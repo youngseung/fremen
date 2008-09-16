@@ -606,7 +606,7 @@ protected
     
   protected 
     constant Pressure p_env=101325.0;
-    constant Temperature dT = 0.001;
+    constant Temperature dT = 0.01;
   algorithm 
     if p == 2 then
       if n == 1 then
