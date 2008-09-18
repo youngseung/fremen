@@ -49,7 +49,7 @@ either tank object (because it lacks the values for the other one).</p>
   
   model Plug "A class that blocks a flow connection" 
     
-    annotation (Icon(Polygon(points=[-60,40; -60,-40; 40,40; 40,-40; -60,40],
+    annotation (Icon(Polygon(points=[-60,40; -60,-40; 60,40; 60,-40; -60,40],
             style(
             color=0,
             rgbcolor={0,0,0},
@@ -64,8 +64,8 @@ either tank object (because it lacks the values for the other one).</p>
   
   model FlowConnector "A class to determine flow direction" 
   public 
-    CheckPoint port1 annotation (extent=[-92,-10; -72,10]);
-    CheckPoint port2 annotation (extent=[72,-10; 92,10]);
+    CheckPoint port1 annotation (extent=[-58,-10; -38,10]);
+    CheckPoint port2 annotation (extent=[18,-10; 38,10]);
   equation 
     // Connection part.
     port1.F + port2.F = 0;
@@ -92,47 +92,11 @@ should be used to set the flow's composition <tt>z</tt> and enthalpic flow <tt>H
 from the connection (gas, liquid, mixed or depending on some variables, such as
 liquid level).</p>
 </html>"), Icon(
-        Ellipse(extent=[40,40; 80,-40], style(
-            color=0,
-            rgbcolor={0,0,0},
-            thickness=2,
-            arrow=3,
-            fillColor=7,
-            rgbfillColor={255,255,255},
-            fillPattern=1)),
-        Rectangle(extent=[-60,40; 60,-40], style(
-            pattern=0,
-            thickness=2,
-            arrow=3,
-            fillColor=7,
-            rgbfillColor={255,255,255},
-            fillPattern=1)),
-        Line(points=[-60,40; 60,40], style(
-            color=0,
-            rgbcolor={0,0,0},
-            thickness=2,
-            fillColor=0,
-            rgbfillColor={0,0,0},
-            fillPattern=1)),
-        Line(points=[-60,-40; 60,-40], style(
-            color=0,
-            rgbcolor={0,0,0},
-            thickness=2,
-            fillColor=0,
-            rgbfillColor={0,0,0},
-            fillPattern=1)),
-        Ellipse(extent=[-80,40; -40,-40], style(
-            color=0,
-            rgbcolor={0,0,0},
-            thickness=2,
-            arrow=3,
-            fillColor=7,
-            rgbfillColor={255,255,255})),
-        Polygon(points=[-30,-2; -10,-32; -10,28; -30,-2], style(
+        Polygon(points=[-40,0; -20,-40; -20,40; -40,0],   style(
             pattern=0,
             fillColor=0,
             rgbfillColor={0,0,0})),
-        Polygon(points=[46,-2; 26,-32; 26,28; 46,-2], style(
+        Polygon(points=[20,0; 0,-40; 0,40; 20,0],     style(
             pattern=0,
             fillColor=0,
             rgbfillColor={0,0,0}))),
@@ -142,6 +106,41 @@ liquid level).</p>
   annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
 <p>This package contains various models related to fluid flow in stirred tanks.</p>
 </html>"));
+  
+  model MethanolSolution "A model to use as a generic source" 
+    import Thermo.mw;
+    import Thermo.rho;
+    import Thermo.h;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.Concentration;
+    import Modelica.SIunits.MoleFraction;
+    
+    outer Temperature T_env "Environment temperature.";
+    
+    parameter Concentration C = 1000 
+      "Concentration of methanol in water, mol/m³.";
+    parameter Temperature T = T_env "Source temperature.";
+    
+    MoleFraction x_ch3oh "Molar fraction of methanol.";
+    MoleFraction x_h2o "Molar fraction of water.";
+    
+    CheckPoint p "Connection point of the source" 
+      annotation (extent=[-10,-10; 10,10]);
+  equation 
+    assert( C >= 0, "Negative concentration given in MethanolSolution object.");
+    assert( C <= rho(T,1,2)/mw(1), "Methanol concentration over limit (" + String(mw(1)/rho(T,1,2)) + " mol/m³).");
+    
+    C = x_ch3oh / ( x_ch3oh*mw(1)/rho(T,1,2) + x_h2o*mw(2)/rho(T,2,2));
+    x_ch3oh + x_h2o = 1.0;
+    
+    p.z_tank = {x_ch3oh, x_h2o, 0, 0, 0};
+    p.h_tank = x_ch3oh*(h(T,1,2)-h(298.15,1,2)) + x_h2o*(h(T,2,2)-h(298.15,2,2));
+    
+    annotation (Icon(Ellipse(extent=[-40,40; 40,-40], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4))));
+  end MethanolSolution;
   
   model EnvironmentPort "A flow connection to environment conditions." 
     import Thermo.dhf;
@@ -162,7 +161,7 @@ liquid level).</p>
     
     MolarEnthalpy h_air "The molar enthalpy of air in the current conditions.";
     
-    CheckPoint c annotation (extent=[-100,-100; -80,-80]);
+    CheckPoint c annotation (extent=[-100,-60; -80,-40]);
   equation 
     z_o2 / 0.21 = z_n2 / 0.79;
     z_h2o + z_o2 + z_n2 = 1.0;
@@ -235,7 +234,7 @@ the gas outlet of separators.</p>
     outer Pressure p_env "Environment pressure.";
     
     parameter String name = "Nameless" "Tank identifier.";
-    parameter HeatCapacity Cp = 1000 "Heat capacity of tank (glass, lid, ...).";
+    parameter HeatCapacity Cp = 100 "Heat capacity of tank (glass, lid, ...).";
     parameter CoefficientOfHeatTransfer h_k = 0.0 
       "Default: perfect insulation.";
     parameter Area A_sur = 1e-3 
@@ -252,13 +251,13 @@ the gas outlet of separators.</p>
     MolarEnthalpy h_tot "Overall molar enthalpy in the tank.";
     MoleFraction[5] z "Overall mole fractions";
     
-    Volume V_l "Amount of liquid volume.";
-    AmountOfSubstance n_l "Total moles of liquid.";
+    Volume V_l(min=0,start=1e-3) "Amount of liquid volume.";
+    AmountOfSubstance n_l(min=0) "Total moles of liquid.";
     MolarEnthalpy h_l "The molar enthalpy of the solution in liquid phase.";
     MoleFraction[5] x "Molar fraction in liquid phase.";
     
-    Volume V_g "Amount of gaseous volume.";
-    AmountOfSubstance n_g "Total moles of gas.";
+    Volume V_g(min=0,start=1e-3) "Amount of gaseous volume.";
+    AmountOfSubstance n_g(min=0) "Total moles of gas.";
     MolarEnthalpy h_g "The molar enthalpy of the mixture in gas phase.";
     MoleFraction[5] y "Molar fraction in gas phase.";
     
@@ -362,12 +361,12 @@ the gas outlet of separators.</p>
    ****************************/
     
     for i in 1:5 loop
-      assert( n[i] > -1e-9, name + ": component "+String(i)+" has a negative quantity.");
+      assert( n[i] > -1e-7, name + ": component "+String(i)+" has a negative quantity.");
     end for;
     
     // Termination criterion: liquid phase goes to zero.
-    assert( V_l > -1e-9, "The liquid phase in "+name+" has become negative.");
-    assert( V_g > -1e-9, "The gas phase in "+name+" has become negative.");
+    assert( V_l > -1e-7, "The liquid phase in "+name+" has become negative.");
+    assert( V_g > -1e-7, "The gas phase in "+name+" has become negative.");
     
     annotation (Documentation(info="<html>
 <p>This class defines the general properties of all stirred tanks, that is a
@@ -478,39 +477,10 @@ deviate significantly from linearity (maximum deviation is about 6%).</p>
     //x[1] = 0.2;  // FIXME why does the line below not work? Start bug hunt!
     n[1] / V_l = 1E3;  // 1 M liquid solution
     level =  0.5 * V / A;   // Half-full
-    n[4] = 0.0;  // No CO2
-    y[5] / 0.79 = y[3] / 0.21;  // N2/O2 in air proportions
+    z[4] = 0.0;  // No CO2
+    y[5] / 79 = y[3] / 21;  // N2/O2 in air proportions
     annotation (Icon);
   end FuelTank;
-  
-  model TestFuelTank "A simple test for the FuelTank class" 
-    
-    FlowConnector flowConnector annotation (extent=[-32,-24; -2,8]);
-    EnvironmentPort environmentPort annotation (extent=[28,-10; 50,16]);
-    annotation (Diagram);
-    FuelTank fuelTank(T(
-                      start = 350),h_k=1000) annotation (extent=[-80,6; -40,44]);
-    FlowConnector flowConnector1 annotation (extent=[-26,36; -2,62]);
-    
-    inner parameter Real RH_env = 50;
-    inner parameter Modelica.SIunits.Pressure p_env = 101325;
-    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-    
-    EnvironmentPort environmentPort1 annotation (extent=[18,48; 48,78]);
-  equation 
-    
-    fuelTank.bottomFlow.F = -1;
-    
-    connect(flowConnector1.port1, fuelTank.topFlow) annotation (points=[-23.84,
-          49; -60,49; -60,40.2], style(pattern=0, thickness=2));
-    connect(fuelTank.bottomFlow, flowConnector.port1) annotation (points=[-60,9.8;
-          -60,-8; -29.3,-8],      style(pattern=0, thickness=2));
-    connect(flowConnector.port2, environmentPort.c) annotation (points=[-4.7,-8;
-          18,-8; 18,-8.7; 29.1,-8.7],
-                                    style(pattern=0, thickness=2));
-    connect(environmentPort1.c, flowConnector1.port2) annotation (points=[19.5,
-          49.5; 6,49.5; 6,49; -4.16,49], style(pattern=0, thickness=2));
-  end TestFuelTank;
   
   model Mixer "Our laboratory mixer" 
     import Modelica.Constants.pi;
@@ -553,78 +523,12 @@ exclude presence of water in gas phase;</li>
     flows[5].h_tank = h_g;
     
   initial equation 
-    n[1] = 0.1; // (Almost) no methanol in initial solution
+    z[1] = 0.0; // (Almost) no methanol in initial solution
     level = 0.5 * V / A; // Half-full
-    y[4] = 1e-3; // (Almost) no CO2 in gas
+    z[4] = 0.0; // No CO2 in gas
     y[5] / 0.79 = y[3] / 0.21; // N2/O2 in air proportions
     
   end Mixer;
-  
-  model TestMixer "A Vodka mixer" 
-    
-    Mixer mixer annotation (extent=[-50,0; -10,42]);
-    FuelTank fuelTank annotation (extent=[-88,12; -56,44]);
-    annotation (Diagram);
-    EnvironmentPort environmentPort annotation (extent=[-50,68; -30,88]);
-    EnvironmentPort environmentPort1 annotation (extent=[-6,62; 14,82]);
-    FlowConnector flowConnector annotation (extent=[-66,-20; -46,0]);
-    FlowConnector flowConnector1 annotation (extent=[-28,42; -8,62]);
-    FlowConnector flowConnector2 annotation (extent=[-70,44; -50,64]);
-    EnvironmentPort environmentPort2 annotation (extent=[4,-52; 24,-32]);
-    Plug plug annotation (extent=[-16,-10; 4,10]);
-    Plug plug1 annotation (extent=[-14,-30; 6,-10]);
-    FlowConnector flowConnector3 annotation (extent=[-26,-64; -4,-38]);
-    inner parameter Real RH_env = 30;
-    inner parameter Modelica.SIunits.Pressure p_env = 101325;
-    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-    
-  equation 
-    connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.8,-10; 
-          -40,-10; -40,4.2; -36,4.2], style(pattern=0, thickness=2));
-    connect(flowConnector.port1, fuelTank.bottomFlow) annotation (points=[-64.2,
-          -10; -72,-10; -72,15.2], style(pattern=0, thickness=2));
-    connect(flowConnector2.port1, fuelTank.topFlow) annotation (points=[-68.2,
-          54; -70,54; -70,40.8; -72,40.8], style(pattern=0, thickness=2));
-    connect(flowConnector2.port2, environmentPort.c) annotation (points=[-51.8,
-          54; -50,54; -50,69; -49,69], style(pattern=0, thickness=2));
-    connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-26.2,52;
-          -30,52; -30,37.8], style(pattern=0, thickness=2));
-    connect(flowConnector1.port2, environmentPort1.c) annotation (points=[-9.8,52; 
-          -6,52; -6,63; -5,63],     style(pattern=0, thickness=2));
-    connect(plug.c, mixer.flow4) annotation (points=[-12.2,6.10623e-16; -24,
-          6.10623e-16; -24,4.2],
-        style(
-        pattern=0,
-        thickness=2,
-        fillColor=46,
-        rgbfillColor={127,127,0},
-        fillPattern=7));
-    connect(plug1.c, mixer.flow3) annotation (points=[-10.2,-20; -28,-20; -28,
-          4.2],
-        style(
-        pattern=0,
-        thickness=2,
-        fillColor=46,
-        rgbfillColor={127,127,0},
-        fillPattern=7));
-    connect(flowConnector3.port1, mixer.flow2) annotation (points=[-24.02,-51; 
-          -32,-51; -32,4.2], style(
-        pattern=0,
-        thickness=2,
-        fillColor=46,
-        rgbfillColor={127,127,0},
-        fillPattern=7));
-    connect(flowConnector3.port2, environmentPort2.c) annotation (points=[-5.98,
-          -51; 5,-51], style(
-        pattern=0,
-        thickness=2,
-        fillColor=46,
-        rgbfillColor={127,127,0},
-        fillPattern=7));
-    flowConnector.port2.F = 1;
-    flowConnector3.port2.F = 0.5;
-    
-  end TestMixer;
   
   model Separator "A gas-liquid separator" 
     import Modelica.Constants.pi;
@@ -650,9 +554,9 @@ exclude presence of water in gas phase;</li>
     flows[3].h_tank = h_l;
     
   initial equation 
-    n[1] = 0.0;  // No methanol in initial solution
-    n[2] = 3;
-    n[4] = 0.0;  // No CO2
+    z[1] = 0.0;  // No methanol in initial solution
+    z[2] = 0.95;
+    z[4] = 0.0;  // No CO2
     y[5] / 0.79 = y[3] / 0.21;  // N2/O2 in air proportions
     
     annotation (Documentation(info="<html>
@@ -668,80 +572,6 @@ it will overflow liquid; specularly the liquid outlet.</p>
 0.25 litres.</p>
 </html>"), Icon);
   end Separator;
-  
-  model TestSeparator "Test suite for the separator model." 
-    
-    inner parameter Real RH_env = 30;
-    inner parameter Modelica.SIunits.Pressure p_env = 101325;
-    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-    Separator separator annotation (extent=[-16,-30; 34,12]);
-    EnvironmentPort environmentPort annotation (extent=[70,22; 90,42]);
-    EnvironmentPort environmentPort1 annotation (extent=[54,-38; 74,-18]);
-    FlowConnector BottomSeparatorConnector 
-                                annotation (extent=[26,-46; 46,-26]);
-    FlowConnector TopSeparatorConnector 
-                                 annotation (extent=[40,14; 60,34]);
-    FlowConnector FuelTankToSeparatorConnector 
-                                 annotation (extent=[-38,-16; -18,4]);
-    FuelTank fuelTank annotation (extent=[-68,4; -48,24]);
-    EnvironmentPort environmentPort2 annotation (extent=[-30,56; -10,76]);
-    FlowConnector topFuelTankConnector 
-                                 annotation (extent=[-54,46; -34,66]);
-  equation 
-    
-    annotation (Diagram);
-    connect(BottomSeparatorConnector.port2, environmentPort1.c) 
-                                                     annotation (points=[44.2,
-          -36; 50,-36; 50,-37; 55,-37], style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    connect(BottomSeparatorConnector.port1, separator.liquidOutlet) 
-                                                         annotation (points=[
-          27.8,-36; 26.5,-36; 26.5,-13.2], style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    connect(TopSeparatorConnector.port2, environmentPort.c) 
-                                                     annotation (points=[58.2,
-          24; 64.6,24; 64.6,23; 71,23], style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    connect(TopSeparatorConnector.port1, separator.gasOutlet) 
-                                                       annotation (points=[41.8,24; 
-          34,24; 34,-0.6; 26.5,-0.6],     style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    connect(FuelTankToSeparatorConnector.port2, separator.feed) 
-                                                  annotation (points=[-19.8,-6; 
-          -15.85,-6; -15.85,-6.9; -11,-6.9], style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    connect(fuelTank.bottomFlow, FuelTankToSeparatorConnector.port1) 
-                                                       annotation (points=[-58,6; 
-          -58,-6; -36.2,-6],    style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    connect(topFuelTankConnector.port2, environmentPort2.c) 
-                                                      annotation (points=[-35.8,56; 
-          -32,56; -32,57; -29,57],     style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    connect(topFuelTankConnector.port1, fuelTank.topFlow) 
-                                                    annotation (points=[-52.2,56; 
-          -56,56; -56,22; -58,22],     style(
-        pattern=0,
-        thickness=2,
-        fillPattern=1));
-    fuelTank.flows[1].F = -0.1;
-    
-    der(separator.level) = 0;
-  end TestSeparator;
   
   model PipeSegment "A pipe segment, modelled as a tank." 
     extends StirredTank(m=2, name="Pipe segment");
@@ -765,15 +595,15 @@ case to use the <tt>final</tt> keyword.</p>
 </html>"));
   end PipeSegment;
   
-  partial model Pipe "A series of PipeSegments or similar objects" 
-    parameter Integer n = 1 "Number of segments";
-    replaceable PipeSegment segments[n];
+  model Pipe "A series of PipeSegments or similar objects" 
+    parameter Integer n = 10 "Number of segments";
+    replaceable PipeSegment[n] segments(each V=1e-4);
   protected 
     FlowConnector[n-1] connections;
   equation 
     for i in 1:(n-1) loop
-      connect( segments[i].flows[2], connections[i].f[1]);
-      connect( connections[i].f[2], segments[i+1].flows[1]);
+      connect( segments[i].flows[2], connections[i].port1);
+      connect( connections[i].port2, segments[i+1].flows[1]);
     end for;
     annotation (Documentation(info="<html>
 <p>A pipe is a sequence of <tt>PipeSegment</tt> objects, intercalated by <tt>FlowConnector</tt>s.
@@ -789,9 +619,10 @@ implementations or children classes of <tt>PipeSegment</tt>.</p>
     extends PipeSegment(m=3, name="Pipe section in heat exchanger");
     
   equation 
-    // Flow and composition are not important for the third flow.
+    /* These variables are unused, but must be initialised to some dummy
+   * value, or the count of equations and variables will not square.*/
     flows[3].F = 0;
-    flows[3].z = z;
+    flows[3].z = zeros(5);
     
     annotation (Documentation(info="<html>
 <p>This kind of segments have a third connector through which no material flow
@@ -801,15 +632,14 @@ temperature differences.</p>
   end HeatExchangerPipeSegment;
   
   model HeatExchangerPipe "A pipe passing through an heat exchanger." 
-    extends Pipe(redeclare HeatExchangerPipeSegment segments[n]);
-    
+    extends Pipe(redeclare HeatExchangerPipeSegment segments[n]) 
     annotation (Documentation(info="<html>
 <p>This particular pipe consists of pipe elements that have a third connector,
 which is used to transfer heat with other elements.</p>
 </html>"));
   end HeatExchangerPipe;
   
-  partial model HeatExchanger "A heat exchanger with two sides" 
+  model HeatExchanger "A heat exchanger with two sides" 
     
   annotation (Icon(Ellipse(extent=[-60,60; 60,-60], style(
           color=0,
@@ -823,7 +653,23 @@ which is used to transfer heat with other elements.</p>
           thickness=4,
           fillColor=67,
           rgbfillColor={85,255,255},
-          fillPattern=1))), Documentation(info="<html>
+          fillPattern=1)), 
+        Text(
+          extent=[10,70; 14,62], 
+          string="1", 
+          style(color=0, rgbcolor={0,0,0})), 
+        Text(
+          extent=[-66,16; -62,8], 
+          string="1", 
+          style(color=0, rgbcolor={0,0,0})), 
+        Text(
+          extent=[62,-10; 66,-18], 
+          style(color=0, rgbcolor={0,0,0}), 
+          string="2"), 
+        Text(
+          extent=[-14,-60; -10,-68], 
+          style(color=0, rgbcolor={0,0,0}), 
+          string="2")),     Documentation(info="<html>
 <p>This is a simple heat exchanger with two sides (left-right and top-bottom
 in the figure) and no phase separation.</p>
 </html>"));
@@ -843,7 +689,7 @@ in the figure) and no phase separation.</p>
     parameter String name="Heat exchanger";
     parameter Area A=1e-2;
     parameter CoefficientOfHeatTransfer U = 10;
-    parameter Integer steps = 1;
+    parameter Integer steps = 10;
     
     HeatExchangerPipe side1(n=steps);
     HeatExchangerPipe side2(n=steps);
@@ -851,9 +697,9 @@ in the figure) and no phase separation.</p>
   equation 
     // Connect pipe connectors to the heat exchanger's.
     connect( f11, side1.segments[1].flows[1]);
-    connect( f12, side1.segments[end].flows[end]);
+    connect( f12, side1.segments[end].flows[2]);
     connect( f21, side2.segments[1].flows[1]);
-    connect( f22, side2.segments[end].flows[end]);
+    connect( f22, side2.segments[end].flows[2]);
     
     /* Connect the pipe segments two by two, using the enthalpy element
    * in the third connectors to transport heat.*/
@@ -972,11 +818,268 @@ in liquid phase; it takes their density from the Thermo library.</p>
     import Modelica.SIunits.Conversions.from_degC;
     import Modelica.SIunits.Conversions.from_degF;
     
+    outer parameter Temperature T_env;
+    parameter Temperature T = T_env 
+      "Temperature (FIXME should not be a reference!).";
     VolumeFlowRate V "Standard volume flow rate.";
-    Temperature T "Temperature (not a reference!)."; // TODO couple somehow to entering composition/enthalpy?
     
   equation 
       V = sum({inlet.z[i] * F * mw(i) / rho(T, i, 2) for i in 1:2});
     
   end Pump;
+  
+  package Tests "A series of tests for units defined in the Tank library" 
+    
+    model TestFuelTank "A simple test for the FuelTank class" 
+      
+      FlowConnector flowConnector annotation (extent=[-32,-24; -2,8]);
+      EnvironmentPort environmentPort annotation (extent=[28,-10; 50,16]);
+      annotation (Diagram);
+      FuelTank fuelTank(T(
+                        start = 350),h_k=1000) annotation (extent=[-80,6; -40,44]);
+      FlowConnector flowConnector1 annotation (extent=[-26,36; -2,62]);
+      
+      inner parameter Real RH_env = 50;
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      
+      EnvironmentPort environmentPort1 annotation (extent=[18,48; 48,78]);
+    equation 
+      
+      fuelTank.bottomFlow.F = -1;
+      
+      connect(flowConnector1.port1, fuelTank.topFlow) annotation (points=[-19.76,
+            49; -60,49; -60,40.2], style(pattern=0, thickness=2));
+      connect(fuelTank.bottomFlow, flowConnector.port1) annotation (points=[-60,9.8;
+            -60,-8; -24.2,-8],      style(pattern=0, thickness=2));
+      connect(flowConnector.port2, environmentPort.c) annotation (points=[-12.8,-8; 
+            18,-8; 18,-3.5; 29.1,-3.5],
+                                      style(pattern=0, thickness=2));
+      connect(environmentPort1.c, flowConnector1.port2) annotation (points=[19.5,
+            55.5; 6,55.5; 6,49; -10.64,49],style(pattern=0, thickness=2));
+    end TestFuelTank;
+
+    model TestMixer "A Vodka mixer" 
+      
+      Mixer mixer annotation (extent=[-50,0; -10,42]);
+      annotation (Diagram);
+      EnvironmentPort environmentPort1 annotation (extent=[-2,48; 16,64]);
+      FlowConnector flowConnector annotation (extent=[-66,-20; -46,0]);
+      FlowConnector flowConnector1 annotation (extent=[-28,42; -8,62]);
+      EnvironmentPort environmentPort2 annotation (extent=[4,-56; 24,-36]);
+      Plug plug annotation (extent=[-16,-10; 4,10]);
+      Plug plug1 annotation (extent=[-14,-30; 6,-10]);
+      FlowConnector flowConnector3 annotation (extent=[-26,-64; -4,-38]);
+      inner parameter Real RH_env = 30;
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      
+      MethanolSolution source annotation (extent=[-86,8; -66,28]);
+    equation 
+      connect(flowConnector.port2, mixer.flow1) annotation (points=[-53.2,-10; 
+            -40,-10; -40,4.2; -36,4.2], style(pattern=0, thickness=2));
+      connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-22.8,52;
+            -30,52; -30,37.8], style(pattern=0, thickness=2));
+      connect(flowConnector1.port2, environmentPort1.c) annotation (points=[-15.2,52; 
+            -1.1,52],                 style(pattern=0, thickness=2));
+      connect(plug.c, mixer.flow4) annotation (points=[-12.2,6.10623e-16; -24,
+            6.10623e-16; -24,4.2],
+          style(
+          pattern=0,
+          thickness=2,
+          fillColor=46,
+          rgbfillColor={127,127,0},
+          fillPattern=7));
+      connect(plug1.c, mixer.flow3) annotation (points=[-10.2,-20; -28,-20; -28,
+            4.2],
+          style(
+          pattern=0,
+          thickness=2,
+          fillColor=46,
+          rgbfillColor={127,127,0},
+          fillPattern=7));
+      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.28,-51; 
+            -32,-51; -32,4.2], style(
+          pattern=0,
+          thickness=2,
+          fillColor=46,
+          rgbfillColor={127,127,0},
+          fillPattern=7));
+      connect(flowConnector3.port2, environmentPort2.c) annotation (points=[-11.92,
+            -51; 5,-51], style(
+          pattern=0,
+          thickness=2,
+          fillColor=46,
+          rgbfillColor={127,127,0},
+          fillPattern=7));
+      flowConnector.port2.F = 1;
+      flowConnector3.port2.F = 0.5;
+      
+      connect(source.p, flowConnector.port1) annotation (points=[-76,18; -76,
+            -10; -60.8,-10], style(pattern=0, thickness=2));
+    end TestMixer;
+    
+    model TestSeparator "Test suite for the separator model." 
+      
+      inner parameter Real RH_env = 30;
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      Separator separator annotation (extent=[-36,-26; 16,14]);
+      EnvironmentPort environmentPort annotation (extent=[48,20; 72,44]);
+      EnvironmentPort environmentPort1 annotation (extent=[46,-40; 68,-16]);
+      FlowConnector BottomSeparatorConnector 
+                                  annotation (extent=[18,-44; 38,-24]);
+      FlowConnector TopSeparatorConnector 
+                                   annotation (extent=[20,16; 40,36]);
+      FlowConnector FuelTankToSeparatorConnector 
+                                   annotation (extent=[-58,-14; -38,6]);
+      MethanolSolution source(T=350) annotation (extent=[-72,4; -52,24]);
+    equation 
+      
+      annotation (Diagram);
+      connect(BottomSeparatorConnector.port2, environmentPort1.c) 
+                                                       annotation (points=[30.8,-34;
+            47.1,-34],                    style(
+          pattern=0,
+          thickness=2,
+          fillPattern=1));
+      connect(BottomSeparatorConnector.port1, separator.liquidOutlet) 
+                                                           annotation (points=[23.2,-34; 
+            8.2,-34; 8.2,-10],               style(
+          pattern=0,
+          thickness=2,
+          fillPattern=1));
+      connect(TopSeparatorConnector.port2, environmentPort.c) 
+                                                       annotation (points=[32.8,26;
+            49.2,26],                     style(
+          pattern=0,
+          thickness=2,
+          fillPattern=1));
+      connect(TopSeparatorConnector.port1, separator.gasOutlet) 
+                                                         annotation (points=[25.2,26; 
+            8,26; 8,2; 8.2,2],              style(
+          pattern=0,
+          thickness=2,
+          fillPattern=1));
+      connect(FuelTankToSeparatorConnector.port2, separator.feed) 
+                                                    annotation (points=[-45.2,-4; 
+            -41.6,-4; -41.6,-4; -38,-4; -38,-4; -30.8,-4],
+                                               style(
+          pattern=0,
+          thickness=2,
+          fillPattern=1));
+      
+      source.p.F = -1;
+      der(separator.level) = 0;
+      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14; 
+            -62,-4; -52.8,-4],     style(pattern=0, thickness=2));
+    end TestSeparator;
+    
+    model TestPipe 
+      inner parameter Real RH_env = 30;
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      Pipe pipe(n=10);
+      MethanolSolution source(T=320);
+      FlowConnector inlet;
+      EnvironmentPort nature;
+      FlowConnector outlet;
+    equation 
+      connect(source.p, inlet.port1);
+      connect(inlet.port2, pipe.segments[1].flows[1]);
+      connect(pipe.segments[end].flows[end], outlet.port1);
+      connect(outlet.port2, nature.c);
+      
+      source.p.F = -1;
+    initial equation 
+      for i in 1:pipe.n loop
+        pipe.segments[i].z[1]=0.01;
+        pipe.segments[i].z[2]=0.9;
+        pipe.segments[i].z[4]=0;
+        pipe.segments[i].z[3]/21 = pipe.segments[i].z[5]/79;
+      end for;
+      
+    end TestPipe;
+    
+    model TestHeatExchangerPipe 
+      inner parameter Real RH_env = 30;
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      HeatExchangerPipe pipe(n=10);
+      MethanolSolution source(T=320);
+      FlowConnector inlet;
+      EnvironmentPort nature;
+      FlowConnector outlet;
+    equation 
+      connect(source.p, inlet.port1);
+      connect(inlet.port2, pipe.segments[1].flows[1]);
+      connect(pipe.segments[end].flows[2], outlet.port1);
+      connect(outlet.port2, nature.c);
+      
+      source.p.F = -1;
+    initial equation 
+      for i in 1:pipe.n loop
+        pipe.segments[i].z[1]=0;
+        pipe.segments[i].z[2]=0.95;
+        pipe.segments[i].z[4]=0;
+        pipe.segments[i].z[3]/21 = pipe.segments[i].z[5]/79;
+        
+        pipe.segments[i].flows[3].H = 20;
+      end for;
+      
+    end TestHeatExchangerPipe;
+
+    model TestHeatExchanger 
+      
+      inner parameter Real RH_env = 30;
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      
+      HeatExchanger heatExchanger annotation (extent=[-16,-4; 12,24]);
+      MethanolSolution methanolSolution annotation (extent=[-88,28; -68,48]);
+      annotation (Diagram);
+      EnvironmentPort environmentPort annotation (extent=[68,6; 84,22]);
+      EnvironmentPort environmentPort1 annotation (extent=[36,44; 52,60]);
+      FlowConnector solutionInlet annotation (extent=[-42,0; -22,20]);
+      FlowConnector solutionOutlet annotation (extent=[38,0; 58,20]);
+      FlowConnector airOutlet annotation (extent=[6,38; 26,58]);
+      GasFlowController mfc annotation (extent=[-44,-40; -24,-20]);
+      FlowConnector airInlet annotation (extent=[-22,-40; -2,-20]);
+      EnvironmentPort environmentPort2 annotation (extent=[-82,-20; -62,0]);
+      FlowConnector mfcInlet annotation (extent=[-72,-40; -52,-20]);
+      Pump pump annotation (extent=[-62,0; -42,20]);
+      FlowConnector solutionInlet1 annotation (extent=[-84,0; -64,20]);
+    equation 
+      connect(solutionInlet.port2, heatExchanger.f11) annotation (points=[-29.2,10; 
+            -19.8,10; -19.8,10; -10.4,10],   style(pattern=0, thickness=2));
+      connect(heatExchanger.f12, solutionOutlet.port1) annotation (points=[6.4,10; 
+            24.8,10; 24.8,10; 43.2,10],     style(pattern=0, thickness=2));
+      connect(solutionOutlet.port2, environmentPort.c) 
+        annotation (points=[50.8,10; 68.8,10], style(pattern=0, thickness=2));
+      connect(airOutlet.port1, heatExchanger.f21) annotation (points=[11.2,48; 
+            -2,48; -2,18.4],
+                         style(pattern=0, thickness=2));
+      connect(airOutlet.port2, environmentPort1.c) 
+        annotation (points=[18.8,48; 36.8,48], style(pattern=0, thickness=2));
+      connect(airInlet.port1, mfc.outlet) annotation (points=[-16.8,-30; -28,
+            -30], style(pattern=0, thickness=2));
+      connect(airInlet.port2, heatExchanger.f22) annotation (points=[-9.2,-30; 
+            -2,-30; -2,1.6],
+                          style(pattern=0, thickness=2));
+      connect(mfcInlet.port2, mfc.inlet) annotation (points=[-59.2,-30; -40,-30],
+          style(pattern=0, thickness=2));
+      connect(mfcInlet.port1, environmentPort2.c) annotation (points=[-66.8,-30;
+            -86,-30; -86,-15; -81,-15], style(pattern=0, thickness=2));
+      
+      connect(pump.outlet, solutionInlet.port1) 
+        annotation (points=[-46,10; -36.8,10], style(pattern=0, thickness=2));
+      connect(solutionInlet1.port2, pump.inlet) 
+        annotation (points=[-71.2,10; -58,10], style(pattern=0, thickness=2));
+      connect(solutionInlet1.port1, methanolSolution.p) annotation (points=[
+            -78.8,10; -88,10; -88,38; -78,38], style(pattern=0, thickness=2));
+      
+      mfc.V = 10e-3/60; // 10 liters per minute of cooling air
+      pump.V = 20e-6/60; // 20 mL/min
+    end TestHeatExchanger;
+  end Tests;
 end Tank;
