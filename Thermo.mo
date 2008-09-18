@@ -570,9 +570,9 @@ public
   algorithm 
     if p == 2 then
       if n == 1 then
-        RHO := rho_ch3oh(T);
+        RHO := 791; // rho_ch3oh(T);
       elseif n == 2 then
-        RHO := rho_h2o(T);
+        RHO := 997; // rho_h2o(T);
       else
         assert(false, "Density in liquid phase of gaseous component "+String(n)+" requested.");
       end if;
@@ -610,9 +610,9 @@ protected
   algorithm 
     if p == 2 then
       if n == 1 then
-        der_rho := (rho_ch3oh(T+dT)-rho_ch3oh(T))/dT; // FIXME use spline?
+        der_rho := 0; // (rho_ch3oh(T+dT)-rho_ch3oh(T))/dT; // FIXME use spline?
       elseif n == 2 then
-        der_rho := (rho_h2o(T+dT)-rho_h2o(T))/dT;  // FIXME use spline?
+        der_rho := 0; // (rho_h2o(T+dT)-rho_h2o(T))/dT;  // FIXME use spline?
       else
         assert(false, "Density in liquid phase of gaseous component "+String(n)+" requested.");
       end if;
