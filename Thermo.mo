@@ -432,13 +432,13 @@ public
     output MolarEnthalpy f;
   algorithm 
     if n == 1 and p == 1 then
-      f := -205000.0;
+      f := -205000;
     elseif n == 1 and p == 2 then
-      f := -238400.0;
+      f := -238400;
     elseif n == 2 and p == 1 then
-      f := -241826.0;
+      f := -241826;
     elseif n == 2 and p == 2 then
-      f := -285.830;
+      f := -285830;
     elseif n == 3 and p == 1 then
       f := 0.0;
     elseif n == 4 and p == 1 then
