@@ -13,7 +13,7 @@
    id="svg2"
    sodipodi:version="0.32"
    inkscape:version="0.44.1"
-   sodipodi:docbase="/data/portsys/projects/modelling/Modelica/docs/pics"
+   sodipodi:docbase="/scratch/zenith/Modelica/docs/pics"
    sodipodi:docname="stirredtank.svg"
    version="1.0">
   <defs
@@ -195,15 +195,15 @@
     <text
        xml:space="preserve"
        style="font-size:12.96141624px;font-style:normal;font-weight:normal;line-height:125%;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="66.639717"
-       y="6.6189179"
+       x="33.003094"
+       y="7.718154"
        id="text1884"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan1886"
-         x="66.639717"
-         y="6.6189179"
-         style="font-size:10.80117989px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Courier New">Flow</tspan></text>
+         x="33.003094"
+         y="7.718154"
+         style="font-size:10.80117989px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Courier New">CheckPoint</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:black;stroke-width:1.02388763px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend);stroke-opacity:1"
        d="M 145.30003,69.917542 L 164.24259,95.97366"

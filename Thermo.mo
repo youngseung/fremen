@@ -15,6 +15,25 @@ public
 <p>Definition lacking from Modelica library.</p>
 </html>"));
   
+  // Species
+public 
+  constant Integer AllSpecies =    1:5;
+  constant Integer GasSpecies =    3:5;
+  constant Integer LiquidSpecies = 1:2;
+  constant Integer Methanol =      1;
+  constant Integer Water =         2;
+  constant Integer Oxygen =        3;
+  constant Integer CarbonDioxide = 4;
+  constant Integer Nitrogen =      5;
+  
+  
+  // Phases
+public 
+  constant Integer[:] AllPhases = 1:2;
+  constant Integer GasPhase =     1;
+  constant Integer LiquidPhase =  2;
+  
+  
 protected 
   record WaterVapourParameters "Parameters for water vapour" 
     constant Real A=8.22;
@@ -110,6 +129,49 @@ protected
                                          D=2474.455, E=3.855326, F=-256.5478,
                                          G=-488.7163, H=-285.8304,
                                          T_min=298.0, T_max=500.0);
+public 
+  function speciesName 
+    input Integer n "The species code.";
+    output String st "The species name.";
+  algorithm 
+    if n == Methanol then
+      st := "methanol";
+    elseif n == Water then
+      st := "water";
+    elseif n == Oxygen then
+      st := "oxygen";
+    elseif n == CarbonDioxide then
+      st := "carbon dioxide";
+    elseif n == Nitrogen then
+      st := "nitrogen";
+    else
+      st := "unknown ("+String(n)+")";
+    end if;
+    
+    annotation (Documentation(info="<html>
+<p>This function returns a string with the name of the species whose
+code was set into the input.</p>
+</html>"));
+  end speciesName;
+public 
+
+  function phaseName 
+    input Integer n "The phase code.";
+    output String st "The phase name.";
+  algorithm 
+    if n == GasPhase then
+      st := "gas";
+    elseif n == LiquidPhase then
+      st := "liquid";
+    else
+      st := "unknown ("+String(n)+")";
+    end if;
+    
+    annotation (Documentation(info="<html>
+<p>This function returns a string with the name of the phase whose
+code was set into the input.</p>
+</html>"));
+  end phaseName;
   
 protected 
   function ShomateEnthalpy 
@@ -400,18 +462,18 @@ public
     input Integer n "Component";
     output MolarMass m;
   algorithm 
-    if n == 1 then
+    if n == Methanol then
       m := 32.0419e-3;
-    elseif n == 2 then
+    elseif n == Water then
       m := 18.0153e-3;
-    elseif n == 3 then
+    elseif n == Oxygen then
       m := 31.9988e-3;
-    elseif n == 4 then
+    elseif n == CarbonDioxide then
       m := 44.0095e-3;
-    elseif n == 5 then
+    elseif n == Nitrogen then
       m := 28.01348e-3;
     else
-      assert(false, "Bad input data: requested component "+String(n)+" is not implemented.");
+      assert(false, "Bad input data: requested species "+String(n)+" is not implemented.");
     end if;
     annotation (Documentation(info="<html>
 <p>This function returns the molecular weight of the chemical species. Data is from NIST, for:
@@ -431,22 +493,22 @@ public
     input Integer p=1 "Phase, gaseous by default";
     output MolarEnthalpy f;
   algorithm 
-    if n == 1 and p == 1 then
+    if n == Methanol and p == GasPhase then
       f := -205000;
-    elseif n == 1 and p == 2 then
+    elseif n == Methanol and p == LiquidPhase then
       f := -238400;
-    elseif n == 2 and p == 1 then
+    elseif n == Water and p == GasPhase then
       f := -241826;
-    elseif n == 2 and p == 2 then
+    elseif n == Water and p == LiquidPhase then
       f := -285830;
-    elseif n == 3 and p == 1 then
+    elseif n == Oxygen and p == GasPhase then
       f := 0.0;
-    elseif n == 4 and p == 1 then
+    elseif n == CarbonDioxide and p == GasPhase then
       f := -393510.0;
-    elseif n == 5 and p == 1 then
+    elseif n == Nitrogen and p == GasPhase then
       f := 0.0;
     else
-      assert(false, "Bad input data: component "+String(n)+", phase "+String(p)+".");
+      assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
     annotation (Documentation(info="<html>
 <p>This function returns the standard enthalpy of formation of the chemical species. Data is from NIST, for:
@@ -468,27 +530,29 @@ public
     input Integer n "Component";
     input Integer p=1 "Phase, gaseous by default";
     output MolarEnthalpy H;
+  protected 
+    constant Temperature T_ref = 298.15;
   algorithm 
-    if n == 1 and p == 1 then
-      H := h_ch3oh_gas(T);
-    elseif n == 1 and p == 2 then
-      H := h_ch3oh_liq(T);
-    elseif n == 2 and p == 1 then
-      H := h_h2o_gas(T);
-    elseif n == 2 and p == 2 then
-      H := ShomateEnthalpy(T, ShomateH2O);
-    elseif n == 3 and p == 1 then
-      H := ShomateEnthalpy(T, ShomateO2);
-    elseif n == 4 and p == 1 then
-      H := ShomateEnthalpy(T, ShomateCO2);
-    elseif n == 5 and p == 1 then
-      H := ShomateEnthalpy(T, ShomateN2);
+    if n == Methanol and p == GasPhase then
+      H := h_ch3oh_gas(T) - h_ch3oh_gas(T_ref);
+    elseif n == Methanol and p == LiquidPhase then
+      H := h_ch3oh_liq(T) - h_ch3oh_liq(T_ref);
+    elseif n == Water and p == GasPhase then
+      H := h_h2o_gas(T) - h_h2o_gas(T_ref);
+    elseif n == Water and p == LiquidPhase then
+      H := ShomateEnthalpy(T, ShomateH2O) - ShomateEnthalpy(T_ref, ShomateH2O);
+    elseif n == Oxygen and p == GasPhase then
+      H := ShomateEnthalpy(T, ShomateO2) - ShomateEnthalpy(T_ref, ShomateO2);
+    elseif n == CarbonDioxide and p == GasPhase then
+      H := ShomateEnthalpy(T, ShomateCO2) - ShomateEnthalpy(T_ref, ShomateCO2);
+    elseif n == Nitrogen and p == GasPhase then
+      H := ShomateEnthalpy(T, ShomateN2) - ShomateEnthalpy(T_ref, ShomateN2);
     else
-      assert(false, "Bad input data: component "+String(n)+", phase "+String(p)+".");
+      assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
     annotation (Documentation(info="<html>
 <p>Returns the enthalpy of the given component at the given temperature and in
-the given phase.</p>
+the given phase; the reference state is always 298.15 K.</p>
 </html>"));
   end h;
   
@@ -499,22 +563,22 @@ public
     input Integer p=1 "Phase, gaseous by default";
     output MolarHeatCapacity CP;
   algorithm 
-    if n == 1 and p == 1 then
+    if n == Methanol and p == GasPhase then
       CP := cp_ch3oh_gas(T);
-    elseif n == 1 and p == 2 then
+    elseif n == Methanol and p == LiquidPhase then
       CP := cp_ch3oh_liq(T);
-    elseif n == 2 and p == 1 then
+    elseif n == Water and p == GasPhase then
       CP := cp_h2o_gas(T);
-    elseif n == 2 and p == 2 then
+    elseif n == Water and p == LiquidPhase then
       CP := ShomateHeatCapacity(T, ShomateH2O);
-    elseif n == 3 and p == 1 then
+    elseif n == Oxygen and p == GasPhase then
       CP := ShomateHeatCapacity(T, ShomateO2);
-    elseif n == 4 and p == 1 then
+    elseif n == CarbonDioxide and p == GasPhase then
       CP := ShomateHeatCapacity(T, ShomateCO2);
-    elseif n == 5 and p == 1 then
+    elseif n == Nitrogen and p == GasPhase then
       CP := ShomateHeatCapacity(T, ShomateN2);
     else
-      assert(false, "Bad input data: component "+String(n)+", phase "+String(p)+".");
+      assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
     annotation (Documentation(info="<html>
 <p>Returns the molar heat capacity of the given component at the given 
@@ -528,12 +592,12 @@ public
     input Integer n "Component";
     output PartialPressure p;
   algorithm 
-    if n == 1 then
+    if n == Methanol then
       p := p_ch3oh(T);
-    elseif n == 2 then
+    elseif n == Water then
       p := p_h2o(T);
     else
-      assert(false, "Error: vapour Pressure of component "+String(n)+" requested.");
+      assert(false, "Vapour pressure of species "+speciesName(n)+" requested.");
     end if;
     annotation(derivative=dp_vap_dT);
     annotation (Documentation(info="<html>
@@ -562,16 +626,16 @@ public
   function rho 
     input Temperature T;
     input Integer n "Component";
-    input Integer p=1 "Phase, gaseous by default";
+    input Integer p=GasPhase "Phase, gaseous by default";
     output Density RHO;
     import Modelica.Constants.R;
   protected 
     constant Pressure p_env=101325.0;
   algorithm 
-    if p == 2 then
-      if n == 1 then
+    if p == LiquidPhase then
+      if n == Methanol then
         RHO := 791; // rho_ch3oh(T);
-      elseif n == 2 then
+      elseif n == Water then
         RHO := 997; // rho_h2o(T);
       else
         assert(false, "Density in liquid phase of gaseous component "+String(n)+" requested.");
