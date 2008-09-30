@@ -1,6 +1,13 @@
 \documentclass[a4paper]{article}
 \usepackage{amsmath,multicol,graphicx}
 \renewcommand{\d}{\ensuremath{\mathrm{d}}}
+\newcommand{\e}{\ensuremath{\mathrm{e}}}
+\newcommand{\CO}{\ensuremath{\mathrm{CO}}}
+\newcommand{\COO}{\ensuremath{\mathrm{CO_2}}}
+\newcommand{\OO}{\ensuremath{\mathrm{O_2}}}
+\newcommand{\HHO}{\ensuremath{\mathrm{H_2O}}}
+\newcommand{\OH}{\ensuremath{\mathrm{OH}}}
+\newcommand{\MeOH}{\ensuremath{\mathrm{CH_3OH}}}
 \newcommand{\der}[2]{\ensuremath{\frac{\d \, #1}{\d \, #2}}}
 \newcommand{\pder}[2]{\ensuremath{\frac{\partial \, #1}{\partial \, #2}}}
 \newcommand{\CC}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
@@ -451,9 +458,8 @@ set to zero.
 
 
 \subsection{The \texttt{HeatExchangerPipe} Class}
-This is a child class of \texttt{Pipe}, where the segments are now of type
-\texttt{HeatExchangerPipeSegments}. It is otherwise identical to its parent
-class.
+This is a child class of \texttt{Pipe}, with \texttt{HeatExchangerPipeSegments}s
+for segments. It is otherwise identical to its parent class.
 
 
 \subsection{The \texttt{HeatExchanger} Class}
@@ -503,10 +509,83 @@ defaults to 273.15\,K, the so-called ``standard''. The ``norm'', instead, is at
 
 
 \subsection{The \texttt{Pump} class}
-This is another derived class of \texttt{FlowController}, and just like
-\texttt{GasFlowController} it gives the possibility to set the volumetric flow;
+This is another derived class of \texttt{FlowController}, and just like the gas
+flow controller it gives the possibility to set the volumetric flow;
 only, this is done \emph{assuming all flow is liquid} and that all flow is
 either water or methanol.
 
+\section{The Fuel-Cell Model}
+
+The model consists of two \texttt{StirredTank}s connected in such a way that
+they can exchange heat and mass.
+
+Each side will have a certain volume, and the fuel cell itself will have
+parameters for area, reaction kinetics, membrane and so on.
+
+The main phenomena modelled by the equations are:
+\begin{itemize}
+\item overvoltages;
+\item ohmic resistance;
+\item diffusion;
+\item mass and energy balances;
+\item methanol crossover.
+\end{itemize}
+
+The following assumptions are made when modelling the fuel cell:
+
+\begin{itemize}
+\item pseudo-steady state for overvoltages of both electrodes ($\eta_a$,
+$\eta_c$);
+\item diffusion phenomena are also at pseudo-steady state;
+\item temperature is uniform and equal in cathode and anode;
+\item for starters, the effect of developing CO$_2$ will be neglected.
+\item Mass-transport effects are not going to be modelled.
+\end{itemize}
+
+Only the mass and energy balances have transients in this model; this is
+justified as other transients are faster than the bandwidth we are interested
+in.
+
+The overall cell reaction is:
+
+\begin{equation}
+\MeOH + \frac{3}{2}\,\OO \rightarrow 2\,\HHO + \COO
+\end{equation}
+
+The catalyst-layer concentration of methanol is the only catalyst-layer
+concentration that we estimate, since we need it to calculate the crossover
+current density. The methanol transport from bulk to catalyst layer is described
+as:
+
+\begin{equation}
+k_{ad}(c_a-c_{ac}) = \overbrace{\frac{D_M}{d_M}\,c_{ac}}^{i_c/6\,F}
++ \frac{i}{6\,F}
+\end{equation}
+
+The mass balances of various species follow; for the anode:
+
+\begin{align}
+0 &= \dot n_\HHO^\text{in} - \dot n_\HHO^\text{out}
+- I\,\left(\frac{k_\text{drag}}{F} + \frac{1}{6\,F}\right)\\
+0 &= \dot n_\MeOH^\text{in} - \dot n_\MeOH^\text{out} - \frac{I}{6\,F} -
+\frac{A\,i_c}{6\,F}\\
+0 &= \dot n_\COO^\text{in} - \dot n_\COO^\text{out} + \frac{I}{6\,F}
+\end{align}
+
+and for the cathode:
+
+\begin{align}
+0 &= \dot n_\HHO^\text{in} - \dot n_\HHO^\text{out} + I\,\left(\frac{3}{6\,F} +
+\frac{k_\text{drag}}{F}\right) + 2\,\frac{A\,i_c}{6\,F}\\
+0 &= \dot n_\OO^\text{in} - \dot n_\OO^\text{out}
+- \frac{3}{2}\frac{I+i_c\,A}{6\,F}\\
+0 &= \dot n_\COO^\text{in} - \dot n_\COO^\text{out} + \frac{i_c\,A}{6\,F}
+\end{align}
+
+The overvoltages are found with the Tafel equations:
+\begin{align}
+r_c & = k_c p_\OO \e^{-\frac{(1-\alpha_c)F}{R\,T}\eta_c}\\
+r_a & = k_a c_\MeOH^{ac} \e^{-\frac{\alpha_a\,F}{R\,T}\eta_a}
+\end{align}
 
 \end{document}
