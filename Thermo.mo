@@ -26,13 +26,11 @@ public
   constant Integer CarbonDioxide = 4;
   constant Integer Nitrogen =      5;
   
-  
   // Phases
 public 
-  constant Integer[:] AllPhases = 1:2;
-  constant Integer GasPhase =     1;
-  constant Integer LiquidPhase =  2;
-  
+  constant Integer[:] AllPhases = 1001:1002;
+  constant Integer GasPhase =     1001;
+  constant Integer LiquidPhase =  1002;
   
 protected 
   record WaterVapourParameters "Parameters for water vapour" 
@@ -153,8 +151,8 @@ public
 code was set into the input.</p>
 </html>"));
   end speciesName;
+  
 public 
-
   function phaseName 
     input Integer n "The phase code.";
     output String st "The phase name.";
@@ -362,35 +360,6 @@ protected
       C=-33.50);
   end dp_ch3oh_dT;
   
-public 
-  function bubblePressure 
-    input MoleFraction x_ch3oh;
-    input Temperature T;
-    output Pressure p;
-  protected 
-    MoleFraction x_h2o=1.0 - x_ch3oh;
-  algorithm 
-    p := p_h2o(T)*x_h2o + p_ch3oh(T)*x_ch3oh;
-    annotation (Documentation(info="<html>
-<p>This function returns the bubble pressure of a water-methanol solution at a given temperature.</p>
-</html>"));
-  end bubblePressure;
-  
-public 
-  function dewPressure 
-    input MoleFraction y_ch3oh;
-    input MoleFraction y_h2o;
-    input Temperature T;
-    output Pressure p;
-  algorithm 
-    p := 1.0/(y_h2o/p_h2o(T) + y_ch3oh/p_ch3oh(T));
-    annotation (Documentation(info="<html>
-<p>This function returns the dew pressure of a water-methanol mixture at a given temperature.</p>
-<p>Note that there could be other non-condensing species such as nitrogen in the gaseous mixture,
-so the the water and methanol fractions do not necessarily sum up to one.</p>
-</html>"));
-  end dewPressure;
-  
 protected 
   function LinearInterpolation 
     input Real x;
@@ -490,7 +459,7 @@ public
 public 
   function dhf 
     input Integer n "Component";
-    input Integer p=1 "Phase, gaseous by default";
+    input Integer p "Phase";
     output MolarEnthalpy f;
   algorithm 
     if n == Methanol and p == GasPhase then
@@ -528,7 +497,7 @@ public
   function h 
     input Temperature T;
     input Integer n "Component";
-    input Integer p=1 "Phase, gaseous by default";
+    input Integer p "Phase";
     output MolarEnthalpy H;
   protected 
     constant Temperature T_ref = 298.15;
@@ -550,17 +519,29 @@ public
     else
       assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
+    annotation(derivative=dh_dT);
     annotation (Documentation(info="<html>
 <p>Returns the enthalpy of the given component at the given temperature and in
 the given phase; the reference state is always 298.15 K.</p>
 </html>"));
   end h;
   
+protected 
+  function dh_dT "Derivative of the enthalpy function" 
+    input Temperature T;
+    input Integer n "Component";
+    input Integer p "Phase";
+    input Real der_T "The rate of variation of temperature.";
+    output MolarHeatCapacity c;
+  algorithm 
+    c := cp(T,n,p);
+  end dh_dT;
+  
 public 
   function cp 
     input Temperature T;
     input Integer n "Component";
-    input Integer p=1 "Phase, gaseous by default";
+    input Integer p "Phase";
     output MolarHeatCapacity CP;
   algorithm 
     if n == Methanol and p == GasPhase then
@@ -605,6 +586,33 @@ public
 </html>"));
   end p_vap;
   
+public 
+  function K 
+    input Temperature T "Temperature";
+    input Integer n "Components";
+    output Real Kvalue 
+      "The ratio x/y between liquid and gaseous molar fraction.";
+  protected 
+    constant Pressure p_env = 101325 "The environment pressure.";
+  algorithm 
+    if n == Methanol then
+      Kvalue := p_env/p_ch3oh(T);
+    elseif n == Water then
+      Kvalue := p_env/p_h2o(T);
+    else
+      Kvalue := 0.0;
+    end if;
+    
+    annotation (Documentation(info="<html>
+<p>This function provides the chemical-equilibrium x/y ratio of liquid versus gaseous
+molar fraction.</p>
+<p>Note that this is the inverse of the usual y/x ratio: the reason is that this way 
+it is possible to include components that are present in gaseous phase but not in 
+liquid phase, by setting their K-value to be zero.</p>
+<p>Note also that this function assumes environmental pressure (101.325 Pa).</p>
+</html>"));
+  end K;
+  
 protected 
   function dp_vap_dT 
     input Temperature T;
@@ -626,7 +634,7 @@ public
   function rho 
     input Temperature T;
     input Integer n "Component";
-    input Integer p=GasPhase "Phase, gaseous by default";
+    input Integer p "Phase";
     output Density RHO;
     import Modelica.Constants.R;
   protected 
@@ -660,11 +668,10 @@ molar heat capacity, vapour pressure, molecular weight and so on.</p>
 protected 
   function drho_dT "Derivative of the density function" 
     import Modelica.Constants.R;
-    import Modelica.SIunits.Temperature;
     
     input Temperature T;
     input Integer n "The component code";
-    input Integer p=1 "Phase, gaseous by default";
+    input Integer p "Phase";
     input Real der_T "The rate of variation of temperature";
     output Real der_rho "The derivative drho/dT";
     
@@ -685,4 +692,5 @@ protected
       der_rho := -mw(n)*p_env/R/T^2*der_T;
     end if;
   end drho_dT;
+  
 end Thermo;
