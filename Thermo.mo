@@ -589,7 +589,7 @@ public
 public 
   function K 
     input Temperature T "Temperature";
-    input Integer n "Components";
+    input Integer n "Component";
     output Real Kvalue 
       "The ratio x/y between liquid and gaseous molar fraction.";
   protected 
@@ -600,9 +600,10 @@ public
     elseif n == Water then
       Kvalue := p_env/p_h2o(T);
     else
-      Kvalue := 0.0;
+      Kvalue := 0; // TODO implement solutibilies
     end if;
     
+    annotation(derivative=dK_dT);
     annotation (Documentation(info="<html>
 <p>This function provides the chemical-equilibrium x/y ratio of liquid versus gaseous
 molar fraction.</p>
@@ -612,6 +613,24 @@ liquid phase, by setting their K-value to be zero.</p>
 <p>Note also that this function assumes environmental pressure (101.325 Pa).</p>
 </html>"));
   end K;
+  
+protected 
+  function dK_dT 
+    input Temperature T "Temperature.";
+    input Integer n "Component.";
+    input Real der_T "The derivative of temperature.";
+    output Real der_K "The derivative of K-values with respect to temperature.";
+  protected 
+    constant Pressure p_env = 101325 "Environment pressure";
+  algorithm 
+    if n == Methanol then
+      der_K := -p_env/p_ch3oh(T)^2*dp_ch3oh_dT(T);
+    elseif n == Water then
+      der_K := p_env/p_h2o(T)^2*dp_h2o_dT(T);
+    else
+      der_K := 0.0;
+    end if;
+  end dK_dT;
   
 protected 
   function dp_vap_dT 
