@@ -7,7 +7,7 @@ type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s")
 <p>Just a definition lacking from the standard library.</p>
 </html>"));
   
-  connector CheckPoint "What passes through a control surface" 
+  connector FlowPort "What passes through a control surface" 
     
     flow MolarFlowRate[size(Thermo.AllSpecies,1)] n(each min=0);
     flow Modelica.SIunits.EnthalpyFlowRate H;
@@ -27,14 +27,23 @@ should instead be between these, to whose sides the CheckPoints are connected. T
 necessary because at some point it must be decided what composition and enthalpy content
 to use, the one up- or downstream of the connection, and this decision cannot be made in
 either tank object (because it lacks the values for the other one).</p>
-</html>"), Icon(Ellipse(extent=[-100,100; 100,-100],
-                                                 style(
+</html>"), Icon(Rectangle(extent=[-100,100; 100,-100], style(
             pattern=0,
-            thickness=2,
+            fillColor=1,
+            rgbfillColor={255,0,0}))));
+  end FlowPort;
+  
+  connector TemperaturePort "A connector providing temperature values." 
+    
+    Modelica.SIunits.Temperature T "The temperature, in kelvin.";
+    
+    annotation (Diagram, Icon(
+                        Ellipse(extent=[-100,100; 100,-100],style(
+            pattern=0,
             gradient=3,
             fillColor=1,
             rgbfillColor={255,0,0}))));
-  end CheckPoint;
+  end TemperaturePort;
   
   model Plug "A class that blocks a flow connection" 
     import Thermo.AllSpecies;
@@ -47,13 +56,12 @@ either tank object (because it lacks the values for the other one).</p>
             rgbfillColor={255,255,255}))), Documentation(info="<html>
 <p>This simple item sets the connected flow to zero.</p>
 </html>"));
-    CheckPoint c annotation (extent=[-100,-10; -80,10]);
+    FlowPort c   annotation (extent=[-90,-10; -70,10]);
   equation 
     c.n = zeros(size(AllSpecies, 1));
     c.H = 0;
     
   end Plug;
-  
   
   annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
 <p>This package contains various models related to fluid flow in stirred tanks.</p>
@@ -67,19 +75,18 @@ either tank object (because it lacks the values for the other one).</p>
     import Thermo.Water;
     import Thermo.Methanol;
     import Modelica.SIunits.Temperature;
-    import Modelica.SIunits.Concentration;
     import Modelica.SIunits.MoleFraction;
     
     outer parameter Temperature T_env;
     
-    parameter Concentration C = 1000 
+    parameter Modelica.SIunits.Concentration C = 1000 
       "Concentration of methanol in water, mol/m³.";
     parameter Temperature T = T_env "Source temperature.";
     
     MoleFraction x_ch3oh "Molar fraction of methanol.";
     MoleFraction x_h2o "Molar fraction of water.";
     
-    CheckPoint c "Connection point of the source" 
+    FlowPort c "Connection point of the source" 
       annotation (extent=[-20,-20; 20,20]);
   equation 
     assert(C >= 0, "Negative concentration given in MethanolSolution object.");
@@ -115,6 +122,8 @@ this is 1000 times the normal scale (1M = 1000 mol/m³).</p>
     import Thermo.Oxygen;
     import Thermo.CarbonDioxide;
     import Thermo.Nitrogen;
+    import Thermo.GasPhase;
+    import Thermo.LiquidPhase;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.MoleFraction;
@@ -132,15 +141,15 @@ this is 1000 times the normal scale (1M = 1000 mol/m³).</p>
     MolarEnthalpy h_h2o "The molar enthalpy of water vapour.";
     MolarEnthalpy h_air "The molar enthalpy of air in the current conditions.";
     
-    CheckPoint c annotation (extent=[-100,-60; -80,-40]);
+    FlowPort c   annotation (extent=[-100,-60; -80,-40]);
   equation 
-    y_o2 / 0.21 = y_n2 / 0.79;
-    y_h2o + y_o2 + y_n2 = 1.0;
-    y_h2o = RH_env/100 * p_vap(T_env, 2)/p_env;
+    y_o2 / 0.21 = y_n2 / 0.79; // The O2/N2 ratio.
+    y_h2o + y_o2 + y_n2 = 1.0; // Fractions sum to 1.
+    y_h2o = RH_env/100 * p_vap(T_env, 2)/p_env; // Humidity of air
     
-    h_h2o = h(T_env, 2, 1) + dhf(2, 1) - dhf(2,2);
-    h_o2  = h(T_env, 3, 1);
-    h_n2  = h(T_env, 5, 1);
+    h_h2o = h(T_env, Water, GasPhase) + dhf(2, GasPhase) - dhf(2,LiquidPhase);
+    h_o2  = h(T_env, Oxygen, GasPhase);
+    h_n2  = h(T_env, Nitrogen, GasPhase);
     h_air = h_h2o*y_h2o + h_o2*y_o2 + h_n2*y_n2;
     
     c.n[Water] / y_h2o = c.n[Oxygen] / y_o2;
@@ -186,24 +195,11 @@ values from 0 (dry air) to 100 (saturated air).</p>
       Diagram);
   end EnvironmentPort;
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  model SinkPort 
+    annotation (Diagram);
+    FlowPort flowPort annotation (extent=[-100,-10; -80,10]);
+  end SinkPort;
+
   model FlowController "A unit modelling a pump or a MFC" 
     
     import Thermo.mw;
@@ -211,8 +207,8 @@ values from 0 (dry air) to 100 (saturated air).</p>
     
     MolarFlowRate F;
     Modelica.SIunits.MassFlowRate m;
-    CheckPoint inlet "Unit inlet" annotation (extent=[-12,-10; 8,10]);
-    CheckPoint outlet "Unit outlet" annotation (extent=[-10,90; 10,110]);
+    FlowPort inlet "Unit inlet"   annotation (extent=[-12,-10; 8,10]);
+    FlowPort outlet "Unit outlet"   annotation (extent=[-10,90; 10,110]);
   equation 
     m = sum({inlet.n[i] * mw(i) for i in AllSpecies});
     F = sum(inlet.n);
@@ -288,74 +284,184 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
   end Pump;
   
+  model FlowTemperature "A unit that calculates the temperature of a flow." 
+    
+    import Thermo.h;
+    import Thermo.dhf;
+    import Thermo.p_vap;
+    import Thermo.AllSpecies;
+    import Thermo.GasSpecies;
+    import Thermo.LiquidSpecies;
+    import Thermo.GasPhase;
+    import Thermo.LiquidPhase;
+    
+    outer Modelica.SIunits.Pressure p_env;
+    
+    FlowPort flow1 annotation (extent=[-110,-10; -90,10]);
+    FlowPort flow2 annotation (extent=[90,-10; 110,10]);
+    Modelica.SIunits.Temperature T(start=298.15);
+    annotation (Diagram, Icon(
+        Ellipse(extent=[-100,100; 100,-100], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Rectangle(extent=[-38,46; 42,36], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={0,0,0},
+            fillPattern=1)),
+        Rectangle(extent=[-4,36; 6,-48], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={0,0,0},
+            fillPattern=1))));
+    
+    MolarFlowRate[k] vapour;
+    MolarFlowRate[k] condensate;
+  protected 
+    constant Integer k = size(LiquidSpecies,1);
+    
+  equation 
+    vapour + condensate = flow1.n[LiquidSpecies];
+    
+    if sum(flow1.n[GasSpecies]) <= 0.0 and sum( p_vap(T, i)*flow1.n[i] for i in LiquidSpecies)  < p_env*sum(flow1.n) then
+      /* There are no gas species and the liquids' vapour pressure cannot sustain
+     * a gas phase (their sum is less than the environment pressure).
+     * Therefore, there is only liquid and no gas phase.
+     */
+      vapour = zeros(k);
+    elseif max( flow1.n[i]/p_vap(T,i) for i in LiquidSpecies)  < sum(flow1.n)/p_env then
+      /* No species that can be present in liquid phase has a gas fraction sufficient for
+     * condensation. Therefore, there is only gas phase.
+     */
+      condensate = zeros(k);
+    else
+      // Gas-liquid equilibrium (Raoult's law): y * p_env = x * p_vap
+      vapour / (sum(flow1.n[GasSpecies]) + sum(vapour)) * p_env = { condensate[i]/sum(condensate)*p_vap(T,i) for i in LiquidSpecies};
+    end if;
+    
+    // Note that this works only because LiquidSpecies is a vector starting with 1, otherwise the second term would not work.
+    flow1.H = sum( flow1.n[i] * h(T, i, GasPhase) for i in GasSpecies) +
+              sum( vapour[i]*( h(T, i, GasPhase) + dhf(i,GasPhase) - dhf(i,LiquidPhase))
+                   + condensate[i]*h(T, i, LiquidPhase) for i in LiquidSpecies);
+    
+  end FlowTemperature;
+  
+  model WaterRecuperator "Separator to recover condensed water." 
+    FlowPort inlet annotation (extent=[-110,-10; -90,10]);
+    FlowPort gasOutlet annotation (extent=[60,30; 80,50]);
+    FlowPort liquidOutlet annotation (extent=[60,-50; 80,-30]);
+    annotation (Diagram, Icon(
+        Ellipse(extent=[-100,40; -60,-40], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Ellipse(extent=[60,40; 100,-40], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Rectangle(extent=[-80,40; 80,-40], style(
+            color=0,
+            rgbcolor={255,255,255},
+            thickness=0,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Line(points=[-80,40; 80,40], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4)),
+        Line(points=[-80,-40; 80,-40], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4))));
+    TemperaturePort Tm annotation (extent=[-10,-10; 10,10]);
+  end WaterRecuperator;
   
   model Mixer "A unit mixing four molar flows." 
-    CheckPoint checkPoint annotation (extent=[-100,-10; -80,10]);
-    CheckPoint checkPoint1 annotation (extent=[80,-10; 100,10]);
-    CheckPoint checkPoint2 annotation (extent=[-10,80; 10,100]);
-    CheckPoint checkPoint3 annotation (extent=[-10,-100; 10,-80]);
+    FlowPort outlet       annotation (extent=[-90,20; -70,40]);
+    FlowPort inlet1        annotation (extent=[70,-20; 90,0]);
+    FlowPort inlet2        annotation (extent=[70,60; 90,80]);
+    FlowPort inlet3        annotation (extent=[70,20; 90,40]);
     annotation (Diagram, Icon(
         Ellipse(extent=[-80,80; 80,-80], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255})), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255})),
         Rectangle(extent=[-80,0; 80,80], style(
-            pattern=0, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
+            pattern=0,
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
         Line(points=[-80,0; -80,80; 80,80; 80,0], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
         Line(points=[0,6; 0,-54], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
-        Line(points=[0,6; -52,40], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
-        Line(points=[0,6; 46,40], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Line(points=[0,6; -52,36], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Line(points=[0,6; 52,36], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
             fillPattern=1))));
+    
   equation 
-    connect(checkPoint2, checkPoint) annotation (points=[5.55112e-16,90; 0,90; 
-          0,5.55112e-16; -90,5.55112e-16], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
-        fillPattern=1));
-    connect(checkPoint1, checkPoint) annotation (points=[90,5.55112e-16; 4,
-          5.55112e-16; 4,5.55112e-16; -90,5.55112e-16], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
-        fillPattern=1));
-    connect(checkPoint3, checkPoint) annotation (points=[5.55112e-16,-90; 0,-90; 
-          0,5.55112e-16; -90,5.55112e-16], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
-        fillPattern=1));
+    outlet.n = inlet1.n + inlet2.n + inlet3.n;
+    outlet.H = port1.H + port2.H + port3.H;
   end Mixer;
+  
+  package Test "Package of test cases" 
+    model FlowTemperatureTest "A test case for the temperature sensor" 
+      
+      FlowTemperature fc              annotation (extent=[-20,0; 0,20]);
+      
+      annotation (Diagram);
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Real RH_env = 60;
+      
+      EnvironmentPort environmentPort annotation (extent=[-50,26; -30,46]);
+      SinkPort sinkPort annotation (extent=[40,0; 60,20]);
+    equation 
+      sum( fc.flow1.n)  = 1;
+      
+      connect(sinkPort.flowPort, fc.flow2)
+        annotation (points=[41,10; 5.55112e-16,10], style(pattern=0));
+      connect(environmentPort.c, fc.flow1) annotation (points=[-49,31; -63.5,31; 
+            -63.5,10; -20,10], style(pattern=0));
+    end FlowTemperatureTest;
+  end Test;
 end System;
