@@ -17,9 +17,9 @@ public
   
   // Species
 public 
-  constant Integer AllSpecies =    1:5;
-  constant Integer GasSpecies =    3:5;
-  constant Integer LiquidSpecies = 1:2;
+  constant Integer[:] AllSpecies =    1:5;
+  constant Integer[:] GasSpecies =    3:5;
+  constant Integer[:] LiquidSpecies = 1:2;
   constant Integer Methanol =      1;
   constant Integer Water =         2;
   constant Integer Oxygen =        3;
