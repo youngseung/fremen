@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <float.h>
 #include <stdlib.h>
 
 /* Set the DEBUG macro variable to activate the debug messages. If you also set
@@ -23,176 +24,156 @@
         #define debug_v(...) ;
 #endif
 
-int nonZeroComponents( const double* const z_start,
-                       const double* const K_start,
-                       const size_t n_start,
-                       double** const z,
-                       double** const K,
-                       size_t* const n );
+#define max(a, b)       ((a) > (b) ? (a) : (b))
+#define min(a, b)       ((a) < (b) ? (a) : (b))
 
-int findBrackets( const double* const K,
-                  const size_t n,
-                  double* const beta_max,
-                  double* const beta_min );
+int countComponents( const double* const z,
+                     const size_t nz,
+                     const double* const K,
+                     const double z_g,
+                     double* const default_beta );
 
-void findFiniteInterval( const double beta_max,
-                         const double beta_min,
+void findAsymptotes( const double* const z,
+                     const double* const K,
+                     const size_t n,
+                     const double z_g,
+                     double* const beta_max,
+                     double* const beta_min );
+
+void findFiniteInterval( const double beta_min,
+                         const double beta_max,
                          double* const a,
                          double* const b,
                          const double* const z,
                          const double* const K,
-                         const size_t n );
+                         const size_t n,
+                         const double z_g );
 
 double bisection( double a,
                   double b,
                   const double* const z,
                   const double* const K,
                   const size_t n,
+                  const double z_g,
                   const double reltol );
 
 double h( const double beta,
           const double* const z,
           const double* const K,
-          const size_t n );
+          const size_t n,
+          const double z_g );
 
 /* This returns beta = n_g/n_tot, given z_i and K_i.
- * Note that K_i is defined, against convention, as x_i = K_i*y_i. */
-double ricer( double* z_start, size_t nz, double* K_start, size_t nK )
+ * Note that K_i is defined, against convention, as x_i = K_i*y_i.
+ * The provided compositions can be zero (for numerical noise, they could also
+ * be slighly negative).
+ */
+double ricer( double* z, size_t nz, double* K, size_t nK, double z_g )
 {
         assert( nz == nK );
-        size_t n = 0;
-        double* z = 0;
-        double* K = 0;
 
-        debug("Starting research of non-zero components...\n");
-        switch( nonZeroComponents(z_start, K_start, nz, &z, &K, &n) ) {
-        case 1: /* No memory freed, since none has been allocated. */
-                return 0.0;
-        case 0: /* Everything is well, proceed. */
+        double single_beta;
+        switch( countComponents(z, nz, K, z_g, &single_beta) ) {
+        case 0: /* Fed bad data. Cannot find any sensible solution. Crash. */
+                abort();
+        case 1: /* Single component, return simple guess. */
+                return single_beta;
+        default: /* Normal situation, proceed. */
                 break;
-        default: /* Unhandled case: something went really wrong. */
-                exit(1);
         }
-        /* If there is only one component, the Rachford-Rice equation does not
-         * have any solution. A default value for beta is then returned; if
-         * the only component's K value is less than one, it will be in liquid
-         * phase; if it is larger than one, in gas phase; if it is exactly one,
-         * it will split evenly between gas and liquid phase (though this is
-         * really a freakish limit case). */
-        if( n == 1 ) {
-                double default_beta;
-                if( K[0] > 1.0 )
-                        default_beta = 0.0;
-                else if( K[0] < 1.0 )
-                        default_beta = 1.0;
-                else
-                        default_beta = 0.5;
 
-                free( z );
-                free( K );
-                return default_beta;
-        }
-        debug("\tcomplete, %d non-zero components found.\n", n);
 
         double beta_max, beta_min;
         debug("Looking for asymptotes delimiting the physical solution...\n");
-        switch( findBrackets( K, n, &beta_max, &beta_min ) ) {
-        case 0: /* Everything is well, proceed. */
-                break;
-        default: /* Unhandled case: something went really wrong. */
-                exit(1);
-        }
-        if( beta_max == beta_min ) {
-                free( z );
-                free( K );
-                return beta_max;
-        }
+        findAsymptotes( z, K, nz, z_g, &beta_max, &beta_min );
+        /* This covers the case of only one component being present. */
+        if( beta_min == beta_max )
+                return beta_min;
         debug("\tfound. They are %f and %f.\n", beta_min, beta_max);
 
-        double a, b; // Interval extremes
+        double a, b; /* Interval extremes */
         debug("Looking for a finite interval for the bisection algorithm...\n");
-        findFiniteInterval( beta_max, beta_min, &a, &b, z, K, n );
-        if( a == b ) {
-                free( z );
-                free( K );
+        findFiniteInterval( beta_min, beta_max, &a, &b, z, K, nz, z_g );
+        if( a == b )
                 return a;
-        }
         debug("\tfound. The interval is between %f and %f\n", a, b);
 
         double reltol = 1E-9;
         debug("Starting bisection algorithm...\n");
-        const double beta = bisection( a, b, z, K, n, reltol );
-        debug("\tfinished. Solution is %f, h(beta) = %f.\n", beta,
-                                                           h(beta, z, K, n) );
-
-        free(z);
-        free(K);
+        const double beta = bisection( a, b, z, K, nz, z_g, reltol );
+        debug("\tfinished. Solution is %f, h(beta) = %e.\n", beta,
+                                                       h(beta, z, K, nz, z_g) );
 
         return beta;
 }
 
-/* This function finds out how many components of the original vector are to be
- * kept, and allocates sub-vectors z and K, together with a count n of the
- * valid elements.
- * It returns error codes:
- * - 0: if calculation completed successfully;
- * - 1: if there is no component with non-zero molar fraction. */
-int nonZeroComponents( const double* const z_start,
-                       const double* const K_start,
-                       const size_t n_start,
-                       double** const z,
-                       double** const K,
-                       size_t* const n )
+/* This function makes a preliminary count of the components provided to the
+ * Rachford-Rice solution algorithm. If there is only one component set, the
+ * variable pointed by single_beta will be set to zero or one, depending on the
+ * K-value (smaller or larger than 1).
+ * If the K-value is exactly 1, 0.5 will be returned, but that should strictly
+ * speaking be an undetermined case; furthermore, in our model we do not expect
+ * to get single-components mixtures of water or methanol at boiling
+ * temperature.
+ */
+int countComponents( const double* const z,
+                     const size_t n,
+                     const double* const K,
+                     const double z_g,
+                     double* const single_beta )
 {
-        size_t nonZero, i;
-        for( i = 0, nonZero = 0; i < n_start; i++ ) {
-                if (z_start[i] != 0.0) {
-                        debug_v("\tNon-zero component: %d, with z=%f, K=%f\n",
-                                                    i, z_start[i], K_start[i] );
+        int nonZero = 0;
+        size_t i;
+        for( i = 0; i < n; i++ ) {
+                if( z[i] > 0.0 ) {
                         nonZero++;
+                        if( K[i] < 1.0 )
+                                *single_beta = 0.0;
+                        else if ( K[i] == 1.0 )
+                                *single_beta = 0.5;
+                        else
+                                *single_beta = 1.0;
                 }
         }
-        if( nonZero == 0 ) // Error code 1: no components available.
-                return 1;
-
-        *z = (double*)malloc(nonZero*sizeof(double));
-        assert( *z );
-        *K = (double*)malloc(nonZero*sizeof(double));
-        assert( *K );
-
-        for( i = 0, *n = 0; i < n_start; i++ ) {
-                if( z_start[i] > 0.0 ) {
-                        (*z)[*n] = z_start[i];
-                        (*K)[*n] = K_start[i];
-                        (*n)++;
-                }
+        if( z_g > 0.0 ) {
+                nonZero++;
+                *single_beta = 1.0;
         }
-        return 0;
+        return nonZero;
 }
 
-/* Given the vector of K_i, this function sets the pointers to beta_max and
- * beta_min accordingly.
+/* Given the vector of z_i and K_i, and the number of gas moles, this function
+ * sets the pointers to beta_max and beta_min accordingly.
+ * Components with zero composition are not considered, as they do not influence
+ * the shape of the Rachford-Rice function.
+ * If gas components are present, they are considered later on, since their
+ * K-value would be infinite, while their corresponding value of beta is 1.0,
+ * and is therefore manageable.
+ *
  * No error codes are returned. */
-int findBrackets( const double* const K,
-                  const size_t n,
-                  double* const beta_max,
-                  double* const beta_min )
-{
-        /* We need at least two components to find a solution to the
-         * Rachford-Rice relation. */
-        assert( n >= 2 );
-        double K_min = K[0];
-        double K_max = K[0];
+void findAsymptotes( const double* const z,
+                     const double* const K,
+                     const size_t n,
+                     const double z_g,
+                     double* const beta_max,
+                     double* const beta_min )
+{// FIXME why do I get equal betas with water & gas?
+        double K_min = DBL_MAX;
+        double K_max = 0.0;
+
         size_t i;
-        for( i = 1; i < n; i++ ) {
-                if (K[i] < K_min)
-                        K_min = K[i];
-                if (K[i] > K_max)
-                        K_max = K[i];
+        for( i = 0; i < n; i++ ) {
+                if( z[i] > 0.0 ) {
+                        K_min = min( K_min, K[i] );
+                        K_max = max( K_max, K[i] );
+                }
         }
 
-        *beta_min = K_min / (K_min - 1);
-        *beta_max = K_max / (K_max - 1);
+        *beta_min = 1.0 / (1.0 - K_max);
+        *beta_max = 1.0 / (1.0 - K_min);
+
+        if( z_g > 0.0 )
+                *beta_min = max( *beta_min, 0.0 );
 
         /* There is a chance that the betas will be the wrong way around. This
          * happens either when K_min > 1 or K_max < 1. In both of these cases
@@ -205,33 +186,43 @@ int findBrackets( const double* const K,
                 *beta_min = *beta_max;
                 *beta_max = tmp;
         }
-
-        return 0;
 }
 
 /* Given beta_max and beta_min (at which h(beta) is infinite, and cannot
  * therefore be evaluated), this function finds an internal interval [a, b]
- * so that beta_min < a < b < beta_max, and h(a)*h(b) < 0. */
-void findFiniteInterval( const double beta_max,
-                         const double beta_min,
+ * so that beta_min < a < b < beta_max, and h(a)*h(b) < 0.
+ * First, the middle point between the two betas is taken. Then, it is checked
+ * whether the value of h(beta) is positive or negative at that point, and a
+ * target asymptote (i.e. the asymptote on the other side with respect to the
+ * solution) is set. The algorithm then approaches the asymptote gradually by
+ * bisection, until a point with different sign and finite value of h(beta) is
+ * found.
+ * Finally, if necessary, a and b are swapped (the algorithm gives have no
+ * guarantee of them being in any order).
+ *
+ * The function returns no error codes. */
+void findFiniteInterval( const double beta_min,
+                         const double beta_max,
                          double* const a,
                          double* const b,
                          const double* const z,
                          const double* const K,
-                         const size_t n )
+                         const size_t n,
+                         const double z_g )
 {
         assert( beta_max > beta_min );
-        *a = (beta_max+beta_min) / 2.0;
-        const double target_beta = h(*a, z, K, n) < 0 ? beta_max : beta_min;
-        *b = (target_beta + *a) / 2.0;
+        *a = (beta_min+beta_max) / 2.0;
+        const double other_side_asymptote = h(*a, z, K, n, z_g) < 0 ? beta_min :
+                                                                      beta_max;
+        *b = (other_side_asymptote + *a) / 2.0;
 
         debug_v("findFiniteInterval: initial values %f and %f\n", *a, *b);
-        while( h(*b, z, K, n) * h(*a, z, K, n) >= 0 ) {
+        while( h(*b, z, K, n, z_g) * h(*a, z, K, n, z_g) > 0 ) {
                 debug_v("\tCycling: h(%f) = %f, h(%f) = %f.\n",
-                                       *a, h(*a, z, K, n), *b, h(*b, z, K, n) );
+                             *a, h(*a, z, K, n, z_g), *b, h(*b, z, K, n, z_g) );
                 debug_v("\tChanging b value from %f to %f.\n", *b,
-                                                     (target_beta + *b) / 2.0 );
-                *b = (target_beta + *b) / 2.0;
+                                            (other_side_asymptote + *b) / 2.0 );
+                *b = (other_side_asymptote + *b) / 2.0;
         }
 
         if( *a > *b ) {
@@ -251,15 +242,16 @@ double bisection( double a,
                   const double* const z,
                   const double* const K,
                   const size_t n,
+                  const double z_g,
                   const double reltol )
 {
-        assert( h(a, z, K, n)*h(b, z, K, n) <= 0.0 );
+        assert( h(a, z, K, n, z_g)*h(b, z, K, n, z_g) <= 0.0 );
         assert( b > a );
 
-        double h_a = h(a, z, K, n);
+        double h_a = h(a, z, K, n, z_g);
         if( h_a == 0.0 )
                 return a;
-        double h_b = h(b, z, K, n);
+        double h_b = h(b, z, K, n, z_g);
         if( h_b == 0.0 )
                 return b;
 
@@ -267,7 +259,7 @@ double bisection( double a,
         const double abstol = reltol*(b-a);
         while( b-a > abstol ) {
                 middle = (b+a)/2.0;
-                h_middle = h(middle, z, K, n);
+                h_middle = h(middle, z, K, n, z_g);
                 if( h_middle == 0.0 )
                         return middle;
                 else if( h_middle*h_a > 0.0 ) {
@@ -282,28 +274,39 @@ double bisection( double a,
         return (b+a)/2.0;
 }
 
-/* This function is the one that has to be zero for the modified Rachford-Rice
- * relation to hold. */
+/* This function is the one that has to be zero for the Rachford-Rice relation
+ * to hold. Components with zero fraction are disregarded. */
 double h( const double beta,
           const double* const z,
           const double* const K,
-          const size_t n )
+          const size_t n,
+          const double z_g )
 {
         double sum = 0.0;
         size_t i;
-        for( i = 0; i < n; i++ )
-                sum += z[i]*(K[i]-1) / (beta + K[i]*(1-beta));
+        for( i = 0; i < n; i++ ) {
+                if( z[i] > 0.0 )
+                        sum += z[i]*(K[i] - 1.0) / (1.0 + beta*(K[i]-1.0));
+        }
+        if( z_g > 0.0 )
+                sum += z_g / beta;
         return sum;
 }
 
 #if DEBUG
 /* The main function will test whether ricer.c can work. */
-int main()
+int main( int argc, char* argv[] )
 {
-        const size_t n = 5;
-        double z[5] = { 0.2, 0.2, 0.0, 0.05, 0.0 };
-        double K[5] = { 5.3, 31.2, 0.0, 0.0, 0.0 };
-        ricer( z, n, K, n );
+        if( argc != 3 ) {
+                printf("Usage: %s z_h2o z_ch3oh\n", argv[0]);
+                return 1;
+        }
+
+        const size_t n = 2;
+        double z[2] = { atof(argv[1]), atof(argv[2]) };
+        double K[2] = { 0.1672, 0.031378 };
+        double z_g = 1.0 - atof(argv[1]) - atof(argv[2]);
+        debug("Beta: %f\n", ricer( z, n, K, n, z_g ) );
         return 0;
 }
 #endif
