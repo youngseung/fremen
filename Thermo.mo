@@ -503,11 +503,11 @@ public
     constant Temperature T_ref = 298.15;
   algorithm 
     if n == Methanol and p == GasPhase then
-      H := h_ch3oh_gas(T) - h_ch3oh_gas(T_ref);
+      H := h_ch3oh_gas(T) - h_ch3oh_gas(T_ref) + dhf(Methanol, GasPhase) - dhf(Methanol, LiquidPhase);
     elseif n == Methanol and p == LiquidPhase then
       H := h_ch3oh_liq(T) - h_ch3oh_liq(T_ref);
     elseif n == Water and p == GasPhase then
-      H := h_h2o_gas(T) - h_h2o_gas(T_ref);
+      H := h_h2o_gas(T) - h_h2o_gas(T_ref) + dhf(Water, GasPhase) - dhf(Water, LiquidPhase);
     elseif n == Water and p == LiquidPhase then
       H := ShomateEnthalpy(T, ShomateH2O) - ShomateEnthalpy(T_ref, ShomateH2O);
     elseif n == Oxygen and p == GasPhase then
@@ -519,7 +519,13 @@ public
     else
       assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
-    annotation(derivative=dh_dT);
+    annotation(derivative=dh_dT, Documentation(info="<html>
+<p>Returns the enthalpy of the given component at the given temperature and in
+the given phase; the reference state is always 298.15 K.</p>
+<p>Water and methanol are assumed to be in liquid phase at the reference state;
+when asking their enthalpy in gas phase, the evaporation enthalpy will be added
+to the result.</p>
+</html>"));
     annotation (Documentation(info="<html>
 <p>Returns the enthalpy of the given component at the given temperature and in
 the given phase; the reference state is always 298.15 K.</p>
@@ -591,16 +597,16 @@ public
     input Temperature T "Temperature";
     input Integer n "Component";
     output Real Kvalue 
-      "The ratio x/y between liquid and gaseous molar fraction.";
+      "The ratio y/x between liquid and gaseous molar fraction.";
   protected 
     constant Pressure p_env = 101325 "The environment pressure.";
   algorithm 
     if n == Methanol then
-      Kvalue := p_env/p_ch3oh(T);
+      Kvalue := p_ch3oh(T)/p_env;
     elseif n == Water then
-      Kvalue := p_env/p_h2o(T);
+      Kvalue := p_h2o(T)/p_env;
     else
-      Kvalue := 0; // TODO implement solutibilies
+      Kvalue := 1e20; // TODO implement solutibilies
     end if;
     
     annotation(derivative=dK_dT);

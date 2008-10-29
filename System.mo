@@ -285,6 +285,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
   end Pump;
   
     model FlowTemperature "A unit that calculates the temperature of a flow." 
+    
       annotation (Diagram, Icon(
           Ellipse(extent=[-100,100; 100,-100], style(
               color=0,
@@ -317,11 +318,13 @@ in liquid phase; it takes their density from the Thermo library.</p>
       import Thermo.GasPhase;
       import Thermo.LiquidPhase;
     
-      FlowPort flow1 annotation (extent=[-110,-10; -90,10]);
-      FlowPort flow2 annotation (extent=[90,-10; 110,10]);
+      FlowPort inlet annotation (extent=[-110,-10; -90,10]);
+      FlowPort outlet 
+                     annotation (extent=[90,-10; 110,10]);
       Modelica.SIunits.Temperature T(start=298.15) = Tm.T;
     
       outer Modelica.SIunits.Pressure p_env;
+    
       MolarFlowRate[k] vapour(each min=0);
       MolarFlowRate[k] condensate(each min=0);
       TemperaturePort Tm                annotation (extent=[-10,90; 10,110]);
@@ -329,36 +332,37 @@ in liquid phase; it takes their density from the Thermo library.</p>
       constant Integer k = size(LiquidSpecies,1);
     
     equation 
-      vapour + condensate = flow1.n[LiquidSpecies];
+      vapour + condensate = inlet.n[LiquidSpecies];
     
-      if sum(flow1.n[GasSpecies]) <= 0.0 and sum( p_vap(T, i)*flow1.n[i] for i in LiquidSpecies)  < p_env*sum(flow1.n) then
+      if sum(inlet.n[GasSpecies]) <= 0.0 and sum( p_vap(T, i)*inlet.n[i] for i in LiquidSpecies)  < p_env*sum(inlet.n) then
         /* There are no gas species and the liquids' vapour pressure cannot sustain
      * a gas phase (their sum is less than the environment pressure).
      * Therefore, there is only liquid and no gas phase.
      */
         vapour = zeros(k);
-      elseif max( flow1.n[i]/p_vap(T,i) for i in LiquidSpecies)  < sum(flow1.n)/p_env then
+      elseif max(inlet.n[i]/p_vap(T,i) for i in LiquidSpecies)  < sum(inlet.n)/p_env then
         /* No species that can be present in liquid phase has a gas fraction sufficient for
      * condensation. Therefore, there is only gas phase.
      */
         condensate = zeros(k);
       else
         // Gas-liquid equilibrium (Raoult's law): y * p_env = x * p_vap
-        vapour / (sum(flow1.n[GasSpecies]) + sum(vapour)) * p_env = { condensate[i]/sum(condensate)*p_vap(T,i) for i in LiquidSpecies};
+        // FIXME not enough! I must find a way to solve this correctly. I must select the right solution out of n-1.
+        vapour / (sum(inlet.n[GasSpecies]) + sum(vapour)) * p_env = { condensate[i]/sum(condensate)*p_vap(T,i) for i in LiquidSpecies};
       end if;
     
       // Note that this works only because LiquidSpecies is a vector starting with 1, otherwise the second term would not work.
-      flow1.H = sum( flow1.n[i] * h(T, i, GasPhase) for i in GasSpecies) +
-                sum( vapour[i]*( h(T, i, GasPhase) + dhf(i,GasPhase) - dhf(i,LiquidPhase))
-                     + condensate[i]*h(T, i, LiquidPhase) for i in LiquidSpecies);
+      inlet.H = sum( inlet.n[i] * h(T, i, GasPhase) for i in GasSpecies) +
+                sum( vapour[i]*h(T, i, GasPhase) + condensate[i]*h(T, i, LiquidPhase) for i in LiquidSpecies);
     
-    connect(flow1, flow2) annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
+      connect(inlet, outlet) 
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
     end FlowTemperature;
   
-  
   model Separator 
+    import Thermo.AllSpecies;
     import Thermo.GasSpecies;
     import Thermo.LiquidSpecies;
     import Thermo.LiquidPhase;
@@ -402,19 +406,20 @@ in liquid phase; it takes their density from the Thermo library.</p>
   equation 
     connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,40], style(pattern=0));
-    connect(ft.flow1, inlet) annotation (points=[-10,6.10623e-16; -54,
+    connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(pattern=0));
-    connect(ft.flow2, gasOutlet) annotation (points=[10,6.10623e-16; 40,
+    connect(ft.outlet, gasOutlet) annotation (points=[10,6.10623e-16; 40,
           6.10623e-16; 40,40; 70,40], style(pattern=0));
-    connect(liquidOutlet, ft.flow2) annotation (points=[70,-40; 40,-40; 40,
-          6.10623e-16; 10,6.10623e-16], style(pattern=0));
+    connect(ft.outlet, liquidOutlet) annotation (points=[10,6.10623e-16; 40,
+          6.10623e-16; 40,-40; 70,-40], style(pattern=0));
     
     liquidOutlet.n[GasSpecies] = zeros(size(GasSpecies,1));
+    
     liquidOutlet.n[LiquidSpecies] = -ft.condensate;
     liquidOutlet.H = sum(h(ft.T, i, LiquidPhase) * ft.condensate[i] for i in LiquidSpecies);
     
   end Separator;
-
+  
   model Mixer "A unit mixing four molar flows." 
     FlowPort port1        annotation (extent=[-90,0; -70,20]);
     FlowPort port2         annotation (extent=[-10,-90; 10,-70]);
@@ -482,11 +487,11 @@ in liquid phase; it takes their density from the Thermo library.</p>
       EnvironmentPort environmentPort annotation (extent=[-50,26; -30,46]);
       SinkPort sinkPort annotation (extent=[40,0; 60,20]);
     equation 
-      sum( fc.flow1.n)  = 1;
+      sum(fc.inlet.n)  = 1;
       
-      connect(sinkPort.flowPort, fc.flow2) 
+      connect(sinkPort.flowPort, fc.outlet) 
         annotation (points=[41,10; 5.55112e-16,10], style(pattern=0));
-      connect(environmentPort.c, fc.flow1) annotation (points=[-49,31; -63.5,31;
+      connect(environmentPort.c, fc.inlet) annotation (points=[-49,31; -63.5,31;
             -63.5,10; -20,10], style(pattern=0));
     end FlowTemperatureTest;
     

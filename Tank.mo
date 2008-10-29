@@ -253,27 +253,29 @@ values from 0 (dry air) to 100 (saturated air).</p>
   protected 
     constant Integer k = size(AllSpecies, 1) "Number of species";
     function ricer 
-      input Real[:] Z;
-      input Real[:] Keq;
+      input Real[:] z_eq;
+      input Real[:] k_eq;
+      input Real[:] z_gas;
       output Real beta;
       external "C";
       annotation(Include="#include <./ricer.c>");
     end ricer;
     
   equation 
-    // Equilibrium relations. NOTE that K is defined in Thermo.
-    x = {K(T, i) * y[i] for i in AllSpecies};
+    // Equilibrium relations.
+    y[Liquidspecies] = {K(T, i) * x[i] for i in LiquidSpecies};
+    x[GasSpecies] = zeros(size(GasSpecies,1));
     
     // Component material balance.
     z = y*beta + x*(1-beta);
     
     // Mole fraction consistency.
-    // Note: sum(z) = 1 is linearly dependent with this, Rathford-Rice and material balance.
+    // Note: sum(z) = 1 is linearly dependent with this relation, Rathford-Rice and material balance.
     // Note: sum(y) = 1 is also linearly dependent, since we are using the Rathford-Rice relation.
     sum(x) = 1;
     
-    // From the Rathford-rice relation:
-    beta = ricer(z, {K(T, i) for i in AllSpecies});
+    // The Rathford-Rice relation.
+    beta = ricer(z[LiquidSpecies], {K(T, i) for i in LiquidSpecies}, sum(z[GasSpecies]));
     
     annotation (Documentation(info="<html>
 <p>This class allows to calculate the phase equilibrium of components in
