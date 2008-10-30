@@ -255,7 +255,7 @@ values from 0 (dry air) to 100 (saturated air).</p>
     function ricer 
       input Real[:] z_eq;
       input Real[:] k_eq;
-      input Real[:] z_gas;
+      input Real z_gas;
       output Real beta;
       external "C";
       annotation(Include="#include <./ricer.c>");
@@ -263,7 +263,7 @@ values from 0 (dry air) to 100 (saturated air).</p>
     
   equation 
     // Equilibrium relations.
-    y[Liquidspecies] = {K(T, i) * x[i] for i in LiquidSpecies};
+    y[LiquidSpecies] = {K(T, i) * x[i] for i in LiquidSpecies};
     x[GasSpecies] = zeros(size(GasSpecies,1));
     
     // Component material balance.

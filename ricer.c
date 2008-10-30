@@ -11,10 +11,10 @@
  *   gcc -DDEBUG -DVERBOSE -ggdb -o test ricer.c
  * and run "./test".
  */
-#if DEBUG
+#ifdef DEBUG
         #include <stdio.h>
         #define debug(...) fprintf (stderr, __VA_ARGS__)
-        #if VERBOSE
+        #ifdef VERBOSE
                 #define debug_v(...) debug(__VA_ARGS__)
         #else
                 #define debug_v(...) ;
@@ -24,8 +24,10 @@
         #define debug_v(...) ;
 #endif
 
-#define max(a, b)       ((a) > (b) ? (a) : (b))
+#undef min
+#undef max
 #define min(a, b)       ((a) < (b) ? (a) : (b))
+#define max(a, b)       ((a) > (b) ? (a) : (b))
 
 int countComponents( const double* const z,
                      const size_t nz,
@@ -37,8 +39,8 @@ void findAsymptotes( const double* const z,
                      const double* const K,
                      const size_t n,
                      const double z_g,
-                     double* const beta_max,
-                     double* const beta_min );
+                     double* const beta_min,
+                     double* const beta_max );
 
 void findFiniteInterval( const double beta_min,
                          const double beta_max,
@@ -82,10 +84,14 @@ double ricer( double* z, size_t nz, double* K, size_t nK, double z_g )
                 break;
         }
 
+        size_t i;
+        for( i = 0; i < nz; i++ )
+                debug("\tz[%d]: %f\n", i+1, z[i]);
+        debug("\tz_g: %f\n", z_g);
 
         double beta_max, beta_min;
         debug("Looking for asymptotes delimiting the physical solution...\n");
-        findAsymptotes( z, K, nz, z_g, &beta_max, &beta_min );
+        findAsymptotes( z, K, nz, z_g, &beta_min, &beta_max );
         /* This covers the case of only one component being present. */
         if( beta_min == beta_max )
                 return beta_min;
@@ -147,17 +153,23 @@ int countComponents( const double* const z,
  * Components with zero composition are not considered, as they do not influence
  * the shape of the Rachford-Rice function.
  * If gas components are present, they are considered later on, since their
- * K-value would be infinite, while their corresponding value of beta is 1.0,
- * and is therefore manageable.
+ * K-value would be infinite, while their corresponding value of beta is 0, and
+ * is therefore manageable.
+ *
+ * During calculation, it is checked whether the minimum K value is over 1, in
+ * which case no liquid phase can exist, or whether the maximum one is below 1
+ * and at the same time there is no gas, in which case no gas phase can exist.
+ * In those cases the code sets beta_min and beta_max at the same value,
+ * respectively 1 and 0.
  *
  * No error codes are returned. */
 void findAsymptotes( const double* const z,
                      const double* const K,
                      const size_t n,
                      const double z_g,
-                     double* const beta_max,
-                     double* const beta_min )
-{// FIXME why do I get equal betas with water & gas?
+                     double* const beta_min,
+                     double* const beta_max )
+{
         double K_min = DBL_MAX;
         double K_max = 0.0;
 
@@ -169,23 +181,23 @@ void findAsymptotes( const double* const z,
                 }
         }
 
+        if( K_min > 1.0 ) {
+                *beta_min = 1.0;
+                *beta_max = *beta_min;
+                return;
+        }
+        if( K_max < 1.0 && z_g <= 0.0 ) {
+                *beta_min = 0.0;
+                *beta_max = *beta_min;
+                return;
+        }
+
         *beta_min = 1.0 / (1.0 - K_max);
         *beta_max = 1.0 / (1.0 - K_min);
 
         if( z_g > 0.0 )
                 *beta_min = max( *beta_min, 0.0 );
 
-        /* There is a chance that the betas will be the wrong way around. This
-         * happens either when K_min > 1 or K_max < 1. In both of these cases
-         * there can be only one phase, as sum(x_i) = 1 and sum(K_i x_i) = 1
-         * cannot be satisfied at the same time by any combination of x_i: in
-         * other words, the resulting beta will undoubtedly be either < 0 or
-         * > 1 (no phase equilibrium). */
-        if( *beta_min > *beta_max ) {
-                double tmp = *beta_min;
-                *beta_min = *beta_max;
-                *beta_max = tmp;
-        }
 }
 
 /* Given beta_max and beta_min (at which h(beta) is infinite, and cannot
@@ -293,7 +305,7 @@ double h( const double beta,
         return sum;
 }
 
-#if DEBUG
+#ifdef DEBUG
 /* The main function will test whether ricer.c can work. */
 int main( int argc, char* argv[] )
 {
