@@ -718,4 +718,36 @@ protected
     end if;
   end drho_dT;
   
+public 
+  function vapourFraction 
+    "The vapour fraction of a methanol-water-gas mixture." 
+    input MoleFraction z_methanol "The methanol fraction.";
+    input MoleFraction z_water "The water fraction.";
+    input Temperature T 
+      "The temperature at which the equilibrium is calculated.";
+    output MoleFraction beta 
+      "The vapour molar fraction, or vaporisation ratio.";
+  protected 
+    constant Pressure p_env = 101325 "The environment pressure.";
+    constant Real C_methanol = p_vap(T, Methanol)/p_env-1;
+    constant Real C_water = p_vap(T, Water)/p_env-1;
+    // Coefficients of the 2nd-degree polynomial.
+    constant Real a = C_methanol*C_water;
+    constant Real b = C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
+    constant Real c = 1.0-z_methanol-z_water;
+    constant Real delta = b*b - 4*a*c;
+  algorithm 
+    if z_methanol + z_water >= 1.0 then
+      beta := 0.0;
+    elseif z_methanol <= 0.0 and z_water <= 0.0 then
+      beta := 1.0;
+    elseif z_methanol <= 0.0 then
+      beta := - (1.0-z_water)/C_water;
+    elseif z_water <= 0.0 then
+      beta := - (1.0-z_methanol)/C_methanol;
+    else
+      beta := ( -b - sqrt(delta)) /2*a;
+    end if;
+    
+  end vapourFraction;
 end Thermo;
