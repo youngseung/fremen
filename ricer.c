@@ -93,9 +93,19 @@ double ricer( double* z, size_t nz, double* K, size_t nK, double z_g )
         debug("Looking for asymptotes delimiting the physical solution...\n");
         findAsymptotes( z, K, nz, z_g, &beta_min, &beta_max );
         /* This covers the case of only one component being present. */
+        debug("\tfound. They are %f and %f.\n", beta_min, beta_max);
         if( beta_min == beta_max )
                 return beta_min;
-        debug("\tfound. They are %f and %f.\n", beta_min, beta_max);
+        /* NOTE: when beta_min <= 1, we have only _liquid_, not only gas as one
+         * would guess. The numerical solution for beta would indeed beta > 1,
+         * but we would lose information about the phase; looking at a beta > 1,
+         * we would say that phase is gaseous, when in fact the opposite is
+         * true.
+         * Specularly for beta_max <= 0. */
+        if( beta_min >= 1.0 )
+                return 0.0;
+        if( beta_max <= 0.0 )
+                return 1.0;
 
         double a, b; /* Interval extremes */
         debug("Looking for a finite interval for the bisection algorithm...\n");
