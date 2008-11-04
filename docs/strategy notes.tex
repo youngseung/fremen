@@ -1,0 +1,254 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage{amsmath}
+\newcommand{\MeOH}{\ensuremath{\mathrm{CH_3OH}}}
+\newcommand{\HHO}{\ensuremath{\mathrm{H_2O}}}
+\newcommand{\OO}{\ensuremath{\mathrm{O_2}}}
+\newcommand{\NN}{\ensuremath{\mathrm{N_2}}}
+\newcommand{\COO}{\ensuremath{\mathrm{CO_2}}}
+
+%opening
+\title{Continuous Control in DMFC Systems}
+\author{Federico Zenith}
+
+\begin{document}
+
+\maketitle
+
+\section{Overall Problem Description}
+
+\subsection{Control Task}
+To maintain appropriate reactant concentrations and system temperature, so that
+the reaction may proceed; to recover water in order to maintain the water
+content in the anode loop.
+
+\subsection{Disturbances}
+The main disturbances are the reaction, which results in:
+\begin{itemize}
+\item consumption of methanol at the anode;
+\item production of water at the cathode;
+\item water cross-over from anode to cathode;
+\item temperature increase.
+\end{itemize}
+
+In addition, the methanol cross-over depends on the methanol concentration on
+the anode, and produces some \COO{} at the cathode; otherwise, it is similar to
+reaction.
+
+The current (and thereby the reaction rate) is easily measured, whereas the
+methanol crossover can be estimated given the methanol concentration.
+
+\subsection{Manipulated Variables}
+\begin{itemize}
+\item The air flow through the cathode;
+\item The solution flow through the anode;
+\item The methanol fuel-feed flow into the solution mixer;
+\item The cooling of cathode outflow (condenser);
+\item The cooling of anode outflow (cooler).
+\end{itemize}
+
+\subsection{Measurements}
+Temperature measurements are cheap and easy; some interesting ones could be in
+the fuel cell itself, the condenser, the anode-loop cooler, and the environment.
+
+Flow in anode and cathode may be set feedforward, assuming that pumps and
+blowers can set their instructed flow rates reliably enough by themselves.
+
+Concentration measurements are expensive, slow and we would rather avoid them.
+The concentration of methanol is however stable: more methanol means more
+crossover in the cell (and also more loss in the \COO{} separator, though that
+should be of lesser importance). Since the main disturbance, the current, is
+measurable, feedforward should be an option.
+
+Water content in the anode loop is however not stable: we need some measure of
+the loop level to implement a feedback control loop.
+
+\subsection{Constraints}
+The main constraint is the ability of condensing water vapour from the cathode.
+To maintain a high oxygen concentration we would like maximum air flow, but this
+will cause the water vapour to thin out; it will therefore be necessary to cool
+down the flow to a much lower temperature than otherwise, straining the
+condenser duty. Since we have a limit on minimum condenser temperature (the
+environment temperature), there is an envelope of conditions for which water
+recovery is unfeasible.
+
+It is therefore necessary that the controller determining air flow considers
+both water recovery and oxygen concentration (at least a MISO, then).
+
+\subsection{Possible Strategies}
+The air flow should be set primarily to maintain oxygen concentration, and
+whenever possible to recover water vapour. The first part may be a feedforward
+controller based on measurement of current (which is easy and cheap to sample
+with high bandwidth), and the other on a measurement of water quantity in the
+anodic loop; feedback is probably necessary, though it must be checked whether
+the quantity of water in the anodic loop is stable or not, and with which
+dynamics.
+
+The cooling of the cathode outflow should be related to the actual requirement
+of liquid water. It will be advantageous to provide to this controller
+information about the operation status of the air flow controller.
+
+The methanol concentration can be controlled using the fuel feed by means of
+feedforward control. The dynamics of methanol concentration should be stable,
+since there are two stabilising terms:
+\begin{itemize}
+\item more methanol means more crossover;
+\item more methanol means more methanol loss in the \COO{} separation stage.
+\end{itemize}
+It remains to be seen whether these two factors are enough to provide a decent
+dynamic performance.
+
+Anodic flow should be set so that it provides reactant to the fuel cell
+proportionally to the current; a feedforward is probably appropriate.
+
+Temperature can be influenced in a variety of ways. Obviously the cooler on the
+anodic loop is a good tool to reduce the temperature. However, if temperature
+must be raised, fuel feed may be used to increase concentration and thereby
+methanol crossover.
+
+\pagebreak
+\section{Operational Envelope for Water Recovery}
+Air entering the cathode is assumed to be at environmental temperature
+$T_\text{env}$ and humidity $RH_\text{env}$. Its water fraction is therefore
+determined as:
+\begin{equation}
+x_\HHO^0 = RH_\text{env}\,\frac{p_\HHO^0(T_\text{env})}{p_\text{env}}
+\end{equation}
+
+In the fuel cell's cathode, water will be produced and transported, because of:
+\begin{itemize}
+\item reaction of oxygen with hydrogen ions;
+\item water drag;
+\item methanol crossover and immediate reaction.
+\end{itemize}
+
+The first two terms are roughly proportional with current, whereas the last is
+proportional with methanol concentration on the anode side's catalyst layer,
+which is lower at high currents because of diffusion.
+
+The produced water will be:
+\begin{equation}
+\frac{\dot n_\HHO}{A} = \left( \overbrace{2}^\text{drag} +
+\overbrace{\frac{3}{6}}^\text{reaction} \right) \frac{i}{F} +
+\overbrace{2\,\frac{D_M}{d_M}\,c_{ac}}^\text{crossover}
+\end{equation}
+
+Assuming that the catalyst-layer methanol concentration depends on current and
+bulk methanol concentration as:
+\begin{equation}
+k_a(c_a-c_{ac}) = \underbrace{
+\overbrace{\frac{D_M}{d_M}\,c_{ac}}^\text{crossover} +
+\overbrace{\frac{i}{6\,F}}^\text{reaction}
+}_\text{total consumption}
+\end{equation}
+We can express $c_{ac}$ as:
+\begin{equation}
+c_{ac} = \frac{k_a\,c_a - \frac{i}{6\,F}}{k_a+\frac{D_M}{d_M}}
+= \alpha \, c_a - \beta \,i
+\end{equation}
+
+where we used $\alpha \in [0,1]$ and $\beta>0$ to illustrate that catalyst-layer
+concentration depends essentially on current and bulk concentration.
+The expression for water production is then:
+
+\begin{equation}
+\boxed{
+\frac{\dot n_\HHO}{A} = \left(15 - \frac{\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}}
+\right) \frac{i}{6\,F} +
+2\,\frac{k_a\,\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}} \, c_a
+}
+\end{equation}
+
+So the two terms that influence water production are current density and
+methanol concentration in the anode bulk. Note, though, that $D_M$ may display
+some dependence on temperature.
+
+The water lost in the anode is:
+\begin{equation}
+\frac{\dot n_\HHO}{A} = \left( \overbrace{2}^\text{crossover} +
+\overbrace{\frac{1}{6}}^\text{reaction} \right) \frac{i}{F}=
+\frac{13}{6}\frac{i}{F} = 2.166 \frac{i}{F}
+\end{equation}
+
+Whereas the water lost in the anode-loop \COO{} separator is (assuming no
+methanol present, as a conservative estimate):
+\begin{equation}
+\dot n_\HHO = \frac{x_\HHO(T)}{1-x_\HHO(T)}\,\frac{i}{6\,F}
+\end{equation}
+
+Where $x_\HHO$ is the equilibrium vapour fraction in air at the temperature
+of the \COO{} separator.
+
+Typical values of the term multiplying $\frac{i}{F}$ are:
+\begin{equation}
+\frac{x_\HHO(T)}{6\,[1-x_\HHO(T)]} =
+\begin{cases}
+0.023 & T = 323\,\mathrm{K}\\
+0.035 & T = 330\,\mathrm{K}\\
+0.062 & T = 340\,\mathrm{K}\\
+0.117 & T = 350\,\mathrm{K}
+\end{cases}
+\end{equation}
+
+It appears that the water loss in the \COO{} separator is, in all cases of
+interest, one order of magnitude smaller than the loss in the reaction and
+drag terms.
+
+The exiting air will be volumetrically larger (it will have much more water
+vapour to offset the lost oxygen), and at stack temperature. What is necessary
+is to find out how much water can be condensed by bringing the air flow down to
+environment temperature.
+
+It is possible to connect the entering air flow by assuming that it is operated
+according to a stoichiometric-ratio specification:
+
+\begin{equation}
+\dot n_\text{air} = \frac{\lambda}{x_\OO^0}\, \frac{I}{4\,F}
+\end{equation}
+
+After the reaction,
+\begin{itemize}
+\item nitrogen flow will be the same, $\lambda \, \frac{x_\NN^0}{x_\OO^0}\,
+\frac{i}{4\,F}$;
+\item oxygen flow will be reduced by 1 in $\lambda$-scale because of the
+reaction, and by an amount corresponding to 3/2 of the methanol
+crossover:
+\begin{equation}
+\begin{aligned}
+\frac{\dot n_\OO}{A} &= \overbrace{\lambda\frac{i}{4\,F}}^\text{Entering oxygen}
+- \overbrace{\frac{i}{4\,F}}^\text{Cathodic reaction}
+- \overbrace{ \frac{3}{2}\,\frac{D_M}{d_M}\,c_{ac}}^\text{Methanol crossover}\\
+&= (\lambda - 1) \frac{i}{4\,F} - \frac{3}{2}\,\frac{k_a\,\frac{D_M}{d_M}}
+{k_a+\frac{D_M}{d_M}}\,c_a
+\end{aligned}
+\end{equation}
+\item we can assume that there is no carbon dioxide entering, or at least very
+little compared to what is generated by the methanol crossover (there are only
+small amounts in the atmosphere):
+\begin{equation}
+\frac{\dot n_\COO}{A} = \frac{k_a\,\frac{D_M}{d_M}} {k_a+\frac{D_M}{d_M}}\,c_a
+\end{equation}
+\item water flow will depend on water and methanol crossover, reaction, and
+naturally on the entering air:
+\begin{equation}
+\begin{aligned}
+\frac{\dot n_\HHO}{A} & = \overbrace{\lambda \, \frac{x_\HHO^0}{x_\OO^0} \,
+\frac{i}{4\,F}}^\text{Entering vapour} +
+\overbrace{2\,\frac{i}{F}}^\text{Water drag} +
+\overbrace{\frac{3}{6}\frac{i}{F}}^\text{Cathodic reaction}
++ \overbrace{2\,\frac{D_M}{d_M}\,c_{ac}}^\text{Methanol crossover}\\
+& = \left( 1.5\,\lambda \frac{x_\HHO^0}{x_\OO^0} + 15
+- \frac{\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}} \right)\frac{i}{6\,F}
++ 2\,\frac{k_a\,\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}}\, c_a
+\end{aligned}
+\end{equation}
+
+From this, it is possible to find out the water fraction, and how much the
+flow has to be cooled in order to condensate a certain amount of water.
+
+\end{itemize}
+
+
+
+
+
+\end{document}
