@@ -241,10 +241,11 @@ values from 0 (dry air) to 100 (saturated air).</p>
     import Thermo.LiquidSpecies;
     import Thermo.GasSpecies;
     import Thermo.AllSpecies;
+    import Thermo.rachfordRice;
     
     Temperature T(start=298.15) "Representative temperature.";
     
-    Real beta "Gas mole fraction.";
+    Real beta = rachfordRice(z[1], z[2], T) "Gas mole fraction.";
     
     MoleFraction[k] z(each min=0, each max=1) "Overall molar fraction.";
     MoleFraction[k] x(each min=0, each max=1) "Liquid molar fraction.";
@@ -252,14 +253,6 @@ values from 0 (dry air) to 100 (saturated air).</p>
     
   protected 
     constant Integer k = size(AllSpecies, 1) "Number of species";
-    function ricer 
-      input Real[:] z_eq;
-      input Real[:] k_eq;
-      input Real z_gas;
-      output Real beta;
-      external "C";
-      annotation(Include="#include <./ricer.c>");
-    end ricer;
     
   equation 
     // Equilibrium relations.
@@ -270,12 +263,9 @@ values from 0 (dry air) to 100 (saturated air).</p>
     z = y*beta + x*(1-beta);
     
     // Mole fraction consistency.
-    // Note: sum(z) = 1 is linearly dependent with this relation, Rathford-Rice and material balance.
+    // Note: sum(x) = 1 is linearly dependent with this relation, Rathford-Rice and material balance.
     // Note: sum(y) = 1 is also linearly dependent, since we are using the Rathford-Rice relation.
-    sum(x) = 1;
-    
-    // The Rathford-Rice relation.
-    beta = ricer(z[LiquidSpecies], {K(T, i) for i in LiquidSpecies}, sum(z[GasSpecies]));
+    sum(z) = 1;
     
     annotation (Documentation(info="<html>
 <p>This class allows to calculate the phase equilibrium of components in
@@ -1191,13 +1181,15 @@ in liquid phase; it takes their density from the Thermo library.</p>
     model TestEquilibrium "Test for the Equilibrium class" 
       
       parameter Modelica.SIunits.Temperature T = 298.15;
+      parameter Modelica.SIunits.MoleFraction ch3oh;
+      parameter Modelica.SIunits.MoleFraction h2o;
       
       Equilibrium eq;
       
     equation 
       eq.T = T;
       
-      eq.z[1:4]={0.3,0.7,0,0};
+      eq.z[1:4]={ch3oh, h2o,0,0};
       
     end TestEquilibrium;
     

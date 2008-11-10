@@ -719,8 +719,7 @@ protected
   end drho_dT;
   
 public 
-  function vapourFraction 
-    "The vapour fraction of a methanol-water-gas mixture." 
+  function rachfordRice "The vapour fraction of a methanol-water-gas mixture." 
     input MoleFraction z_methanol "The methanol fraction.";
     input MoleFraction z_water "The water fraction.";
     input Temperature T 
@@ -728,26 +727,50 @@ public
     output MoleFraction beta 
       "The vapour molar fraction, or vaporisation ratio.";
   protected 
+    constant Real z_gas = 1.0 - z_methanol - z_water;
     constant Pressure p_env = 101325 "The environment pressure.";
-    constant Real C_methanol = p_vap(T, Methanol)/p_env-1;
-    constant Real C_water = p_vap(T, Water)/p_env-1;
+    constant Real C_methanol = p_vap(T, Methanol)/p_env - 1;
+    constant Real C_water = p_vap(T, Water)/p_env - 1;
     // Coefficients of the 2nd-degree polynomial.
     constant Real a = C_methanol*C_water;
     constant Real b = C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
     constant Real c = 1.0-z_methanol-z_water;
     constant Real delta = b*b - 4*a*c;
   algorithm 
-    if z_methanol + z_water >= 1.0 then
-      beta := 0.0;
-    elseif z_methanol <= 0.0 and z_water <= 0.0 then
+    assert( C_methanol > C_water, "Water is more volatile than methanol: this should not be possible.");
+    assert( z_methanol + z_water <= 1.0, "Fractions of water and methanol sum to more than 1.");
+    
+    if C_water > 0.0 then // No component can condensate, simple as that.
       beta := 1.0;
-    elseif z_methanol <= 0.0 then
-      beta := - (1.0-z_water)/C_water;
-    elseif z_water <= 0.0 then
-      beta := - (1.0-z_methanol)/C_methanol;
-    else
-      beta := ( -b - sqrt(delta)) /2*a;
+    elseif C_methanol > 0.0 and z_methanol > 0.0 then // Gas can still be present, even without incondensable gases.
+      if z_water > 0.0 then // There is water, so there can be a liquid-vapour equilibrium.
+        if z_gas > 0.0 then // We have gas present: use larger solution of the 2nd order equation.
+          beta := ( -b + sqrt(delta)) / (2*a);
+        else // no gas present: use the solution for the water-methanol equilibrium.
+          beta := - (C_methanol*z_methanol + C_water*z_water)/(C_methanol*C_water);
+        end if;
+      else // i.e. if z_water == 0
+        beta := 1;
+      end if;
+    else // Water and methanol cannot form a gas phase by themselves.
+      if z_gas > 0.0 then // We still have a gas phase: use the smaller solution of the 2nd order equation.
+        beta := ( -b - sqrt(delta)) / (2*a);
+      else // No gas phase can be sustained.
+        beta := 0.0;
+      end if;
     end if;
     
-  end vapourFraction;
+    annotation (Documentation(info="<html>
+<p>This function solves the Rachford-Rice equation for systems with methanol, water and
+gaseous components. In order to solve the system analytically as a second-degree polynomial,
+some assumptions have been made:</p>
+<ul>
+<li>No other components than methanol and water may condense;</li>
+<li>All other components are gases whose molar fraction is the complement to one of
+the fractions of methanol and water;</li>
+<li>The boiling temperature of water is never exceeded;</li>
+<li>
+</ul>
+</html>"));
+  end rachfordRice;
 end Thermo;
