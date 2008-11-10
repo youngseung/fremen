@@ -255,17 +255,23 @@ values from 0 (dry air) to 100 (saturated air).</p>
     constant Integer k = size(AllSpecies, 1) "Number of species";
     
   equation 
-    // Equilibrium relations.
-    y[LiquidSpecies] = {K(T, i) * x[i] for i in LiquidSpecies};
-    x[GasSpecies] = zeros(size(GasSpecies,1));
-    
-    // Component material balance.
-    z = y*beta + x*(1-beta);
-    
     // Mole fraction consistency.
     // Note: sum(x) = 1 is linearly dependent with this relation, Rathford-Rice and material balance.
     // Note: sum(y) = 1 is also linearly dependent, since we are using the Rathford-Rice relation.
     sum(z) = 1;
+    
+    if beta <= 0 then
+      x = z;
+    elseif beta < 1 then
+      // Equilibrium relations.
+      y[LiquidSpecies] = {K(T, i) * x[i] for i in LiquidSpecies};
+      x[GasSpecies] = zeros(size(GasSpecies,1));
+    else
+      y = z;
+    end if;
+    
+    // Component material balance.
+    z = y*beta + x*(1-beta);
     
     annotation (Documentation(info="<html>
 <p>This class allows to calculate the phase equilibrium of components in

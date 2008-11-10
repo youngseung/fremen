@@ -738,7 +738,6 @@ public
     constant Real delta = b*b - 4*a*c;
   algorithm 
     assert( C_methanol > C_water, "Water is more volatile than methanol: this should not be possible.");
-    assert( z_methanol + z_water <= 1.0, "Fractions of water and methanol sum to more than 1.");
     
     if C_water > 0.0 then // No component can condensate, simple as that.
       beta := 1.0;
