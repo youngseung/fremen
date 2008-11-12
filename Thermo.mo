@@ -736,29 +736,156 @@ public
     constant Real b = C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
     constant Real c = 1.0-z_methanol-z_water;
     constant Real delta = b*b - 4*a*c;
+    
   algorithm 
     assert( C_methanol > C_water, "Water is more volatile than methanol: this should not be possible.");
     
-    if C_water > 0.0 then // No component can condensate, simple as that.
+    if C_water >= 0.0 then // Too high temperature for condensation.
       beta := 1.0;
-    elseif C_methanol > 0.0 and z_methanol > 0.0 then // Gas can still be present, even without incondensable gases.
-      if z_water > 0.0 then // There is water, so there can be a liquid-vapour equilibrium.
-        if z_gas > 0.0 then // We have gas present: use larger solution of the 2nd order equation.
-          beta := ( -b + sqrt(delta)) / (2*a);
-        else // no gas present: use the solution for the water-methanol equilibrium.
-          beta := - (C_methanol*z_methanol + C_water*z_water)/(C_methanol*C_water);
-        end if;
-      else // i.e. if z_water == 0
-        beta := 1;
+    elseif C_methanol > 0.0 then // Intermediate temperature
+      if z_water > 0.0 and z_methanol > 0.0 and z_gas > 0.0 then // All components are present
+        /* NOTE: we are still using the minus sign, even though we want the larger solution,
+       * because if we are here we can be sure that a < 0! */
+        beta := (-b - sqrt(delta)) / (2*a);
+      elseif z_water > 0.0 and z_gas > 0.0 then // Only water and gas, simple solution.
+        beta := - z_gas / C_water;
+      elseif z_water > 0.0 and z_methanol > 0.0 then // Water-methanol equilibrium.
+        beta := - (C_water*z_water + C_methanol*z_methanol) / (C_water*C_methanol);
+      elseif z_water > 0.0 then // Only case left with water: there is only water.
+        beta := 0.0;
+      else // Only case left: there is no water, so no condensation is possible.
+        beta := 1.0;
       end if;
-    else // Water and methanol cannot form a gas phase by themselves.
-      if z_gas > 0.0 then // We still have a gas phase: use the smaller solution of the 2nd order equation.
-        beta := ( -b - sqrt(delta)) / (2*a);
-      else // No gas phase can be sustained.
+    else // Low temperature, below methanol's boiling point.
+      if z_water > 0.0 and z_methanol > 0.0 and z_gas > 0.0 then // All components are present
+        beta := (-b - sqrt(delta)) / (2*a);
+      elseif z_water > 0.0 and z_gas > 0.0 then // Only water and gas, simple solution.
+        beta := - z_gas / C_water;
+      elseif z_methanol > 0.0 and z_gas > 0.0 then // Only methanol and gas, simple solution.
+        beta := - z_gas / C_methanol;
+      elseif z_gas > 0.0 then // Only case with gas left: there is only gas.
+        beta := 1.0;
+      else // All other cases with no gas.
         beta := 0.0;
       end if;
+      
     end if;
     
+    // Make sure that the returned beta is always in [0,1].
+    if beta < 0.0 then
+      beta := 0.0;
+    elseif beta > 1.0 then
+      beta := 1.0;
+    end if;
+    
+    annotation(derivative=drachfordRice_dt, Documentation(info="<html>
+<p>This function solves the Rachford-Rice equation for systems with methanol, water and
+gaseous components. In order to solve the system analytically as a second-degree polynomial,
+some assumptions have been made:</p>
+<ul>
+<li>No other components than methanol and water may condense;</li>
+<li>All other components are gases whose molar fraction is the complement to one of
+the fractions of methanol and water.</li>
+</ul>
+ 
+<h3>Rearranging the Rachford-Rice as a polynomial</h3>
+<p>Assimilating all gases into one is a nice trick to reduce a 5-component problem into a
+3-component one. The latter has only two solutions to the Rachford-Rice, and they are
+easily found with the formula for 2nd-degree polynomials.</p>
+ 
+<p>The actual polynomial is:<br/>
+C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub> &beta;<sup>2</sup> + 
+[C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>
++ (C<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>)z<sub>g</sub>] &beta; + z<sub>g</sub> = 0</p>
+<p>For a simpler notation, C<sub>i</sub> = K<sub>i</sub> - 1 has been used.</p>
+ 
+ 
+<h3>Choice of the root of h(&beta;)</h3>
+ 
+<p>The criterion to obtain an analytical solution to the Rachford-Rice relation can change
+according to which components we actually have, and the temperature range in which we are. In
+particular, when passing the boiling temperature of methanol, one of the asymptote of the
+Rachford-Rice equation h(&beta;) moves from the right-hand to the left-hand plane, meaning
+we have to pick a different solution when we pass beyond this temperature.</p>
+ 
+<p>We have to cater for (almost) all cases of missing components: we need to be able to extract 
+sensible results from the case of no methanol, no water, only gas etc. This sums up to seven 
+cases (we reject the case with no components as it is nonsensical), times three temperature
+brackets (less than methanol's boiling temperature, between methanol's and water's, and beyond
+water's), yielding 21 cases; fortunately many of these can be grouped, as per the following
+table:</p>
+ 
+<style type=\"text/css\">
+table.z {
+        border: 1px solid;
+        border-collapse: collapse;
+        text-align: center;
+}
+table.z th {
+        border: 1px solid;
+        padding: 3px;
+}
+table.z td {
+        border: 1px solid;
+        padding: 3px;
+}
+table.z td.vap { background-color: red; }
+table.z td.liq { background-color: green; }
+table.z td.eq { background-color: yellow; }
+</style>
+ 
+<table class=\"z\">
+<tr><th>Components present</th>
+<th>T &lt; T<sub>boil, CH<sub>3</sub>OH</sub></th>
+<th>T<sub>boil, CH<sub>3</sub>OH</sub> &lt; T &lt; T<sub>boil, H<sub>2</sub>O</sub></th>
+<th>T &gt; T<sub>boil, H<sub>2</sub>O</sub></th></tr>
+ 
+<tr>
+<th>All components</th>
+<td class=\"eq\">Lower root</td>
+<td class=\"eq\">Higher root</td>
+<td rowspan=\"7\" class=\"vap\">No condensation<br/>&beta;=1</td>
+</tr>
+ 
+<tr>
+<th>No methanol</th>
+<td colspan=\"2\" class=\"eq\">Water-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>H<sub>2</sub>O</sub> > 0</td>
+</tr>
+ 
+<tr>
+<th>Only water</th>
+<td colspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
+</tr>
+ 
+<tr>
+<th>No gas</th>
+<td rowspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
+<td class=\"eq\">Water-methanol equilibrium<br/>&beta;=-(C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>+
+C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub>)/C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub></td>
+</tr>
+ 
+<tr>
+<th>Only methanol</th>
+<td rowspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
+</tr>
+ 
+<tr>
+<th>No water</th>
+<td class=\"eq\">Methanol-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>CH<sub>3</sub>OH</sub> > 0</td>
+</tr>
+ 
+<tr>
+<th>Only gas</th>
+<td colspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
+</tr>
+ 
+</table>
+ 
+<h3>References</h3>
+<p>Whitson, Curtis H., and Michelsen, Michael L.: <em>The negative flash</em>, Fluid Phase Equilibria 53, 51&ndash;71, 1989.</p>
+<p>Warren, John H., and Adewumi, Michael A.: <em>Polynomial Objective Functions for Flash Calculations: Binary, Ternary, and 
+Quaternary Systems</em>, Industrial and Engineering Chemistry Research 32(7), 1528&ndash;1530, July 1993.</p>
+</html>"));
     annotation (Documentation(info="<html>
 <p>This function solves the Rachford-Rice equation for systems with methanol, water and
 gaseous components. In order to solve the system analytically as a second-degree polynomial,
@@ -766,10 +893,154 @@ some assumptions have been made:</p>
 <ul>
 <li>No other components than methanol and water may condense;</li>
 <li>All other components are gases whose molar fraction is the complement to one of
-the fractions of methanol and water;</li>
-<li>The boiling temperature of water is never exceeded;</li>
-<li>
+the fractions of methanol and water.</li>
 </ul>
+ 
+<h3>Rearranging the Rachford-Rice as a polynomial</h3>
+<p>Assimilating all gases into one is a nice trick to reduce a 5-component problem into a
+3-component one. The latter has only two solutions to the Rachford-Rice, and they are
+easily found with the formula for 2nd-degree polynomials.</p>
+ 
+<p>The actual polynomial is:<br/>
+C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub>&beta;<sup>2</sup> + 
+[C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>
++ (C<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>)z<sub>g</sub>]&beta; + z<sub>g</sub> = 0</p>
+ 
+ 
+<h3>Choice of the root of h(&beta;)</h3>
+ 
+<p>The criterion to obtain an analytical solution to the Rachford-Rice relation can change
+according to which components we actually have, and the temperature range in which we are. In
+particular, when passing the boiling temperature of methanol, one of the asymptote of the
+Rachford-Rice equation h(&beta;) moves from the right-hand to the left-hand plane, meaning
+we have to pick a different solution when we pass beyond this temperature.</p>
+ 
+<p>We have to cater for (almost) all cases of missing components: we need to be able to extract 
+sensible results from the case of no methanol, no water, only gas etc. This sums up to seven 
+cases (we reject the case with no components as it is nonsensical), times three temperature
+brackets (less than methanol's boiling temperature, between methanol's and water's, and beyond
+water's), yielding 21 cases; fortunately many of these can be grouped, as per the following
+table:</p>
+ 
+<style type=\"text/css\">
+table.z {
+        border: 1px solid;
+        border-collapse: collapse;
+        text-align: center;
+}
+table.z th {
+        border: 1px solid;
+        padding: 3px;
+}
+table.z td {
+        border: 1px solid;
+        padding: 3px;
+}
+table.z td.vap { background-color: red; }
+table.z td.liq { background-color: green; }
+table.z td.eq { background-color: yellow; }
+</style>
+ 
+<table class=\"z\">
+<tr><th>Components present</th>
+<th>T &lt; T<sub>boil, CH<sub>3</sub>OH</sub></th>
+<th>T<sub>boil, CH<sub>3</sub>OH</sub> &lt; T &lt; T<sub>boil, H<sub>2</sub>O</sub></th>
+<th>T &gt; T<sub>boil, H<sub>2</sub>O</sub></th></tr>
+ 
+<tr>
+<th>All components</th>
+<td class=\"eq\">Lower root</td>
+<td class=\"eq\">Higher root</td>
+<td rowspan=\"7\" class=\"vap\">No condensation<br/>&beta;=1</td>
+</tr>
+ 
+<tr>
+<th>No methanol</th>
+<td colspan=\"2\" class=\"eq\">Water-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>H<sub>2</sub>O</sub> > 0</td>
+</tr>
+ 
+<tr>
+<th>Only water</th>
+<td colspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
+</tr>
+ 
+<tr>
+<th>No gas</th>
+<td rowspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
+<td class=\"eq\">Water-methanol equilibrium<br/>&beta;=-(C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>+
+C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub>)/C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub></td>
+</tr>
+ 
+<tr>
+<th>Only methanol</th>
+<td rowspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
+</tr>
+ 
+<tr>
+<th>No water</th>
+<td class=\"eq\">Methanol-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>CH<sub>3</sub>OH</sub> > 0</td>
+</tr>
+ 
+<tr>
+<th>Only gas</th>
+<td colspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
+</tr>
+ 
+</table>
+ 
+<h3>References</h3>
+<p>John H. Warren and Michael A. Adewumi, <em>Polynomial Objective Functions for Flash Calculations: 
+Binary, Ternary, and Quaternary Systems</em>, Industrial and Engineering Chemistry Research,
+1993 (32), 1528&ndash;1530.</p>
+ 
+ 
 </html>"));
+  equation 
+    
   end rachfordRice;
+  
+protected 
+  function drachfordRice_dt 
+    "The vapour fraction of a methanol-water-gas mixture." 
+    input MoleFraction z_methanol "The methanol fraction.";
+    input MoleFraction z_water "The water fraction.";
+    input Temperature T 
+      "The temperature at which the equilibrium is calculated.";
+    input Real der_z_methanol "The time derivative of the methanol fraction.";
+    input Real der_z_water "The time derivative of the water fraction.";
+    input Real der_T "The time derivative of temperature.";
+    output Real der_beta "The derivative of the vapour molar fraction.";
+    
+  protected 
+    constant Real z_eps = 1e-6 
+      "Small number for the magnitude of molar fraction.";
+    constant Real T_eps = 1e-3 "Small number for the magnitude of temperature.";
+    Real pder_z_methanol;
+    Real pder_z_water;
+    Real pder_T;
+    
+  algorithm 
+    if z_methanol <= 0 then
+      pder_z_methanol := (rachfordRice(z_eps, z_water, T)-rachfordRice(0.0, z_water, T))/z_eps;
+    elseif z_methanol < 1 then
+      pder_z_methanol := (rachfordRice(z_methanol+z_eps, z_water, T)-rachfordRice(z_methanol-z_eps, z_water, T))/(2*z_eps);
+    else
+      pder_z_methanol := (rachfordRice(1.0, z_water, T)-rachfordRice(1.0-z_eps, z_water, T))/z_eps;
+    end if;
+    
+    if z_water <= 0 then
+      pder_z_water := (rachfordRice(z_methanol, z_eps, T)-rachfordRice(z_methanol, 0.0, T))/z_eps;
+    elseif z_water < 1 then
+      pder_z_water := (rachfordRice(z_methanol, z_water+z_eps, T)-rachfordRice(z_methanol, z_water-z_eps, T))/(2*z_eps);
+    else
+      pder_z_water := (rachfordRice(z_methanol, 1.0, T)-rachfordRice(z_methanol, 1.0-z_eps, T))/z_eps;
+    end if;
+    
+    pder_T := (rachfordRice(z_methanol, z_water, T+T_eps)-rachfordRice(z_methanol, z_water, T-T_eps))/(2*T_eps);
+    
+    der_beta := pder_z_methanol*der_z_methanol + pder_z_water*der_z_water + pder_T*der_T;
+    
+    annotation (Documentation(info="<html>
+</html>"));
+  end drachfordRice_dt;
 end Thermo;
