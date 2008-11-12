@@ -231,7 +231,7 @@ values from 0 (dry air) to 100 (saturated air).</p>
       Diagram);
   end EnvironmentPort;
   
-  model Equilibrium "a class describing liquid-vapour equilibria." 
+  partial model Equilibrium "a class describing liquid-vapour equilibria." 
     
     import Modelica.SIunits.AmountOfSubstance;
     import Modelica.SIunits.Temperature;
@@ -255,10 +255,15 @@ values from 0 (dry air) to 100 (saturated air).</p>
     constant Integer k = size(AllSpecies, 1) "Number of species";
     
   equation 
-    // Mole fraction consistency.
-    // Note: sum(x) = 1 is linearly dependent with this relation, Rathford-Rice and material balance.
-    // Note: sum(y) = 1 is also linearly dependent, since we are using the Rathford-Rice relation.
-    sum(z) = 1;
+    // Component material balance.
+    z = y*beta + x*(1-beta);
+    
+    /* Notes on mole-fraction consistency:
+   * We assume that z is given and sums to 1. Then, it follows that:
+   * 1) sum(x) = 1 is linearly dependent with sum(z) = 1, the Rathford-Rice relation and material balance.
+   * 2) sum(y) = 1 is also linearly dependent, since we are using the Rathford-Rice relation.
+   * Therefore, there is no particular need to write the consistency explicitly.
+   */
     
     if beta <= 0 then
       x = z;
@@ -269,9 +274,6 @@ values from 0 (dry air) to 100 (saturated air).</p>
     else
       y = z;
     end if;
-    
-    // Component material balance.
-    z = y*beta + x*(1-beta);
     
     annotation (Documentation(info="<html>
 <p>This class allows to calculate the phase equilibrium of components in
@@ -321,7 +323,8 @@ functions.</p>
     AmountOfSubstance[k] n_g(each min=0) = y*n_g_tot 
       "The moles of species in gas phase";
     
-    MolarEnthalpy h_tot "Overall molar enthalpy in the tank.";
+    MolarEnthalpy h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot 
+      "Overall molar enthalpy in the tank.";
     MolarEnthalpy h_l = (sum(h(T,i,LiquidPhase)*x[i] for i in LiquidSpecies)) 
       "The molar enthalpy of the solution in liquid phase.";
     MolarEnthalpy h_g = ( sum(h(T,i,GasPhase)*y[i] for i in AllSpecies)+
@@ -341,27 +344,9 @@ functions.</p>
     // Mass balance.
     der(n) = {sum(flows[j].F * flows[j].z[i] for j in 1:m) for i in AllSpecies};
     
-    /* The hybrid section of the model.
-   * Equations giving the overall molar enthalpy, the total moles and
-   * relating the total volume to the phase volumes change according to
-   * the value of parameter beta.
-   *  * beta < 0: completely liquid.
-   *  * 0 < beta < 1: phase equilibrium, with gas and liquid phases.
-   *  * beta > 1: completely gaseous.
-   */
-    if beta <= 0 then
-      h_tot = h_l;  // 1
-      V = V_l;  // 1
-      n = n_l;  // 5
-    elseif beta < 1 then
-      h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot;
-      V = V_l + V_g;
-      n = n_g + n_l;
-    else
-      h_tot = h_g;
-      V = V_g;
-      n = n_g;
-    end if;
+    // Sum of volumes.
+    V = V_l + V_g;
+  //  n = n_g + n_l; // Redundant?
     
     // Sanity checks  
     for i in AllSpecies loop
@@ -1186,16 +1171,20 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
     model TestEquilibrium "Test for the Equilibrium class" 
       
-      parameter Modelica.SIunits.Temperature T = 298.15;
-      parameter Modelica.SIunits.MoleFraction ch3oh;
-      parameter Modelica.SIunits.MoleFraction h2o;
+      parameter Modelica.SIunits.Temperature T_start = 273.15;
+      parameter Modelica.SIunits.MoleFraction ch3oh = 0.2;
+      parameter Modelica.SIunits.MoleFraction h2o = 0.4;
       
-      Equilibrium eq;
+      model MyEquilibrium 
+        extends Equilibrium;
+      end MyEquilibrium;
+      
+      MyEquilibrium eq;
       
     equation 
-      eq.T = T;
+      eq.T = T_start+time;
       
-      eq.z[1:4]={ch3oh, h2o,0,0};
+      eq.z={ch3oh, h2o,0,0,0};
       
     end TestEquilibrium;
     
@@ -1308,7 +1297,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       MethanolSolution source annotation (extent=[-86,8; -66,28]);
     equation 
-      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6;
+      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6; 
             -40,-6; -40,4.2; -36,4.2],  style(pattern=0, thickness=2));
       connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-24.04,
             52; -30,52; -30,37.8],
@@ -1331,7 +1320,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           fillColor=46,
           rgbfillColor={127,127,0},
           fillPattern=7));
-      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51;
+      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51; 
             -32,-51; -32,4.2], style(
           pattern=0,
           thickness=2,
@@ -1377,7 +1366,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(BottomSeparatorConnector.port1, separator.liquidOutlet) 
-                                                           annotation (points=[20.8,-34;
+                                                           annotation (points=[20.8,-34; 
             8.2,-34; 8.2,-10],               style(
           pattern=0,
           thickness=2,
@@ -1389,13 +1378,13 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port1, separator.gasOutlet) 
-                                                         annotation (points=[22.8,26;
+                                                         annotation (points=[22.8,26; 
             8,26; 8,2; 8.2,2],              style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(FuelTankToSeparatorConnector.port2, separator.feed) 
-                                                    annotation (points=[-40.8,-4;
+                                                    annotation (points=[-40.8,-4; 
             -41.6,-4; -41.6,-4; -38,-4; -38,-4; -33.4,-4],
                                                style(
           pattern=0,
@@ -1404,7 +1393,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       source.p.F = -1;
       der(separator.level) = 0;
-      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14;
+      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14; 
             -62,-4; -55.2,-4],     style(pattern=0, thickness=2));
     end TestSeparator;
     
@@ -1540,9 +1529,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       FlowConnector to_f22   annotation (extent=[2,-32; 22,-12]);
       EnvironmentPort coolingOutlet   annotation (extent=[30,42; 46,58]);
     equation 
-      connect(to_f11.port2, hx.f11)                   annotation (points=[-24.8,10;
+      connect(to_f11.port2, hx.f11)                   annotation (points=[-24.8,10; 
             -19.8,10; -19.8,10; -14.6,10],   style(pattern=0, thickness=2));
-      connect(hx.f12, to_f12.port1)                    annotation (points=[10.6,10;
+      connect(hx.f12, to_f12.port1)                    annotation (points=[10.6,10; 
             11.8,10; 11.8,10; 14.8,10],     style(pattern=0, thickness=2));
       connect(to_f12.port2, solutionOutlet.c) 
         annotation (points=[29.2,10; 36.8,10], style(pattern=0, thickness=2));
@@ -1644,9 +1633,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       Real h2o_liquid = pipe.segments[1].x[2]*pipe.segments[1].n_l;
       Real h2o_gas = pipe.segments[1].y[2]*pipe.segments[1].n_g;
     equation 
-      connect(exitingConnector.port1, pipe.side2) annotation (points=[28.8,8;
+      connect(exitingConnector.port1, pipe.side2) annotation (points=[28.8,8; 
             19.4,8; 19.4,8; 8,8],   style(pattern=0, thickness=2));
-      connect(enteringConnector.port2, pipe.side1) annotation (points=[-38.8,8;
+      connect(enteringConnector.port2, pipe.side1) annotation (points=[-38.8,8; 
             -35.4,8; -35.4,8; -28,8],   style(pattern=0, thickness=2));
       connect(inlet.c, enteringConnector.port1) annotation (points=[-53,29;
             -64.5,29; -64.5,8; -53.2,8], style(pattern=0, thickness=2));
@@ -1733,7 +1722,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
         annotation (points=[5.4,-28; -8.12,-28],style(pattern=0, thickness=2));
       connect(environmentPort3.c, flowConnector9.port2) 
         annotation (points=[24.8,16; 16.6,16], style(pattern=0, thickness=2));
-      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2;
+      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2; 
             30.91,2; 30.91,2; 33.5,2],   style(pattern=0, thickness=2));
       connect(flowConnector11.port2, separator.liquidOutlet) annotation (points=[-13.68,
             -60; 0,-60; 0,-38; 57.5,-38; 57.5,-2.2],        style(pattern=0,
@@ -1743,7 +1732,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=2));
       connect(environmentPort4.c, flowConnector12.port2) 
         annotation (points=[72.8,14; 68.6,14], style(pattern=0, thickness=2));
-      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14;
+      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14; 
             58,14; 58,6.2; 57.5,6.2],          style(pattern=0, thickness=2));
       connect(mixer.flow4, flowConnector11.port1) annotation (points=[-44,-83.6;
             -44,-88; -36,-88; -36,-60; -22.32,-60],
@@ -1753,9 +1742,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       connect(environmentPort2.c, flowConnector8.port2) annotation (points=[20.8,-28;
             12.6,-28],                                     style(pattern=0,
             thickness=2));
-      connect(flowConnector5.port2, cooler.f11) annotation (points=[-7.12,2;
+      connect(flowConnector5.port2, cooler.f11) annotation (points=[-7.12,2; 
             -5.06,2; -5.06,2; -3,2], style(pattern=0, thickness=2));
-      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2;
+      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2; 
             17.34,2; 17.34,2; 19.68,2], style(pattern=0, thickness=2));
       connect(flowConnector7.port2, cooler.f22) annotation (points=[2.6,-10; 6,
             -10; 6,-3], style(pattern=0, thickness=2));
