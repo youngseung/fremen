@@ -606,7 +606,7 @@ public
     elseif n == Water then
       Kvalue := p_h2o(T)/p_env;
     else
-      Kvalue := 1e20; // TODO implement solutibilies
+      assert(false, "Equilibrium constant of species "+speciesName(n)+" requested.");
     end if;
     
     annotation(derivative=dK_dT);
