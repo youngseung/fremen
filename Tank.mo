@@ -6,12 +6,6 @@ type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s")
     annotation (Documentation(info="<html>
 <p>Just a definition lacking from the standard library.</p>
 </html>"));
-type HeatTransferCoefficient = Real (final quantity="HeatTransferCoefficient",
-                                     final unit = "W/(K.m2)") 
-                                                         annotation (
-      Documentation(info="<html>
-<p>Just a definition lacking from the standard library.</p>
-</html>"));
   
   connector CheckPoint "What passes through a control surface" 
     import Modelica.SIunits.MoleFraction;
@@ -247,12 +241,12 @@ values from 0 (dry air) to 100 (saturated air).</p>
     
     Real beta = rachfordRice(z[1], z[2], T) "Gas mole fraction.";
     
-    MoleFraction[k] z(each min=0, each max=1) "Overall molar fraction.";
-    MoleFraction[k] x(each min=0, each max=1) "Liquid molar fraction.";
-    MoleFraction[k] y(each min=0, each max=1) "Gaseous molar fraction.";
-    
-  protected 
-    constant Integer k = size(AllSpecies, 1) "Number of species";
+    MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
+      "Overall molar fraction.";
+    MoleFraction[size(AllSpecies, 1)] x(each min=0, each max=1) 
+      "Liquid molar fraction.";
+    MoleFraction[size(AllSpecies, 1)] y(each min=0, each max=1) 
+      "Gaseous molar fraction.";
     
   equation 
     // Component material balance.
@@ -290,6 +284,125 @@ functions.</p>
       DymolaStoredErrors);
   end Equilibrium;
   
+  partial model ExtensiveBalances 
+    "Equations for the balance of extensive properties" 
+    
+    import Modelica.SIunits.AmountOfSubstance;
+    import Modelica.SIunits.InternalEnergy;
+    import Modelica.SIunits.Heat;
+    import Thermo.AllSpecies;
+    
+    parameter Integer m "Number of flows.";
+    CheckPoint[m] flows "Connections with other objects.";
+    
+    AmountOfSubstance[size(AllSpecies,1)] n(each min=0) 
+      "Accumulated moles of each species.";
+    InternalEnergy U "The accumulated internal energy.";
+    Heat Q "Heat exchanged with environment.";
+    
+  equation 
+    der(n) = {sum(flows[j].F * flows[j].z[i] for j in 1:m) for i in AllSpecies};
+    der(U) = sum(flows[j].H for j in 1:m) + Q;
+    
+  end ExtensiveBalances;
+  
+  partial model StirredTank "A generic stirred tank with an undefined shape." 
+    extends Equilibrium(T(start=T_env,fixed=true));
+    extends ExtensiveBalances(m=1);
+    
+    import Modelica.SIunits.AmountOfSubstance;
+    import Modelica.SIunits.InternalEnergy;
+    import Modelica.SIunits.Pressure;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.HeatCapacity;
+    import Modelica.SIunits.CoefficientOfHeatTransfer;
+    import Modelica.SIunits.Area;
+    import Modelica.SIunits.Volume;
+    
+    import Thermo.MolarEnthalpy;
+    import Thermo.rho;
+    import Thermo.h;
+    import Thermo.dhf;
+    import Thermo.mw;
+    import Thermo.AllSpecies;
+    import Thermo.LiquidSpecies;
+    import Thermo.GasSpecies;
+    import Thermo.LiquidPhase;
+    import Thermo.GasPhase;
+    
+    outer Temperature T_env "Environment temperature.";
+    outer Pressure p_env "Environment pressure.";
+    
+    parameter String name = "Nameless" "Tank identifier.";
+    parameter HeatCapacity Cp = 100 "Heat capacity of tank (glass, lid, ...).";
+    parameter CoefficientOfHeatTransfer k_h = 0.0 
+      "Default: perfect insulation.";
+    parameter Area A_sur = 1e-3 
+      "Surface area of contact between tank and environment";
+    parameter Volume V = 1E-3 "Total volume of the tank.";
+    
+    AmountOfSubstance n_tot(min=0) = sum(n) "Total moles.";
+    AmountOfSubstance n_l_tot = sum(n_l) "Total moles of liquid.";
+    AmountOfSubstance n_g_tot = sum(n_g) "Total moles of gas.";
+    
+    AmountOfSubstance[size(AllSpecies, 1)] n_l(each min=0) 
+      "The moles of species in liquid phase";
+    AmountOfSubstance[size(AllSpecies, 1)] n_g(each min=0) 
+      "The moles of species in gas phase";
+    
+    MolarEnthalpy h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot 
+      "Overall molar enthalpy in the tank.";
+    MolarEnthalpy h_l = (sum(h(T,i,LiquidPhase)*x[i] for i in LiquidSpecies)) 
+      "The molar enthalpy of the solution in liquid phase.";
+    MolarEnthalpy h_g = (sum(h(T,i,GasPhase)*y[i] for i in AllSpecies) + sum((dhf(i,GasPhase)-dhf(i,LiquidPhase))*y[i] for i in LiquidSpecies)) 
+      "The molar enthalpy of the mixture in gas phase.";
+    
+    InternalEnergy tankSensibleHeat = Cp*(T-298.15) 
+      "The heat accumulated in the tank's solid parts, such as glass, lid, etc.";
+    InternalEnergy speciesSensibleHeat = sum(h(T,i,GasPhase)*n_g[i] for i in AllSpecies) + sum(h(T,i,LiquidPhase) * n_l[i] for i in LiquidSpecies) 
+      "The sensible heat accumulated in the species currently present in the tank.";
+    InternalEnergy latentHeat = sum((dhf(i,GasPhase) - dhf(i,LiquidPhase)) * n_g[i] for i in LiquidSpecies) 
+      "The heat used to bring the condensable species from their reference liquid state into gas phase.";
+    
+    Volume V_l(min=0) = sum(n_l[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) 
+      "Amount of liquid volume.";
+    Volume V_g(min=0) = sum(n_g[i]*mw(i)/rho(T,i,GasPhase) for i in AllSpecies) 
+      "Amount of gaseous volume.";
+    
+  equation 
+    // Exchange of heat with the environment.
+    Q = A_sur * k_h * (T_env - T);
+    
+    // Allocation of internal energy. See each term for a description.
+    U = tankSensibleHeat + speciesSensibleHeat + latentHeat;
+    
+    // Sum of gas and liquid volumes is constant and equal to the total volume.
+    V = V_l + V_g;
+    
+    // Relation between fractions in phases and total moles.
+    n = n_g + n_l;
+    
+    n_tot * z = n;
+    n_g_tot * y = n_g;
+    
+    annotation (Documentation(info="<html>
+<p>This class defines the general properties of all stirred tanks, that is a
+single representative temperature, an array of amounts of substance with five
+elements, the flows with which the tank is connected to other ones.</p>
+<p>This class models:
+<ul>
+<li>Mass balance (set of differential equations);</li>
+<li>Heat balance (differential equation);</li>
+<li>Gas-liquid equilibrium (set of algebraic equations);</li>
+<li>Sanity checks (various conditional statements).</li>
+</ul>
+</p>
+<p>The number of flows <em>m</em> cannot be set to zero; if you need such a
+isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 
+zeros(5)</tt>.</p>
+</html>"), Icon);
+  end StirredTank;
+  
   model IsothermalTank 
     extends Equilibrium;
     
@@ -312,24 +425,29 @@ functions.</p>
     parameter Integer m = 1 "Number of flows.";
     
     CheckPoint[m] flows "Connections with other objects.";
+  /*  
+  AmountOfSubstance n_tot = sum(n) "Total moles in the tank.";
+  AmountOfSubstance n_l_tot = sum(n_l) "Total moles of liquid.";
+  AmountOfSubstance n_g_tot = sum(n_g) "Total moles of gas.";
+*/
     
-    AmountOfSubstance n_tot = sum(n) "Total moles in the tank.";
-    AmountOfSubstance n_l_tot = sum(n_l) "Total moles of liquid.";
-    AmountOfSubstance n_g_tot = sum(n_g) "Total moles of gas.";
-    
-    AmountOfSubstance[k] n(each min=0) = z*n_tot "Moles of each species.";
-    AmountOfSubstance[k] n_l(each min=0) = x*n_l_tot 
-      "The moles of species in liquid phase";
-    AmountOfSubstance[k] n_g(each min=0) = y*n_g_tot 
-      "The moles of species in gas phase";
-    
-    MolarEnthalpy h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot 
-      "Overall molar enthalpy in the tank.";
-    MolarEnthalpy h_l = (sum(h(T,i,LiquidPhase)*x[i] for i in LiquidSpecies)) 
-      "The molar enthalpy of the solution in liquid phase.";
-    MolarEnthalpy h_g = ( sum(h(T,i,GasPhase)*y[i] for i in AllSpecies)+
-                          sum((dhf(i,GasPhase)-dhf(i,LiquidPhase)) * y[i] for i in LiquidSpecies)) 
-      "The molar enthalpy of the mixture in gas phase.";
+    AmountOfSubstance[k] n(each min=0) "Moles of each species.";
+  /*
+  AmountOfSubstance[k] n_l(each min=0) = x*n_l_tot 
+    "The moles of species in liquid phase";
+  AmountOfSubstance[k] n_g(each min=0) = y*n_g_tot 
+    "The moles of species in gas phase";
+*/
+  /*
+  MolarEnthalpy h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot 
+    "Overall molar enthalpy in the tank.";
+  MolarEnthalpy h_l = (sum(h(T,i,LiquidPhase)*x[i] for i in LiquidSpecies)) 
+    "The molar enthalpy of the solution in liquid phase.";
+  MolarEnthalpy h_g = ( sum(h(T,i,GasPhase)*y[i] for i in AllSpecies)+
+                        sum((dhf(i,GasPhase)-dhf(i,LiquidPhase)) * y[i] for i in LiquidSpecies)) 
+    "The molar enthalpy of the mixture in gas phase.";
+ 
+*/
     
     // NOTE: assumed that partial volumes sum linearly.
     Volume V_l = sum(n_l[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) 
@@ -345,7 +463,7 @@ functions.</p>
     der(n) = {sum(flows[j].F * flows[j].z[i] for j in 1:m) for i in AllSpecies};
     
     // Sum of volumes.
-    V = V_l + V_g;
+  //  V = V_l + V_g;
   //  n = n_g + n_l; // Redundant?
     
     // Sanity checks  
@@ -377,181 +495,6 @@ between 0 and 1, there is a gas-vapour equilibrium; and if it is beyond 1, there
 is only gas phase in the tank.</p>
 </html>"), Icon);
   end IsothermalTank;
-  
-  partial model StirredTank "A generic stirred tank with an undefined shape." 
-    
-    import Modelica.SIunits.AmountOfSubstance;
-    import Modelica.SIunits.Pressure;
-    import Modelica.SIunits.Temperature;
-    import Modelica.SIunits.Heat;
-    import Modelica.SIunits.HeatCapacity;
-    import Modelica.SIunits.HeatFlowRate;
-    import Modelica.SIunits.MoleFraction;
-    import Modelica.SIunits.CoefficientOfHeatTransfer;
-    import Modelica.SIunits.Area;
-    import Thermo.MolarEnthalpy;
-    import Modelica.SIunits.Volume;
-    import Modelica.Constants.R;
-    
-    import Thermo.p_vap;
-    import Thermo.rho;
-    import Thermo.cp;
-    import Thermo.h;
-    import Thermo.dhf;
-    import Thermo.mw;
-    import Thermo.AllSpecies;
-    import Thermo.LiquidSpecies;
-    import Thermo.GasSpecies;
-    import Thermo.LiquidPhase;
-    import Thermo.GasPhase;
-    import Thermo.speciesName;
-    
-    outer Temperature T_env "Environment temperature.";
-    outer Pressure p_env "Environment pressure.";
-    
-    parameter String name = "Nameless" "Tank identifier.";
-    parameter HeatCapacity Cp = 100 "Heat capacity of tank (glass, lid, ...).";
-    parameter CoefficientOfHeatTransfer k_h = 0.0 
-      "Default: perfect insulation.";
-    parameter Area A_sur = 1e-3 
-      "Surface area of contact between tank and environment";
-    parameter Integer m = 1 "Number of flows, default must be != 0 for Dymola.";
-    parameter Volume V = 1E-3 "Total volume of the tank.";
-    
-    Temperature T(start=T_env, fixed=true) "Representative tank temperature.";
-    Heat Q "Heat exchanged with environment (usually negative).";
-    CheckPoint[m] flows "Connections with other objects.";
-    
-    AmountOfSubstance[k] n(each min=0) "Moles of each species.";
-    AmountOfSubstance n_tot(min=0) = sum(n) "Total moles.";
-    MolarEnthalpy h_tot "Overall molar enthalpy in the tank.";
-    MoleFraction[k] z(each min=0, each max=1) = n / n_tot 
-      "Overall mole fractions";
-    
-    Volume V_l(min=0) "Amount of liquid volume.";
-    AmountOfSubstance[k] n_l(each min=0) "The moles of species in liquid phase";
-    AmountOfSubstance n_l_tot = sum(n_l) "Total moles of liquid.";
-    MoleFraction[k] x = n_l/n_l_tot "Molar fraction in liquid phase.";
-    MolarEnthalpy h_l "The molar enthalpy of the solution in liquid phase.";
-    
-    Volume V_g(min=0) "Amount of gaseous volume.";
-    AmountOfSubstance[k] n_g(each min=0) "The moles of species in gas phase";
-    AmountOfSubstance n_g_tot = sum(n_g) "Total moles of gas.";
-    MoleFraction[k] y = n_g/n_g_tot "Molar fraction in gas phase.";
-    MolarEnthalpy h_g "The molar enthalpy of the mixture in gas phase.";
-    
-  protected 
-    HeatFlowRate enthalpyInflow;
-    HeatFlowRate sensibleHeat;
-    HeatFlowRate latentHeat;
-    HeatFlowRate newMassHeat;
-    constant Real eps = 1e-6 "Constraint-violation tolerance (numerical noise)";
-    constant Integer k = size(AllSpecies, 1) "Total number of species";
-    
-  equation 
-    /****************************
-   *** MASS BALANCE SECTION ***
-   ****************************/
-    
-    // Mass balance, piece of cake.
-    der(n) = {sum(flows[j].F * flows[j].z[i] for j in 1:m) for i in AllSpecies};
-    
-    /******************************
-   *** ENERGY BALANCE SECTION ***
-   ******************************/
-    
-    // Complete energy balance.
-    Q + enthalpyInflow = sensibleHeat + latentHeat + newMassHeat;
-    
-    // Exchange with environment.
-    Q = A_sur * k_h * (T_env - T);
-    
-    // The sum of enthalpy inflows from all flows.
-    enthalpyInflow = sum(flows[i].H for i in 1:m);
-    
-    // The specific heat (J/K) of the components in the tank, liquid and gas
-    sensibleHeat = der(T) * (sum(cp(T,i,GasPhase) * n_g[i] for i in AllSpecies)+
-                             sum(cp(T,i,LiquidPhase) * n_l[i] for i in LiquidSpecies)+
-                             Cp);
-    
-    // The heat to bring water and methanol into gas phase
-    latentHeat = sum((dhf(i,GasPhase) - dhf(i,LiquidPhase)) * der(n_g[i]) for i in LiquidSpecies);
-    
-    /* The heat spent on warming incoming matter to tank temperature T.
-   * Note that methanol and water are a bit more complex as they change
-   * phase according to temperature. */
-    newMassHeat = sum(h(T,i,GasPhase) * der(n[i]) for i in GasSpecies)  +
-                  sum(h(T,i,GasPhase) * der(n_g[i]) + h(T,i,LiquidPhase) * der(n_l[i]) for i in LiquidSpecies);
-    
-    /******************************
-   *** MOLAR ENTHALPY SECTION ***
-   ******************************/
-    
-    /* The molar enthalpy present in gas phase; includes heat of vaporisation
-   * water and methanol. */
-    h_g = (sum(h(T,i,GasPhase)*y[i] for i in AllSpecies) +
-           sum((dhf(i,GasPhase)-dhf(i,LiquidPhase))*y[i] for i in LiquidSpecies));
-    
-    // The molar enthalpy present in liquid phase; includes only water and methanol.
-    h_l = (sum(h(T,i,LiquidPhase)*x[i] for i in LiquidSpecies));
-    
-    // The overall molar enthalpy present in the tank.
-    h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot;
-    
-    /************************************
-   *** CHEMICAL EQUILIBRIUM SECTION ***
-   ************************************/
-    
-    // Consistency: sum of gas and liquid volumes is constant.
-    V = V_l + V_g;
-    
-    // The relationship between liquid volume, moles and compositions.
-    // NOTE: assumed no mixture volume.
-    V_l = sum(n_l[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies);
-    
-    // The relationship between gaseous volume, moles and compositions.
-    // NOTE: assumed no mixture volume.
-    V_g = sum(n_g[i]*mw(i)/rho(T,i,GasPhase) for i in AllSpecies);
-    
-    // No gases in liquid phase.
-    n_l[GasSpecies] = zeros(size(GasSpecies, 1));
-    
-    // Raoult's law for methanol and water.
-    for i in LiquidSpecies loop
-      p_env * y[i] = p_vap(T, i) * x[i];
-    end for;
-    
-    // Relation between fractions in phases and total moles.
-    n = n_g + n_l;
-    
-    /***************************
-  *** SANITY CHECK SECTION ***
-  ****************************/
-    
-    for i in AllSpecies loop
-      //assert( n[i] > -eps, "Negative amount of "+speciesName(i)+" in "+name+".");
-    end for;
-    
-    //assert( V_g > -eps, "Negative gas volume in "+name+".");
-    //assert( V_l > -eps, "Negative liquid volume in "+name+".");
-    
-    annotation (Documentation(info="<html>
-<p>This class defines the general properties of all stirred tanks, that is a
-single representative temperature, an array of amounts of substance with five
-elements, the flows with which the tank is connected to other ones.</p>
-<p>This class models:
-<ul>
-<li>Mass balance (set of differential equations);</li>
-<li>Heat balance (differential equation);</li>
-<li>Gas-liquid equilibrium (set of algebraic equations);</li>
-<li>Sanity checks (various conditional statements).</li>
-</ul>
-</p>
-<p>The number of flows <em>m</em> cannot be set to zero; if you need such a
-isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 
-zeros(5)</tt>.</p>
-</html>"), Icon);
-  end StirredTank;
   
   partial model VerticalCylindricalTank 
     "A cylindrical tank in horizontal position." 
@@ -1244,9 +1187,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       tank.flows[2].H=tank.flows[2].F*tank.h_tot;
       
     initial equation 
-      tank.z[1] = 0;
-      tank.z[2] = 0;
-      tank.z[3] = 0;
+      tank.z[1] = 0.;
+      tank.z[2] = 0.8;
+      tank.z[3] / 0.21 = tank.z[5] / 0.79;
       tank.z[4] = 0;
       
     end TestTank;
@@ -1297,7 +1240,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       MethanolSolution source annotation (extent=[-86,8; -66,28]);
     equation 
-      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6; 
+      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6;
             -40,-6; -40,4.2; -36,4.2],  style(pattern=0, thickness=2));
       connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-24.04,
             52; -30,52; -30,37.8],
@@ -1320,7 +1263,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           fillColor=46,
           rgbfillColor={127,127,0},
           fillPattern=7));
-      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51; 
+      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51;
             -32,-51; -32,4.2], style(
           pattern=0,
           thickness=2,
@@ -1366,7 +1309,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(BottomSeparatorConnector.port1, separator.liquidOutlet) 
-                                                           annotation (points=[20.8,-34; 
+                                                           annotation (points=[20.8,-34;
             8.2,-34; 8.2,-10],               style(
           pattern=0,
           thickness=2,
@@ -1378,13 +1321,13 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port1, separator.gasOutlet) 
-                                                         annotation (points=[22.8,26; 
+                                                         annotation (points=[22.8,26;
             8,26; 8,2; 8.2,2],              style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(FuelTankToSeparatorConnector.port2, separator.feed) 
-                                                    annotation (points=[-40.8,-4; 
+                                                    annotation (points=[-40.8,-4;
             -41.6,-4; -41.6,-4; -38,-4; -38,-4; -33.4,-4],
                                                style(
           pattern=0,
@@ -1393,7 +1336,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       source.p.F = -1;
       der(separator.level) = 0;
-      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14; 
+      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14;
             -62,-4; -55.2,-4],     style(pattern=0, thickness=2));
     end TestSeparator;
     
@@ -1529,9 +1472,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       FlowConnector to_f22   annotation (extent=[2,-32; 22,-12]);
       EnvironmentPort coolingOutlet   annotation (extent=[30,42; 46,58]);
     equation 
-      connect(to_f11.port2, hx.f11)                   annotation (points=[-24.8,10; 
+      connect(to_f11.port2, hx.f11)                   annotation (points=[-24.8,10;
             -19.8,10; -19.8,10; -14.6,10],   style(pattern=0, thickness=2));
-      connect(hx.f12, to_f12.port1)                    annotation (points=[10.6,10; 
+      connect(hx.f12, to_f12.port1)                    annotation (points=[10.6,10;
             11.8,10; 11.8,10; 14.8,10],     style(pattern=0, thickness=2));
       connect(to_f12.port2, solutionOutlet.c) 
         annotation (points=[29.2,10; 36.8,10], style(pattern=0, thickness=2));
@@ -1633,9 +1576,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       Real h2o_liquid = pipe.segments[1].x[2]*pipe.segments[1].n_l;
       Real h2o_gas = pipe.segments[1].y[2]*pipe.segments[1].n_g;
     equation 
-      connect(exitingConnector.port1, pipe.side2) annotation (points=[28.8,8; 
+      connect(exitingConnector.port1, pipe.side2) annotation (points=[28.8,8;
             19.4,8; 19.4,8; 8,8],   style(pattern=0, thickness=2));
-      connect(enteringConnector.port2, pipe.side1) annotation (points=[-38.8,8; 
+      connect(enteringConnector.port2, pipe.side1) annotation (points=[-38.8,8;
             -35.4,8; -35.4,8; -28,8],   style(pattern=0, thickness=2));
       connect(inlet.c, enteringConnector.port1) annotation (points=[-53,29;
             -64.5,29; -64.5,8; -53.2,8], style(pattern=0, thickness=2));
@@ -1722,7 +1665,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
         annotation (points=[5.4,-28; -8.12,-28],style(pattern=0, thickness=2));
       connect(environmentPort3.c, flowConnector9.port2) 
         annotation (points=[24.8,16; 16.6,16], style(pattern=0, thickness=2));
-      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2; 
+      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2;
             30.91,2; 30.91,2; 33.5,2],   style(pattern=0, thickness=2));
       connect(flowConnector11.port2, separator.liquidOutlet) annotation (points=[-13.68,
             -60; 0,-60; 0,-38; 57.5,-38; 57.5,-2.2],        style(pattern=0,
@@ -1732,7 +1675,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=2));
       connect(environmentPort4.c, flowConnector12.port2) 
         annotation (points=[72.8,14; 68.6,14], style(pattern=0, thickness=2));
-      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14; 
+      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14;
             58,14; 58,6.2; 57.5,6.2],          style(pattern=0, thickness=2));
       connect(mixer.flow4, flowConnector11.port1) annotation (points=[-44,-83.6;
             -44,-88; -36,-88; -36,-60; -22.32,-60],
@@ -1742,9 +1685,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       connect(environmentPort2.c, flowConnector8.port2) annotation (points=[20.8,-28;
             12.6,-28],                                     style(pattern=0,
             thickness=2));
-      connect(flowConnector5.port2, cooler.f11) annotation (points=[-7.12,2; 
+      connect(flowConnector5.port2, cooler.f11) annotation (points=[-7.12,2;
             -5.06,2; -5.06,2; -3,2], style(pattern=0, thickness=2));
-      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2; 
+      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2;
             17.34,2; 17.34,2; 19.68,2], style(pattern=0, thickness=2));
       connect(flowConnector7.port2, cooler.f22) annotation (points=[2.6,-10; 6,
             -10; 6,-3], style(pattern=0, thickness=2));
