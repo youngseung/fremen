@@ -239,7 +239,8 @@ values from 0 (dry air) to 100 (saturated air).</p>
     
     Temperature T(start=298.15) "Representative temperature.";
     
-    Real beta = rachfordRice(z[1], z[2], T) "Gas mole fraction.";
+    Real beta(min=0.0,max=1.0) = rachfordRice(z[1], z[2], T) 
+      "Gas mole fraction.";
     
     MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
       "Overall molar fraction.";
@@ -256,18 +257,10 @@ values from 0 (dry air) to 100 (saturated air).</p>
    * We assume that z is given and sums to 1. Then, it follows that:
    * 1) sum(x) = 1 is linearly dependent with sum(z) = 1, the Rathford-Rice relation and material balance.
    * 2) sum(y) = 1 is also linearly dependent, since we are using the Rathford-Rice relation.
-   * Therefore, there is no particular need to write the consistency explicitly.
-   */
+   * Therefore, there is no particular need to write the consistency explicitly. */
     
-    if beta <= 0 then
-      x = z;
-    elseif beta < 1 then
-      // Equilibrium relations.
       y[LiquidSpecies] = {K(T, i) * x[i] for i in LiquidSpecies};
-      x[GasSpecies] = zeros(size(GasSpecies,1));
-    else
-      y = z;
-    end if;
+      x[GasSpecies]    = zeros(size(GasSpecies,1));
     
     annotation (Documentation(info="<html>
 <p>This class allows to calculate the phase equilibrium of components in
@@ -292,7 +285,7 @@ functions.</p>
     import Modelica.SIunits.Heat;
     import Thermo.AllSpecies;
     
-    parameter Integer m "Number of flows.";
+    parameter Integer m(min=1) "Number of flows.";
     CheckPoint[m] flows "Connections with other objects.";
     
     AmountOfSubstance[size(AllSpecies,1)] n(each min=0) 
@@ -302,7 +295,7 @@ functions.</p>
     
   equation 
     der(n) = {sum(flows[j].F * flows[j].z[i] for j in 1:m) for i in AllSpecies};
-    der(U) = sum(flows[j].H for j in 1:m) + Q;
+    der(U) =  sum(flows[j].H                 for j in 1:m) + Q;
     
   end ExtensiveBalances;
   
@@ -342,8 +335,8 @@ functions.</p>
     parameter Volume V = 1E-3 "Total volume of the tank.";
     
     AmountOfSubstance n_tot(min=0) = sum(n) "Total moles.";
-    AmountOfSubstance n_l_tot = sum(n_l) "Total moles of liquid.";
-    AmountOfSubstance n_g_tot = sum(n_g) "Total moles of gas.";
+    AmountOfSubstance n_g_tot(min=0) = beta * n_tot "Total moles of gas.";
+    AmountOfSubstance n_l_tot(min=0) = (1-beta)*n_tot "Total moles of liquid.";
     
     AmountOfSubstance[size(AllSpecies, 1)] n_l(each min=0) 
       "The moles of species in liquid phase";
@@ -382,8 +375,8 @@ functions.</p>
     // Relation between fractions in phases and total moles.
     n = n_g + n_l;
     
-    n_tot * z = n;
-    n_g_tot * y = n_g;
+    n = n_tot * z;
+    n_g = n_g_tot * y;
     
     annotation (Documentation(info="<html>
 <p>This class defines the general properties of all stirred tanks, that is a
