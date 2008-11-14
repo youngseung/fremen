@@ -13,7 +13,7 @@
    id="svg2"
    sodipodi:version="0.32"
    inkscape:version="0.44.1"
-   sodipodi:docbase="/data/portsys/projects/modelling/Modelica/docs/pics"
+   sodipodi:docbase="/scratch/zenith/Modelica/docs/pics"
    sodipodi:docname="flow.svg"
    version="1.0">
   <defs
@@ -146,59 +146,55 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
-    <g
-       id="g4737"
-       transform="matrix(1.056133,0,0,1.056133,-26.61768,-24.50961)">
-      <text
-         sodipodi:linespacing="125%"
-         id="text1884"
-         y="52.347137"
-         x="82.468712"
-         style="font-size:12.96141624px;font-style:normal;font-weight:normal;line-height:125%;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-         xml:space="preserve"><tspan
-           style="font-size:10.80117989px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Courier New"
-           y="52.347137"
-           x="82.468712"
-           id="tspan1886"
-           sodipodi:role="line">Flow</tspan></text>
-      <path
-         id="path3838"
-         d="M 79.144993,23.706919 L 79.144993,98.454973"
-         style="fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
-      <path
-         transform="matrix(1.080118,0,0,1.080118,-25.71565,-49.18081)"
-         d="M 102.26186 101.37398 A 5.1837811 5.1837811 0 1 1  91.894298,101.37398 A 5.1837811 5.1837811 0 1 1  102.26186 101.37398 z"
-         sodipodi:ry="5.1837811"
-         sodipodi:rx="5.1837811"
-         sodipodi:cy="101.37398"
-         sodipodi:cx="97.078079"
-         id="path1878"
-         style="fill:red;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         sodipodi:type="arc" />
-      <text
-         id="text3840"
-         y="37.474609"
-         x="24.622889"
-         style="font-size:12px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-         xml:space="preserve"><tspan
-           y="37.474609"
-           x="24.622889"
-           id="tspan3842"
-           sodipodi:role="line">Object 1</tspan></text>
-      <text
-         id="text3844"
-         y="37.474609"
-         x="92.555679"
-         style="font-size:12px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-         xml:space="preserve"><tspan
-           y="37.474609"
-           x="92.555679"
-           id="tspan3846"
-           sodipodi:role="line">Object 2</tspan></text>
-      <path
-         id="path3850"
-         d="M 58.919054,60.201557 L 101.34957,60.201557"
-         style="fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend);stroke-opacity:1" />
-    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:13.68897915px;font-style:normal;font-weight:normal;line-height:125%;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       x="22.886374"
+       y="31.655317"
+       id="text1884"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan1886"
+         x="22.886374"
+         y="31.655317"
+         style="font-size:11.40748215px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Courier New">CheckPoint</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:black;stroke-width:1.05613303px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 56.969959,0.52804948 L 56.969959,79.471936"
+       id="path3838" />
+    <path
+       sodipodi:type="arc"
+       style="fill:red;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       id="path1878"
+       sodipodi:cx="97.078079"
+       sodipodi:cy="101.37398"
+       sodipodi:rx="5.1837811"
+       sodipodi:ry="5.1837811"
+       d="M 102.26186 101.37398 A 5.1837811 5.1837811 0 1 1  91.894298,101.37398 A 5.1837811 5.1837811 0 1 1  102.26186 101.37398 z"
+       transform="matrix(1.140748,0,0,1.140748,-53.77683,-76.45109)" />
+    <text
+       xml:space="preserve"
+       style="font-size:12.67359638px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       x="-0.61263484"
+       y="15.068562"
+       id="text3840"><tspan
+         sodipodi:role="line"
+         id="tspan3842"
+         x="-0.61263484"
+         y="15.068562">Object 1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12.67359638px;font-style:normal;font-weight:normal;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       x="71.13343"
+       y="15.068562"
+       id="text3844"><tspan
+         sodipodi:role="line"
+         id="tspan3846"
+         x="71.13343"
+         y="15.068562">Object 2</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:black;stroke-width:1.05613303px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend);stroke-opacity:1"
+       d="M 35.608677,39.071241 L 80.420945,39.071241"
+       id="path3850" />
   </g>
 </svg>
