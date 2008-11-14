@@ -503,13 +503,13 @@ public
     constant Temperature T_ref = 298.15;
   algorithm 
     if n == Methanol and p == GasPhase then
-      H := h_ch3oh_gas(T) - h_ch3oh_gas(T_ref) + dhf(Methanol, GasPhase) - dhf(Methanol, LiquidPhase);
+      H := h_ch3oh_gas(T) - h_ch3oh_gas(T_ref);
     elseif n == Methanol and p == LiquidPhase then
-      H := h_ch3oh_liq(T) - h_ch3oh_liq(T_ref);
+      H := h_ch3oh_liq(T) - h_ch3oh_liq(T_ref) + dhf(Methanol, LiquidPhase) - dhf(Methanol, GasPhase);
     elseif n == Water and p == GasPhase then
-      H := h_h2o_gas(T) - h_h2o_gas(T_ref) + dhf(Water, GasPhase) - dhf(Water, LiquidPhase);
+      H := h_h2o_gas(T) - h_h2o_gas(T_ref);
     elseif n == Water and p == LiquidPhase then
-      H := ShomateEnthalpy(T, ShomateH2O) - ShomateEnthalpy(T_ref, ShomateH2O);
+      H := ShomateEnthalpy(T, ShomateH2O) - ShomateEnthalpy(T_ref, ShomateH2O) + dhf(Water, LiquidPhase) - dhf(Water, GasPhase);
     elseif n == Oxygen and p == GasPhase then
       H := ShomateEnthalpy(T, ShomateO2) - ShomateEnthalpy(T_ref, ShomateO2);
     elseif n == CarbonDioxide and p == GasPhase then
@@ -521,10 +521,10 @@ public
     end if;
     annotation(derivative=dh_dT, Documentation(info="<html>
 <p>Returns the enthalpy of the given component at the given temperature and in
-the given phase; the reference state is always 298.15 K.</p>
-<p>Water and methanol are assumed to be in liquid phase at the reference state;
-when asking their enthalpy in gas phase, the evaporation enthalpy will be added
-to the result.</p>
+the given phase; the reference state is always 298.15 K in gas phase.</p>
+<p>Water and methanol are also assumed to be in gas phase at the reference state;
+when asking their enthalpy in liquid phase, the evaporation enthalpy will be
+subtracted from the result.</p>
 </html>"));
     annotation (Documentation(info="<html>
 <p>Returns the enthalpy of the given component at the given temperature and in
@@ -609,7 +609,11 @@ public
       assert(false, "Equilibrium constant of species "+speciesName(n)+" requested.");
     end if;
     
-    annotation(derivative=dK_dT);
+    annotation(derivative=dK_dT, Documentation(info="<html>
+<p>This function provides the chemical-equilibrium y/x ratio of liquid versus gaseous
+molar fraction.</p>
+<p>Note that this function assumes environmental pressure (101325 Pa).</p>
+</html>"));
     annotation (Documentation(info="<html>
 <p>This function provides the chemical-equilibrium x/y ratio of liquid versus gaseous
 molar fraction.</p>

@@ -68,9 +68,50 @@ $\tilde a$ \> Intensive volume unit \> e.g. J/m\textsuperscript{3}
 
 
 \section{Thermodynamics Library}
-The thermodynamics library provides a number of properties necessary for the
-simulation environment. The library is placed in the Modelica package
-\texttt{Thermo}, and comprises constants and functions for:
+The thermodynamics library implemented in package \texttt{Thermo} provides
+utility variables and functions necessary for the evelopment of the model.
+
+\subsection{Variables}
+Species are coded as integers, since enumerations are not yet supported neither
+in Dymola nor OpenModelica; variables with their name are written with the first
+letter capitalised and, if the name contains more words, using the so-called
+``CamelCase'':
+
+\begin{itemize}
+\item \texttt{Methanol}=1,
+\item \texttt{Water}=2,
+\item \texttt{Oxygen}=3,
+\item \texttt{CarbonDioxide}=4,
+\item \texttt{Nitrogen}=5.
+\end{itemize}
+
+For convenience, three arrays are also provided to group these species in the
+global set, the set of condensable species and the set of non-condensable
+species:
+
+\begin{itemize}
+\item \texttt{AllSpecies}, all species from methanol to nitrogen;
+\item \texttt{LiquidSpecies}, methanol and water;
+\item \texttt{GasSpecies}, oxygen, nitrogen and carbon dioxide.
+\end{itemize}
+
+To identify phases, two variables are introduced for liquid and gas phase, along
+with an array grouping them:
+
+\begin{itemize}
+\item \texttt{LiquidPhase}=1001;
+\item \texttt{GasPhase}=1002;
+\item \texttt{AllPhases}, an array of the previous variables.
+\end{itemize}
+
+Note that the phase variables are numbered so that using them instead of species
+variables will immediately cause errors.
+
+These variables must be imported in functions using them, with declarations such
+as \texttt{import Thermo.Nitrogen}.
+
+\subsection{Functions}
+The \texttt{Thermo} library contains functions for:
 
 \begin{itemize}
 \item molar mass $M$,
@@ -81,30 +122,15 @@ simulation environment. The library is placed in the Modelica package
 \item density $\rho(T)$.
 \end{itemize}
 
-Where not otherwise specified, the functions are provided for five components,
-identified by the numbers:
+Many of these require arguments for species and phase as appropriate. For the
+case of enthalpy, the functions will always use, for each species, its enthalpy
+at 298.15\,K in gas phase as a reference.
 
-\begin{enumerate}
-\item methanol,
-\item water,
-\item oxygen,
-\item carbon dioxide,
-\item nitrogen.
-\end{enumerate}
-
-Some functions are also applicable for different phases; it is assumed that only
-methanol and water can be in liquid phase. Phases are identified as follows:
-
-\begin{enumerate}
-\item gaseous,
-\item liquid.
-\end{enumerate}
-
-The code uses \emph{pseudo-enumerations}, that is there are a number of integer
-variables named after the components (Methanol, Water, . . . ) with the appro-
-priate name. These must be imported in functions using them, as in import
-Thermo.Nitrogen.
-
+The package also provides a function (\texttt{rachfordRice}) to find out the
+vaporisation ratio of a mixture of methanol, water and non-condensable gases at
+a certain temperature. This function must be rewritten (and will be considerably
+more difficult) should carbon dioxide be modelled so that it can be present in
+liquid phase.
 
 \section{Tanks and Flows}
 The bulk of the model is done by means of \emph{continuously stirred tanks}.
