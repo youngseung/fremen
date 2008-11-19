@@ -105,6 +105,8 @@ anodic loop is a good tool to reduce the temperature. However, if temperature
 must be raised, fuel feed may be used to increase concentration and thereby
 methanol crossover.
 
+
+
 \pagebreak
 \section{Operational Envelope for Water Recovery}
 Air entering the cathode is assumed to be at environmental temperature
@@ -129,7 +131,7 @@ The produced water will be:
 \begin{equation}
 \frac{\dot n_\HHO}{A} = \left( \overbrace{2}^\text{drag} +
 \overbrace{\frac{3}{6}}^\text{reaction} \right) \frac{i}{F} +
-\overbrace{2\,\frac{D_M}{d_M}\,c_{ac}}^\text{crossover}
+2\,\overbrace{\frac{D_M}{d_M}\,c_{ac}}^\text{crossover}
 \end{equation}
 
 Assuming that the catalyst-layer methanol concentration depends on current and
@@ -145,26 +147,27 @@ We can express $c_{ac}$ as:
 c_{ac} = \frac{k_a\,c_a - \frac{i}{6\,F}}{k_a+\frac{D_M}{d_M}}
 = \alpha \, c_a - \beta \,i
 \end{equation}
-
 where we used $\alpha \in [0,1]$ and $\beta>0$ to illustrate that catalyst-layer
 concentration depends essentially on current and bulk concentration.
 The expression for water production is then:
 
 \begin{equation}
 \boxed{
-\frac{\dot n_\HHO}{A} = \left(15 - \frac{\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}}
-\right) \frac{i}{6\,F} +
-2\,\frac{k_a\,\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}} \, c_a
+\frac{\dot n_\HHO}{A} = \overbrace{\left(15 - \frac{2\,\frac{D_M}{d_M}}{k_a+
+\frac{D_M}{d_M}}\right)}^{\in~(13,15)} \frac{i}{6\,F} +
+2\,\overbrace{\frac{k_a\,\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}}}^{i_c^0} \, c_a
 }
 \end{equation}
+where $i_c^0$ is the ``baseline'' methanol crossover current density, which
+occurs at zero current.
 
-So the two terms that influence water production are current density and
-methanol concentration in the anode bulk. Note, though, that $D_M$ may display
-some dependence on temperature.
+The two terms that influence water production are current density and
+methanol concentration in the anode bulk. Note, though, that $D_M$ and $k_a$ may
+display some dependence on temperature.
 
 The water lost in the anode is:
 \begin{equation}
-\frac{\dot n_\HHO}{A} = \left( \overbrace{2}^\text{crossover} +
+\frac{\dot n_\HHO}{A} = \left( \overbrace{2}^\text{drag} +
 \overbrace{\frac{1}{6}}^\text{reaction} \right) \frac{i}{F}=
 \frac{13}{6}\frac{i}{F} = 2.166 \frac{i}{F}
 \end{equation}
@@ -237,7 +240,7 @@ naturally on the entering air:
 \overbrace{\frac{3}{6}\frac{i}{F}}^\text{Cathodic reaction}
 + \overbrace{2\,\frac{D_M}{d_M}\,c_{ac}}^\text{Methanol crossover}\\
 & = \left( 1.5\,\lambda \frac{x_\HHO^0}{x_\OO^0} + 15
-- \frac{\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}} \right)\frac{i}{6\,F}
+- \frac{2\,\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}} \right)\frac{i}{6\,F}
 + 2\,\frac{k_a\,\frac{D_M}{d_M}}{k_a+\frac{D_M}{d_M}}\, c_a
 \end{aligned}
 \end{equation}
