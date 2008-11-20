@@ -1,6 +1,6 @@
 
 
-package System 
+package Flow 
   
 type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s") 
     annotation (Documentation(info="<html>
@@ -518,5 +518,5 @@ in liquid phase; it takes their density from the Thermo library.</p>
     end SeparatorTest;
   end Test;
   
-end System;
+end Flow;
 

@@ -299,6 +299,58 @@ functions.</p>
     
   end ExtensiveBalances;
   
+  partial model BasicTank "A generic stirred tank with an undefined shape." 
+    extends Equilibrium(T(start=T_env,fixed=true));
+    extends ExtensiveBalances(m=1);
+    
+    import Modelica.SIunits.InternalEnergy;
+    import Modelica.SIunits.Pressure;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.HeatCapacity;
+    import Modelica.SIunits.CoefficientOfHeatTransfer;
+    import Modelica.SIunits.Area;
+    
+    import Thermo.MolarEnthalpy;
+    import Thermo.h;
+    import Thermo.AllSpecies;
+    import Thermo.LiquidSpecies;
+    import Thermo.LiquidPhase;
+    import Thermo.GasPhase;
+    
+    outer Temperature T_env "Environment temperature.";
+    outer Pressure p_env "Environment pressure.";
+    
+    parameter String name = "Unnamed stirred tank" "Tank identifier.";
+    parameter HeatCapacity Cp = 100 "Heat capacity of tank (glass, lid, ...).";
+    parameter CoefficientOfHeatTransfer k_h = 0.0 
+      "Default: perfect insulation.";
+    parameter Area A_sur = 1e-3 
+      "Surface area of contact between tank and environment";
+    
+    InternalEnergy tankSensibleHeat = Cp*(T-298.15) 
+      "The heat accumulated in the tank's solid parts, such as glass, lid, etc.";
+    InternalEnergy gasSpeciesEnergy = sum(h(T,i,GasPhase)*beta*sum(n)*y[i] for i in AllSpecies) 
+      "The internal energy of the gaseous species.";
+    InternalEnergy liquidSpeciesEnergy = sum(h(T,i,LiquidPhase)*(1-beta)*sum(n)*x[i] for i in LiquidSpecies) 
+      "The internal energy of the liquid species, including latent heat.";
+    
+  equation 
+    // Exchange of heat with the environment.
+    Q = A_sur * k_h * (T_env - T);
+    
+    // Allocation of internal energy. See each term for a description.
+    U = tankSensibleHeat + gasSpeciesEnergy + liquidSpeciesEnergy;
+    
+    n = z * sum(n);
+    
+    annotation (Documentation(info="<html>
+<p>This class inherits from the <tt>Equilibrium</tt> and <tt>ExtensiveBalances</tt>
+classes, and combines them adding the constraint of a fixed volume.</p>
+<p>The number of flows <em>m</em> cannot be set to zero; if you need such a
+isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt>.</p>
+</html>"), Icon);
+  end BasicTank;
+
   partial model StirredTank "A generic stirred tank with an undefined shape." 
     extends Equilibrium(T(start=T_env,fixed=true));
     extends ExtensiveBalances(m=1);
@@ -326,7 +378,7 @@ functions.</p>
     outer Temperature T_env "Environment temperature.";
     outer Pressure p_env "Environment pressure.";
     
-    parameter String name = "Nameless" "Tank identifier.";
+    parameter String name = "Unnamed stirred tank" "Tank identifier.";
     parameter HeatCapacity Cp = 100 "Heat capacity of tank (glass, lid, ...).";
     parameter CoefficientOfHeatTransfer k_h = 0.0 
       "Default: perfect insulation.";
@@ -335,31 +387,31 @@ functions.</p>
     parameter Volume V = 1E-3 "Total volume of the tank.";
     
     AmountOfSubstance n_tot(min=0) = sum(n) "Total moles.";
-    AmountOfSubstance n_g_tot(min=0) = beta * n_tot "Total moles of gas.";
-    AmountOfSubstance n_l_tot(min=0) = (1-beta)*n_tot "Total moles of liquid.";
     
-    AmountOfSubstance[size(AllSpecies, 1)] n_l(each min=0) 
-      "The moles of species in liquid phase";
-    AmountOfSubstance[size(AllSpecies, 1)] n_g(each min=0) 
-      "The moles of species in gas phase";
+    AmountOfSubstance n_g_tot(min=0) = beta * n_tot "Total moles of gas.";
+    AmountOfSubstance n_l_tot(min=0) = (1-beta) * n_tot 
+      "Total moles of liquid.";
+    
+    AmountOfSubstance[size(AllSpecies,1)] n_l = x * n_l_tot;
+    AmountOfSubstance[size(AllSpecies,1)] n_g = y * n_g_tot;
     
     MolarEnthalpy h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot 
       "Overall molar enthalpy in the tank.";
-    MolarEnthalpy h_l = (sum(h(T,i,LiquidPhase)*x[i] for i in LiquidSpecies)) 
+    MolarEnthalpy h_l = sum(h(T,i,LiquidPhase)*x[i] for i in LiquidSpecies) 
       "The molar enthalpy of the solution in liquid phase.";
-    MolarEnthalpy h_g = (sum(h(T,i,GasPhase)*y[i] for i in AllSpecies) + sum((dhf(i,GasPhase)-dhf(i,LiquidPhase))*y[i] for i in LiquidSpecies)) 
+    MolarEnthalpy h_g = sum(h(T,i,GasPhase)*y[i] for i in AllSpecies) 
       "The molar enthalpy of the mixture in gas phase.";
     
     InternalEnergy tankSensibleHeat = Cp*(T-298.15) 
       "The heat accumulated in the tank's solid parts, such as glass, lid, etc.";
-    InternalEnergy speciesSensibleHeat = sum(h(T,i,GasPhase)*n_g[i] for i in AllSpecies) + sum(h(T,i,LiquidPhase) * n_l[i] for i in LiquidSpecies) 
-      "The sensible heat accumulated in the species currently present in the tank.";
-    InternalEnergy latentHeat = sum((dhf(i,GasPhase) - dhf(i,LiquidPhase)) * n_g[i] for i in LiquidSpecies) 
-      "The heat used to bring the condensable species from their reference liquid state into gas phase.";
+    InternalEnergy gasSpeciesEnergy = sum(h(T,i,GasPhase)*beta*n_tot*y[i] for i in AllSpecies) 
+      "The internal energy of the gaseous species.";
+    InternalEnergy liquidSpeciesEnergy = sum(h(T,i,LiquidPhase)*(1-beta)*n_tot*x[i] for i in LiquidSpecies) 
+      "The internal energy of the liquid species, including latent heat.";
     
-    Volume V_l(min=0) = sum(n_l[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) 
+    Volume V_l(min=0) = sum((1-beta)*n_tot*x[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) 
       "Amount of liquid volume.";
-    Volume V_g(min=0) = sum(n_g[i]*mw(i)/rho(T,i,GasPhase) for i in AllSpecies) 
+    Volume V_g(min=0) = sum(beta*n_tot*y[i]*mw(i)/rho(T,i,GasPhase) for i in AllSpecies) 
       "Amount of gaseous volume.";
     
   equation 
@@ -367,32 +419,18 @@ functions.</p>
     Q = A_sur * k_h * (T_env - T);
     
     // Allocation of internal energy. See each term for a description.
-    U = tankSensibleHeat + speciesSensibleHeat + latentHeat;
+    U = tankSensibleHeat + gasSpeciesEnergy + liquidSpeciesEnergy;
     
     // Sum of gas and liquid volumes is constant and equal to the total volume.
     V = V_l + V_g;
     
-    // Relation between fractions in phases and total moles.
-    n = n_g + n_l;
-    
-    n = n_tot * z;
-    n_g = n_g_tot * y;
+    n = z * sum(n);
     
     annotation (Documentation(info="<html>
-<p>This class defines the general properties of all stirred tanks, that is a
-single representative temperature, an array of amounts of substance with five
-elements, the flows with which the tank is connected to other ones.</p>
-<p>This class models:
-<ul>
-<li>Mass balance (set of differential equations);</li>
-<li>Heat balance (differential equation);</li>
-<li>Gas-liquid equilibrium (set of algebraic equations);</li>
-<li>Sanity checks (various conditional statements).</li>
-</ul>
-</p>
+<p>This class inherits from the <tt>Equilibrium</tt> and <tt>ExtensiveBalances</tt>
+classes, and combines them adding the constraint of a fixed volume.</p>
 <p>The number of flows <em>m</em> cannot be set to zero; if you need such a
-isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 
-zeros(5)</tt>.</p>
+isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt>.</p>
 </html>"), Icon);
   end StirredTank;
   
@@ -1124,6 +1162,21 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
     end TestEquilibrium;
     
+    model TestExtensiveBalances 
+      extends ExtensiveBalances(m=1);
+      
+    equation 
+      for i in 1:m loop
+        flows[i].h_local = 0;
+        flows[i].z_local = 0*flows[i].z_local;
+        flows[i].z = ones(size(flows[i].z,1))/size(flows[i].z,1);
+        flows[i].H = 1;
+        flows[i].F = 1;
+      end for;
+      Q = -0.5;
+      
+    end TestExtensiveBalances;
+    
     model TestIsothermalTank 
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
@@ -1155,7 +1208,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
     end TestIsothermalTank;
     
-    model TestTank "Test for the generic stirred tank" 
+    model TestStirredTank "Test for the generic stirred tank" 
       
       inner parameter Real RH_env = 60;
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
@@ -1181,11 +1234,10 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
     initial equation 
       tank.z[1] = 0.;
-      tank.z[2] = 0.8;
+      tank.z[2] = 0.99;
       tank.z[3] / 0.21 = tank.z[5] / 0.79;
-      tank.z[4] = 0;
       
-    end TestTank;
+    end TestStirredTank;
     
     model TestFuelTank "A simple test for the FuelTank class" 
       
