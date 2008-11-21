@@ -9,7 +9,7 @@ type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s")
   
   connector FlowPort "What passes through a control surface" 
     
-    flow MolarFlowRate[size(Thermo.AllSpecies,1)] n(each min=0);
+    flow MolarFlowRate[size(Thermo.AllSpecies,1)] n;
     flow Modelica.SIunits.EnthalpyFlowRate H;
     
     annotation (Documentation(info="<html>
@@ -74,13 +74,15 @@ either tank object (because it lacks the values for the other one).</p>
     import Thermo.GasSpecies;
     import Thermo.Water;
     import Thermo.Methanol;
+    import Thermo.GasPhase;
+    import Thermo.LiquidPhase;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.MoleFraction;
     
     outer parameter Temperature T_env;
     
     parameter Modelica.SIunits.Concentration C = 1000 
-      "Concentration of methanol in water, mol/m.";
+      "Concentration of methanol in water, mol/m³.";
     parameter Temperature T = T_env "Source temperature.";
     
     MoleFraction x_ch3oh "Molar fraction of methanol.";
@@ -90,14 +92,14 @@ either tank object (because it lacks the values for the other one).</p>
       annotation (extent=[-20,-20; 20,20]);
   equation 
     assert(C >= 0, "Negative concentration given in MethanolSolution object.");
-    assert(C <= rho(T,1,2)/mw(1), "Methanol concentration over limit (" + String(mw(1)/rho(T,1,2)) + " mol/m).");
+    assert(C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m³).");
     
-    C = x_ch3oh / (x_ch3oh*mw(1)/rho(T,1,2) + x_h2o*mw(2)/rho(T,2,2));
+    C = x_ch3oh / (x_ch3oh*mw(Methanol)/rho(T,Methanol,LiquidPhase) + x_h2o*mw(Water)/rho(T,Water,LiquidPhase));
     x_ch3oh + x_h2o = 1.0;
     
     c.n[GasSpecies] = zeros(size(GasSpecies, 1));
     c.n[Methanol] / x_ch3oh = c.n[Water] / x_h2o;
-    c.H = c.n[Methanol]*h(T,1,2) + c.n[Water]*h(T,2,2);
+    c.H = c.n[Methanol]*h(T,Methanol,LiquidPhase) + c.n[Water]*h(T,Water,LiquidPhase);
     
     annotation (Icon(Ellipse(extent=[-100,100; 100,-100],
                                                       style(
@@ -147,7 +149,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     y_h2o + y_o2 + y_n2 = 1.0; // Fractions sum to 1.
     y_h2o = RH_env/100 * p_vap(T_env, 2)/p_env; // Humidity of air
     
-    h_h2o = h(T_env, Water, GasPhase) + dhf(2, GasPhase) - dhf(2,LiquidPhase);
+    h_h2o = h(T_env, Water, GasPhase);
     h_o2  = h(T_env, Oxygen, GasPhase);
     h_n2  = h(T_env, Nitrogen, GasPhase);
     h_air = h_h2o*y_h2o + h_o2*y_o2 + h_n2*y_n2;
@@ -321,35 +323,25 @@ in liquid phase; it takes their density from the Thermo library.</p>
       FlowPort inlet annotation (extent=[-110,-10; -90,10]);
       FlowPort outlet 
                      annotation (extent=[90,-10; 110,10]);
+      TemperaturePort Tm                annotation (extent=[-10,90; 10,110]);
+    
       Modelica.SIunits.Temperature T(start=298.15) = Tm.T;
     
       outer Modelica.SIunits.Pressure p_env;
     
-      MolarFlowRate[k] vapour(each min=0);
-      MolarFlowRate[k] condensate(each min=0);
-      TemperaturePort Tm                annotation (extent=[-10,90; 10,110]);
-  protected 
-      constant Integer k = size(LiquidSpecies,1);
+      MolarFlowRate[size(LiquidSpecies,1)] vapour(each min=0);
+      MolarFlowRate[size(LiquidSpecies,1)] condensate(each min=0);
+    
+      Real beta "The vapour fraction";
+    
+      Real z_m = inlet.n[1]/sum(inlet.n);
+      Real z_w = inlet.n[2]/sum(inlet.n);
     
     equation 
+      beta = Thermo.rachfordRice(z_m, z_w, T);
       vapour + condensate = inlet.n[LiquidSpecies];
-    
-      if sum(inlet.n[GasSpecies]) <= 0.0 and sum( p_vap(T, i)*inlet.n[i] for i in LiquidSpecies)  < p_env*sum(inlet.n) then
-        /* There are no gas species and the liquids' vapour pressure cannot sustain
-     * a gas phase (their sum is less than the environment pressure).
-     * Therefore, there is only liquid and no gas phase.
-     */
-        vapour = zeros(k);
-      elseif max(inlet.n[i]/p_vap(T,i) for i in LiquidSpecies)  < sum(inlet.n)/p_env then
-        /* No species that can be present in liquid phase has a gas fraction sufficient for
-     * condensation. Therefore, there is only gas phase.
-     */
-        condensate = zeros(k);
-      else
-        // Gas-liquid equilibrium (Raoult's law): y * p_env = x * p_vap
-        // FIXME not enough! I must find a way to solve this correctly. I must select the right solution out of n-1.
-        vapour / (sum(inlet.n[GasSpecies]) + sum(vapour)) * p_env = { condensate[i]/sum(condensate)*p_vap(T,i) for i in LiquidSpecies};
-      end if;
+    //  condensate = { inlet.n[i]*(1-beta) / ( 1 + beta*(p_vap(T,i)/p_env - 1) ) for i in LiquidSpecies};
+      vapour = { inlet.n[i]*beta*p_vap(T,i)/p_env / (1+beta*(p_vap(T,i)/p_env -1)) for i in LiquidSpecies};
     
       // Note that this works only because LiquidSpecies is a vector starting with 1, otherwise the second term would not work.
       inlet.H = sum( inlet.n[i] * h(T, i, GasPhase) for i in GasSpecies) +
@@ -467,6 +459,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             rgbfillColor={255,255,255},
             fillPattern=1))));
   equation 
+    // TODO: I might just have a mass/energy balance here (the only one)
     connect(port1, port3) annotation (points=[-80,10; 0,10; 0,80; 5.55112e-16,
           80], style(pattern=0));
     connect(port1, port2) annotation (points=[-80,10; 0,10; 0,-80; 5.55112e-16,
@@ -477,26 +470,27 @@ in liquid phase; it takes their density from the Thermo library.</p>
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
       
-      FlowTemperature fc              annotation (extent=[-20,0; 0,20]);
+      FlowTemperature flowTemp        annotation (extent=[-20,0; 0,20]);
       
       annotation (Diagram);
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
+      inner Real RH_env = time;
       
       EnvironmentPort environmentPort annotation (extent=[-50,26; -30,46]);
       SinkPort sinkPort annotation (extent=[40,0; 60,20]);
     equation 
-      sum(fc.inlet.n)  = 1;
+      sum(flowTemp.inlet.n) = 1;
       
-      connect(sinkPort.flowPort, fc.outlet) 
+      connect(sinkPort.flowPort, flowTemp.outlet) 
         annotation (points=[41,10; 5.55112e-16,10], style(pattern=0));
-      connect(environmentPort.c, fc.inlet) annotation (points=[-49,31; -63.5,31;
+      connect(environmentPort.c, flowTemp.inlet) 
+                                           annotation (points=[-49,31; -63.5,31;
             -63.5,10; -20,10], style(pattern=0));
     end FlowTemperatureTest;
     
     model SeparatorTest 
-      Separator separator annotation (extent=[-26,-10; 22,40]);
+      Separator separator annotation (extent=[-22,-12; 26,38]);
       SinkPort liquidSink 
                         annotation (extent=[62,-22; 82,-2]);
       annotation (Diagram);
@@ -506,15 +500,20 @@ in liquid phase; it takes their density from the Thermo library.</p>
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
+      MethanolSolution methanolSolution annotation (extent=[-78,8; -68,18]);
     equation 
       connect(liquidSink.flowPort, separator.liquidOutlet) 
-        annotation (points=[63,-12; 42,-12; 42,5; 14.8,5], style(pattern=0));
+        annotation (points=[63,-12; 42,-12; 42,3; 18.8,3], style(pattern=0));
       connect(gasSink.flowPort, separator.gasOutlet) 
-        annotation (points=[63,44; 40,44; 40,25; 14.8,25], style(pattern=0));
-      connect(environmentPort.c, separator.inlet) annotation (points=[-51,51;
-            -51,14.5; -26,14.5; -26,15], style(pattern=0));
+        annotation (points=[63,44; 40,44; 40,23; 18.8,23], style(pattern=0));
+      connect(environmentPort.c, separator.inlet) annotation (points=[-51,51; 
+            -51,14.5; -22,14.5; -22,13], style(pattern=0));
+      connect(methanolSolution.c, separator.inlet)
+        annotation (points=[-73,13; -22,13], style(pattern=0));
       
-      sum( environmentPort.c.n)  = -1;
+      sum(environmentPort.c.n) = -1;
+      sum(methanolSolution.c.n) = -2;
+      
     end SeparatorTest;
   end Test;
   
