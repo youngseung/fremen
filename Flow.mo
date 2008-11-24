@@ -527,14 +527,14 @@ in liquid phase; it takes their density from the Thermo library.</p>
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
           -58,26; -58,10],     style(
         pattern=0,
         thickness=4,
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
           60,26; 86,26],        style(
         pattern=0,
         thickness=4,
@@ -651,6 +651,76 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
   end Mixer;
   
+  model FuelCell "A DMFC fuel cell" 
+    import Modelica.Constants.R;
+    import F = Modelica.SIunits.FaradayConstant;
+    import Modelica.SIunits.Length;
+    import Modelica.SIunits.DiffusionCoefficient;
+    import Modelica.SIunits.Velocity;
+    import Modelica.SIunits.Area;
+    import Modelica.SIunits.Current;
+    import Modelica.SIunits.CurrentDensity;
+    import Modelica.SIunits.Concentration;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.Voltage;
+    import Modelica.SIunits.PartialPressure;
+    import Modelica.SIunits.Resistance;
+    
+    parameter Length d_M "Membrane thickness";
+    parameter DiffusionCoefficient D_M 
+      "Methanol diffusion coefficient in the membrane.";
+    parameter Velocity k_ad "Mass transport coefficient";
+    parameter Real k_drag "Drag factor coefficient";
+    parameter Area A "Membrane area";
+    parameter Real alpha_a = 0.5 "Anodic simmetry factor";
+    parameter Real alpha_c = 0.5 "Cathodic simmetry factor";
+    parameter Real k_a "Anodic reaction constant";
+    parameter Real k_c "Cathodic reaction constant";
+    parameter Resistance R "Ohmic resistance to current";
+    
+    FlowPort c_inlet "The cathode flow's inlet" 
+      annotation (extent=[-110,20; -90,40]);
+    FlowPort c_outlet "The cathode flow's outlet" 
+      annotation (extent=[90,20; 110,40]);
+    FlowPort a_inlet "The anode flow's inlet" 
+      annotation (extent=[-110,-40; -90,-20]);
+    FlowPort a_outlet "The cathode flow's outlet" 
+      annotation (extent=[90,-40; 110,-20]);
+    TemperaturePort Tm "Cell temperature connector" 
+                                          annotation (extent=[-10,-10; 10,10]);
+    Temperature T = Tm.T "Cell temperature, a helper variable";
+    
+    Current I = i * A "The overall cell current";
+    Voltage V = E_rev - eta_a - eta_c - R*I "Cell voltage";
+    CurrentDensity i "Current density due to reaction";
+    Voltage eta_a "Anodic overvoltage";
+    Voltage eta_c "Cathodic overvoltage";
+    Voltage E_rev "Reversible reaction potential";
+    
+    Concentration c_a "Anodic methanol concentration";
+    Concentration c_ac "Catalyst-layer anodic methanol concentration";
+    PartialPressure p_o2 "Oxygen cathodic partial pressure";
+    
+  // TODO: enforce same temperature on both sides through heat channel
+  // TODO: set up internal sources and sinks
+  equation 
+    // Methanol transport: binds c_a, c_ac and i.
+    k_ad * (c_a-c_ac) = D_M/d_M * c_ac + i/(6*F);
+    
+    annotation (Icon(Rectangle(extent=[-100,60; 100,0], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=47,
+            rgbfillColor={255,170,85})), Rectangle(extent=[-100,0; 100,-60],
+            style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=71,
+            rgbfillColor={85,170,255}))));
+  end FuelCell;
+
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
       
@@ -750,7 +820,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
     equation 
       
       annotation (Diagram);
-      connect(fuelTank.c, mixer.inlet3) annotation (points=[10,-30; -10,-30; 
+      connect(fuelTank.c, mixer.inlet3) annotation (points=[10,-30; -10,-30;
             -10,2], style(
           pattern=0,
           thickness=2,
@@ -776,9 +846,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       sum(anodicLoop.c.n) = -1;
       sum(condenser.c.n) = -0.4;
       sum(mixer.outlet.n) = -1.5;
-      connect(flowTemperature.outlet, sinkPort.flowPort)
+      connect(flowTemperature.outlet, sinkPort.flowPort) 
         annotation (points=[-44,-16; -27.6,-16], style(thickness=2));
-      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10; 
+      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
             -72,10; -72,-16; -64,-16], style(pattern=0, thickness=2));
     end MixerTest;
   end Test;
