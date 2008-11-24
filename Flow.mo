@@ -131,17 +131,17 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     c.H = c.n[Methanol]*h(T_env,Methanol,LiquidPhase);
     
     annotation (Icon(Ellipse(extent=[-100,100; 100,-100], style(
-            color=67, 
-            rgbcolor={85,255,255}, 
-            thickness=4, 
-            fillColor=7, 
+            color=67,
+            rgbcolor={85,255,255},
+            thickness=4,
+            fillColor=7,
             rgbfillColor={255,255,255}))), Documentation(info="<html>
 <p>This item is a source for methanol-water solutions. Parameter <tt>C</tt>
 allows to set the concentration in moler per <em>cubic metre</em>; note that
 this is 1000 times the normal scale (1M = 1000 mol/m).</p>
 </html>"));
   end PureMethanolSource;
-
+  
   model EnvironmentPort "A flow connection to environment conditions." 
     import Thermo.dhf;
     import Thermo.h;
@@ -228,25 +228,25 @@ values from 0 (dry air) to 100 (saturated air).</p>
   model SinkPort 
     annotation (Diagram, Icon(
         Rectangle(extent=[-100,100; 100,-100], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
         Line(points=[-40,60; 60,60; 60,-60; -40,-60], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
         Rectangle(extent=[-60,0; 60,0], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
             fillPattern=1))));
     FlowPort flowPort annotation (extent=[-120,-30; -60,30]);
   end SinkPort;
@@ -361,7 +361,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
               fillPattern=1))));
     
       import Thermo.h;
-      import Thermo.dhf;
       import Thermo.p_vap;
       import Thermo.AllSpecies;
       import Thermo.GasSpecies;
@@ -397,7 +396,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       vapour = { inlet.n[i]*beta*p_vap(T,i)/p_env / (1+beta*(p_vap(T,i)/p_env -1)) for i in LiquidSpecies};
     
       // Note that this works only because LiquidSpecies is a vector starting with 1, otherwise the second term would not work.
-      inlet.H = sum( inlet.n[i] * h(T, i, GasPhase) for i in GasSpecies) +
+      inlet.H = sum( inlet.n[i]*h(T, i, GasPhase) for i in GasSpecies) +
                 sum( vapour[i]*h(T, i, GasPhase) + condensate[i]*h(T, i, LiquidPhase) for i in LiquidSpecies);
     
     end FlowTemperature;
@@ -445,7 +444,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=4))), Diagram);
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,40], style(pattern=0));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(pattern=0));
@@ -461,59 +460,58 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
   end Separator;
   
-  
   model Cooler "A simplified heat exchanger" 
     
     FlowPort inlet annotation (extent=[-100,-6; -88,6]);
     FlowPort outlet annotation (extent=[88,-6; 100,6]);
     annotation (Diagram, Icon(
         Rectangle(extent=[-90,20; 90,-20], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255})), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255})),
         Ellipse(extent=[-60,16; -28,-16], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255})), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255})),
         Ellipse(extent=[28,16; 60,-16], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255})), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255})),
         Rectangle(extent=[-44,18; -26,-18], style(
-            pattern=0, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
+            pattern=0,
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
         Rectangle(extent=[26,18; 44,-18], style(
-            pattern=0, 
-            thickness=4, 
-            fillColor=7, 
-            rgbfillColor={255,255,255}, 
-            fillPattern=1)), 
+            pattern=0,
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
         Line(points=[-44,16; 44,-16], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=0, 
-            rgbfillColor={0,0,0}, 
-            fillPattern=1)), 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=0,
+            rgbfillColor={0,0,0},
+            fillPattern=1)),
         Line(points=[-44,-16; 44,16], style(
-            color=0, 
-            rgbcolor={0,0,0}, 
-            thickness=4, 
-            fillColor=0, 
-            rgbfillColor={0,0,0}, 
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=0,
+            rgbfillColor={0,0,0},
             fillPattern=1))));
-    TemperaturePort inletTemperature "Temperature of the entering flow"
+    TemperaturePort inletTemperature "Temperature of the entering flow" 
       annotation (extent=[-92,20; -80,32]);
-    TemperaturePort outletTemperature "Temperature of the exiting flow"
+    TemperaturePort outletTemperature "Temperature of the exiting flow" 
       annotation (extent=[80,20; 92,32]);
     Modelica.SIunits.Heat coolingDuty "The heat removed by the cooler.";
   protected 
@@ -522,33 +520,33 @@ in liquid phase; it takes their density from the Thermo library.</p>
     SinkPort sinkPort annotation (extent=[6,-52; 26,-32]);
   equation 
     connect(flowTemperature_inlet.inlet, inlet) annotation (points=[-68,
-          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16], 
+          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16],
         style(
-        pattern=0, 
-        thickness=4, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        pattern=0,
+        thickness=4,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,
-          26; -58,26; -58,10], style(
-        pattern=0, 
-        thickness=4, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
+          -58,26; -58,10],     style(
+        pattern=0,
+        thickness=4,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[
-          60,10; 60,26; 86,26], style(
-        pattern=0, 
-        thickness=4, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
+          60,26; 86,26],        style(
+        pattern=0,
+        thickness=4,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
     connect(flowTemperature_outlet.outlet, outlet) annotation (points=[70,
           6.10623e-16; 80,6.10623e-16; 80,-2.22045e-16; 94,-2.22045e-16], style(
-        pattern=0, 
-        thickness=4, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        pattern=0,
+        thickness=4,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
     
     flowTemperature_inlet.outlet.n + flowTemperature_outlet.inlet.n = 0*flowTemperature_inlet.outlet.n;
@@ -557,21 +555,34 @@ in liquid phase; it takes their density from the Thermo library.</p>
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
       annotation (points=[-48,6.10623e-16; 1,6.10623e-16; 1,6.10623e-16; 50,
           6.10623e-16], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        pattern=0,
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points
-        =[7,-42; 0,-42; 0,6.10623e-16; -48,6.10623e-16], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+    connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points=[7,-42; 0,
+          -42; 0,6.10623e-16; -48,6.10623e-16],          style(
+        pattern=0,
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
   end Cooler;
-
+  
   model Mixer "A unit mixing four molar flows." 
+    
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.AmountOfSubstance;
+    import Thermo.LiquidPhase;
+    import Thermo.LiquidSpecies;
+    import Thermo.h;
+    
+    outer Temperature T_env "The environment temperature.";
+    
+    parameter Temperature T_0 = T_env "The initial temperature.";
+    parameter AmountOfSubstance n_MeOH_0 = 0.0 "Initial moles of methanol.";
+    parameter AmountOfSubstance n_H2O_0 = 10.0 "Initial moles of water.";
+    
     FlowPort outlet "The mixer's outlet" 
                           annotation (extent=[-90,-10; -70,10]);
     FlowPort inlet3 "The methanol-feed inlet" 
@@ -622,53 +633,24 @@ in liquid phase; it takes their density from the Thermo library.</p>
             rgbfillColor={255,255,255},
             fillPattern=1))));
     
-    Modelica.SIunits.AmountOfSubstance n[size(Thermo.AllSpecies,1)](start={10,0,0,0,0}) 
+    AmountOfSubstance n[size(Thermo.AllSpecies,1)](start={n_MeOH_0,n_H2O_0,0,0,0}) 
       "The molar holdup";
     Modelica.SIunits.InternalEnergy U(start=0) "The mixer's internal energy";
     
-  protected 
-    SinkPort localSink "What comes in here is integrated"
-      annotation (extent=[10,20; 30,40]);
   equation 
-    connect(inlet1, localSink.flowPort) annotation (points=[5.55112e-16,80; 
-          5.55112e-16,30; 11,30], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
-        fillPattern=1));
-    connect(inlet2, localSink.flowPort) annotation (points=[80,5.55112e-16; 0,
-          5.55112e-16; 0,30; 11,30], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
-        fillPattern=1));
-    connect(inlet3, localSink.flowPort) annotation (points=[5.55112e-16,-80; 0,
-          -26; 0,30; 11,30], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
-        fillPattern=1));
-    connect(outlet, localSink.flowPort) annotation (points=[-80,5.55112e-16; 0,
-          5.55112e-16; 0,30; 11,30], style(
-        pattern=0, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
-        fillPattern=1));
-    
-    der(U) = localSink.flowPort.H;
-    der(n) = localSink.flowPort.n;
+    der(U) = inlet1.H + inlet2.H + inlet3.H + outlet.H;
+    der(n) = inlet1.n + inlet2.n + inlet3.n + outlet.n;
     
     // Bind outlet's n to composition in holdup
-    outlet.n / sum(outlet.n) = n / sum(n); // FIXME one too much? Is one dependent?
+    outlet.n[1:end-1] / sum(outlet.n) = n[1:end-1] / sum(n);
     // Bind outlet's H to specific internal energy and outlet flow
     outlet.H / sum(outlet.n) = U / sum(n);
     
+  initial equation 
+    U = sum(n[i]*h(T_0,i,LiquidPhase) for i in LiquidSpecies);
+    
   end Mixer;
-
+  
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
       
@@ -719,7 +701,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       sum(methanolSolution.c.n) = -2;
       
     end SeparatorTest;
-
+    
     model CoolerTest 
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
@@ -732,82 +714,72 @@ in liquid phase; it takes their density from the Thermo library.</p>
       annotation (Diagram);
     equation 
       connect(sinkPort.flowPort, cooler.outlet) annotation (points=[60.4,
-            3.88578e-17; 38,3.88578e-17; 38,1.06581e-15; 18.68,1.06581e-15], 
+            3.88578e-17; 38,3.88578e-17; 38,1.06581e-15; 18.68,1.06581e-15],
           style(
-          thickness=2, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          thickness=2,
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
       connect(cooler.inlet, environmentPort.c) annotation (points=[-22.68,
             1.06581e-15; -76.05,1.06581e-15; -76.05,25; -59,25], style(
-          thickness=2, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          thickness=2,
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
       
       sum(environmentPort.c.n) = -1;
       cooler.outletTemperature.T = cooler.inletTemperature.T - time;
       
     end CoolerTest;
-
+    
     model MixerTest 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
+      
       Mixer mixer annotation (extent=[-20,0; 0,20]);
       MethanolSolution anodicLoop(T=330) "Solution coming from the anodic loop"
         annotation (extent=[-20,40; 0,60]);
-      PureMethanolSource fuelTank "Methanol from the fuel tank"
+      PureMethanolSource fuelTank "Methanol from the fuel tank" 
         annotation (extent=[0,-40; 20,-20]);
       MethanolSolution condenser(C=0, T=310) 
-        "Water recovered from the cathode outlet"
+        "Water recovered from the cathode outlet" 
         annotation (extent=[20,0; 40,20]);
-      FlowTemperature flowTemperature annotation (extent=[-50,0; -30,20]);
-      SinkPort sinkPort annotation (extent=[-52,-14; -44,-6]);
+      FlowTemperature flowTemperature annotation (extent=[-64,-26; -44,-6]);
+      SinkPort sinkPort annotation (extent=[-28,-20; -20,-12]);
     equation 
       
       annotation (Diagram);
       connect(fuelTank.c, mixer.inlet3) annotation (points=[10,-30; -10,-30; 
             -10,2], style(
-          pattern=0, 
-          thickness=2, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          pattern=0,
+          thickness=2,
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
-      connect(anodicLoop.c, mixer.inlet1) annotation (points=[-10,50; -10,18], 
+      connect(anodicLoop.c, mixer.inlet1) annotation (points=[-10,50; -10,18],
           style(
-          pattern=0, 
-          thickness=2, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          pattern=0,
+          thickness=2,
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
-      connect(condenser.c, mixer.inlet2) annotation (points=[30,10; -2,10], 
+      connect(condenser.c, mixer.inlet2) annotation (points=[30,10; -2,10],
           style(
-          pattern=0, 
-          thickness=2, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
-          fillPattern=1));
-      connect(flowTemperature.outlet, mixer.outlet) annotation (points=[-30,10; 
-            -18,10], style(
-          pattern=0, 
-          thickness=2, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
-          fillPattern=1));
-      connect(sinkPort.flowPort, flowTemperature.inlet) annotation (points=[
-            -51.6,-10; -62,-10; -62,10; -50,10], style(
-          pattern=0, 
-          thickness=2, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          pattern=0,
+          thickness=2,
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
       
       sum(fuelTank.c.n) = -0.1;
       sum(anodicLoop.c.n) = -1;
       sum(condenser.c.n) = -0.4;
-    // FIXME why is this unnecessary?
-    //  sum(mixer.outlet.n) = -1.3;
+      sum(mixer.outlet.n) = -1.5;
+      connect(flowTemperature.outlet, sinkPort.flowPort)
+        annotation (points=[-44,-16; -27.6,-16], style(thickness=2));
+      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10; 
+            -72,10; -72,-16; -64,-16], style(pattern=0, thickness=2));
     end MixerTest;
   end Test;
   
