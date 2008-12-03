@@ -152,7 +152,10 @@ this is 1000 times the normal scale (1M = 1000 mol/m³).</p>
   end MethanolSolution;
   
   model EnvironmentPort "A flow connection to environment conditions." 
-    import Thermo.dhf;
+    import Thermo.Water;
+    import Thermo.Oxygen;
+    import Thermo.Nitrogen;
+    import Thermo.GasPhase;
     import Thermo.h;
     import Thermo.p_vap;
     import Thermo.MolarEnthalpy;
@@ -177,11 +180,11 @@ this is 1000 times the normal scale (1M = 1000 mol/m³).</p>
   equation 
     z_o2 / 0.21 = z_n2 / 0.79;
     z_h2o + z_o2 + z_n2 = 1.0;
-    z_h2o = RH_env/100 * p_vap(T_env, 2)/p_env;
+    z_h2o = RH_env/100 * p_vap(T_env, Water)/p_env;
     
-    h_h2o = h(T_env, 2, 1) + dhf(2, 1) - dhf(2,2);
-    h_o2  = h(T_env, 3, 1);
-    h_n2  = h(T_env, 5, 1);
+    h_h2o = h(T_env, Water, GasPhase);
+    h_o2  = h(T_env, Oxygen, GasPhase);
+    h_n2  = h(T_env, Nitrogen, GasPhase);
     
     h_air = h_h2o*z_h2o + h_o2*z_o2 + h_n2*z_n2;
     
@@ -350,7 +353,7 @@ classes, and combines them adding the constraint of a fixed volume.</p>
 isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt>.</p>
 </html>"), Icon);
   end BasicTank;
-
+  
   partial model StirredTank "A generic stirred tank with an undefined shape." 
     extends Equilibrium(T(start=T_env,fixed=true));
     extends ExtensiveBalances(m=1);
@@ -367,7 +370,6 @@ isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt
     import Thermo.MolarEnthalpy;
     import Thermo.rho;
     import Thermo.h;
-    import Thermo.dhf;
     import Thermo.mw;
     import Thermo.AllSpecies;
     import Thermo.LiquidSpecies;
@@ -444,7 +446,6 @@ isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt
     import Thermo.rho;
     import Thermo.mw;
     import Thermo.h;
-    import Thermo.dhf;
     import Thermo.AllSpecies;
     import Thermo.LiquidSpecies;
     import Thermo.GasSpecies;
