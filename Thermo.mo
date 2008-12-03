@@ -503,28 +503,27 @@ public
     constant Temperature T_ref = 298.15;
   algorithm 
     if n == Methanol and p == GasPhase then
-      H := h_ch3oh_gas(T) - h_ch3oh_gas(T_ref);
+      H := h_ch3oh_gas(T) - h_ch3oh_gas(T_ref)  + dhf(Methanol, GasPhase);
     elseif n == Methanol and p == LiquidPhase then
-      H := h_ch3oh_liq(T) - h_ch3oh_liq(T_ref) + dhf(Methanol, LiquidPhase) - dhf(Methanol, GasPhase);
+      H := h_ch3oh_liq(T) - h_ch3oh_liq(T_ref) + dhf(Methanol, LiquidPhase);
     elseif n == Water and p == GasPhase then
-      H := h_h2o_gas(T) - h_h2o_gas(T_ref);
+      H := h_h2o_gas(T) - h_h2o_gas(T_ref) + dhf(Water, GasPhase);
     elseif n == Water and p == LiquidPhase then
-      H := ShomateEnthalpy(T, ShomateH2O) - ShomateEnthalpy(T_ref, ShomateH2O) + dhf(Water, LiquidPhase) - dhf(Water, GasPhase);
+      H := ShomateEnthalpy(T, ShomateH2O) - ShomateEnthalpy(T_ref, ShomateH2O) + dhf(Water, LiquidPhase);
     elseif n == Oxygen and p == GasPhase then
       H := ShomateEnthalpy(T, ShomateO2) - ShomateEnthalpy(T_ref, ShomateO2);
     elseif n == CarbonDioxide and p == GasPhase then
-      H := ShomateEnthalpy(T, ShomateCO2) - ShomateEnthalpy(T_ref, ShomateCO2);
+      H := ShomateEnthalpy(T, ShomateCO2) - ShomateEnthalpy(T_ref, ShomateCO2) + dhf(CarbonDioxide, GasPhase);
     elseif n == Nitrogen and p == GasPhase then
       H := ShomateEnthalpy(T, ShomateN2) - ShomateEnthalpy(T_ref, ShomateN2);
     else
       assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
     annotation(derivative=dh_dT, Documentation(info="<html>
-<p>Returns the enthalpy of the given component at the given temperature and in
-the given phase; the reference state is always 298.15 K in gas phase.</p>
-<p>Water and methanol are also assumed to be in gas phase at the reference state;
-when asking their enthalpy in liquid phase, the evaporation enthalpy will be
-subtracted from the result.</p>
+<p>Returns the specific enthalpy of the given component at the given temperature and 
+in the given phase; the reference state is always 298.15 K.</p><p>For non-elementary species,
+such as water or carbon dioxide, the specific enthalpy formation for the element in 
+its phase will be added.</p>
 </html>"));
     annotation (Documentation(info="<html>
 <p>Returns the enthalpy of the given component at the given temperature and in
