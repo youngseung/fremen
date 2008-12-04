@@ -741,7 +741,7 @@ public
     constant Real delta = b*b - 4*a*c;
     
   algorithm 
-    assert( C_methanol > C_water, "Water is more volatile than methanol: this should not be possible.");
+    assert( C_methanol > C_water, "Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
     
     if C_water >= 0.0 then // Too high temperature for condensation.
       beta := 1.0;
