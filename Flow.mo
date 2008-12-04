@@ -389,7 +389,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
     
@@ -446,7 +446,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=4))), Diagram);
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,40], style(pattern=0));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(pattern=0));
@@ -587,11 +587,11 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
     FlowPort outlet "The mixer's outlet" 
                           annotation (extent=[-90,-10; -70,10]);
-    FlowPort inlet3 "The methanol-feed inlet" 
+    FlowPort fuelInlet "The methanol-feed inlet" 
                            annotation (extent=[-10,-90; 10,-70]);
-    FlowPort inlet1 "The anode loop's inlet" 
+    FlowPort loopInlet "The anode loop's inlet" 
                            annotation (extent=[-10,70; 10,90]);
-    FlowPort inlet2 "The water-recovery inlet" 
+    FlowPort waterInlet "The water-recovery inlet" 
                            annotation (extent=[70,-10; 90,10]);
     annotation (Diagram, Icon(
         Ellipse(extent=[-80,80; 80,-80], style(
@@ -640,8 +640,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
     Modelica.SIunits.InternalEnergy U(start=0) "The mixer's internal energy";
     
   equation 
-    der(U) = inlet1.H + inlet2.H + inlet3.H + outlet.H;
-    der(n) = inlet1.n + inlet2.n + inlet3.n + outlet.n;
+    der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
+    der(n) = fuelInlet.n + loopInlet.n + waterInlet.n + outlet.n;
     
     // Bind outlet's n to composition in holdup
     outlet.n[1:end-1] / sum(outlet.n) = n[1:end-1] / sum(n);
@@ -653,7 +653,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
   end Mixer;
   
-  model FuelCell "A DMFC fuel cell" 
+  partial model FuelCell "A generic DMFC" 
     
     annotation (Icon(Rectangle(extent=[-100,60; 100,0], style(
             color=0,
@@ -677,6 +677,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Voltage;
+    import Modelica.SIunits.Pressure;
     import Modelica.SIunits.PartialPressure;
     import Modelica.SIunits.Resistance;
     import Modelica.SIunits.Resistivity;
@@ -690,13 +691,14 @@ in liquid phase; it takes their density from the Thermo library.</p>
     import Thermo.Water;
     import Thermo.Oxygen;
     
+    outer Pressure p_env "The environment pressure";
+    
     parameter Length d_M = 40E-6 "Membrane thickness";
     parameter DiffusionCoefficient D_M = 1E-10 
       "Methanol diffusion coefficient in the membrane.";
     parameter Velocity k_ad = 20E-6 "Mass transport coefficient";
     parameter Real k_drag = 2 "Drag factor coefficient";
     parameter Area A = 26E-4 "Membrane area";
-    parameter Voltage U = 0.5 "Cell voltage (constant)";
     
     FlowPort cathode_inlet "The cathode flow's inlet" 
       annotation (extent=[-110,20; -90,40]);
@@ -714,6 +716,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
     Current I = i * A "The overall cell current";
     CurrentDensity i_c "Equivalent current density due to methanol crossover";
     Current I_c = i_c * A "The cell's crossover current";
+    Voltage V "Cell voltage";
     
     Concentration c_a "Anodic methanol concentration";
     Concentration c_ac "Catalyst-layer anodic methanol concentration";
@@ -751,11 +754,11 @@ in liquid phase; it takes their density from the Thermo library.</p>
           5.55112e-16; 5.55112e-16,5.55112e-16],
                 style(color=1, rgbcolor={255,0,0}));
     connect(nexus.flowPort, anode_inlet) 
-                                        annotation (points=[-39,4.44089e-16;
+                                        annotation (points=[-39,4.44089e-16; 
           -50,0; -60,0; -60,-30; -100,-30],
                                      style(pattern=0));
     connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -60,30;
+                                        annotation (points=[-100,30; -60,30; 
           -60,0; -39,0; -39,4.44089e-16],
                             style(pattern=0));
     connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -50,
@@ -767,21 +770,21 @@ in liquid phase; it takes their density from the Thermo library.</p>
     connect(cathodeT.Tm, anodeT.Tm) annotation (points=[70,40; 70,44; 46,44; 46,
           -14; 70,-14; 70,-18],
                         style(color=1, rgbcolor={255,0,0}));
+    anode_inlet.n + anode_outlet.n + (anode_current+anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
     
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + (anode_current+anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
     // Cathode-side mass balance, accounting for reaction, drag and crossover
     cathode_inlet.n + cathode_outlet.n + (cathode_current+cathode_drag)*I + cathode_crossover*I_c = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
-    nexus.flowPort.H = I*U;
+    nexus.flowPort.H = I*V;
     
     // Definition of anodic methanol concentration: using _outlet_ values
     c_a = anodeT.condensate[Methanol] / sum(anodeT.condensate[i]*mw(i)/Thermo.rho(T,i,LiquidPhase) for i in LiquidSpecies);
     // Definition of oxygen partial pressure: using _outlet_ values
-    p_o2 = cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
+    p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     // Definition of water partial pressure (on the cathode side): using _outlet_ values
-    p_h2o = cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
+    p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     
     // Methanol transport: binds c_a, c_ac and i (i_c is a function of c_ac).
     k_ad * (c_a-c_ac) = (i_c + i)/(6*F);
@@ -791,6 +794,15 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
   end FuelCell;
   
+  model ConstantVoltageFuelCell "A simplified DMFC with constant voltage" 
+    extends FuelCell;
+    
+    parameter Modelica.SIunits.Voltage V_cell = 0.5 "Cell voltage";
+  equation 
+    V = V_cell;
+    
+  end ConstantVoltageFuelCell;
+
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
       
@@ -890,27 +902,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
     equation 
       
       annotation (Diagram);
-      connect(fuelTank.c, mixer.inlet3) annotation (points=[10,-30; -10,-30;
-            -10,2], style(
-          pattern=0,
-          thickness=2,
-          fillColor=7,
-          rgbfillColor={255,255,255},
-          fillPattern=1));
-      connect(anodicLoop.c, mixer.inlet1) annotation (points=[-10,50; -10,18],
-          style(
-          pattern=0,
-          thickness=2,
-          fillColor=7,
-          rgbfillColor={255,255,255},
-          fillPattern=1));
-      connect(condenser.c, mixer.inlet2) annotation (points=[30,10; -2,10],
-          style(
-          pattern=0,
-          thickness=2,
-          fillColor=7,
-          rgbfillColor={255,255,255},
-          fillPattern=1));
       
       sum(fuelTank.c.n) = -0.1;
       sum(anodicLoop.c.n) = -1;
@@ -920,9 +911,15 @@ in liquid phase; it takes their density from the Thermo library.</p>
         annotation (points=[-44,-16; -27.6,-16], style(thickness=2));
       connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
             -72,10; -72,-16; -64,-16], style(pattern=0, thickness=2));
+      connect(condenser.c, mixer.waterInlet)
+        annotation (points=[30,10; -2,10], style(pattern=0));
+      connect(anodicLoop.c, mixer.loopInlet)
+        annotation (points=[-10,50; -10,18], style(pattern=0));
+      connect(mixer.fuelInlet, fuelTank.c)
+        annotation (points=[-10,2; -10,-30; 10,-30], style(pattern=0));
     end MixerTest;
     
-    model TestCell 
+    model CVCellTest 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
@@ -935,7 +932,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
         "Anodic inlet temperature";
       parameter Modelica.SIunits.Current I_cell = 0 "Cell current";
       
-      FuelCell fuelCell annotation (extent=[6,0; 42,34]);
+      ConstantVoltageFuelCell fuelCell 
+                        annotation (extent=[6,0; 42,34]);
       MethanolSolution methanolSolution annotation (extent=[-66,-30; -54,-18]);
       annotation (Diagram);
       Pump pump "Pump for the anode flow" annotation (extent=[-42,-30; -30,-18]);
@@ -967,88 +965,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
       heater.outletTemperature.T = anodeInletTemperature;
       blower.V = cathodeFlow;
       
-    end TestCell;
+    end CVCellTest;
     
-    model TestLoop "A simple anodic loop" 
-      import Modelica.SIunits.VolumeFlowRate;
-      import Modelica.SIunits.Temperature;
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
-      
-      parameter VolumeFlowRate anodeFlow = 30e-6/60 
-        "Flow rate for the anodic loop";
-      parameter VolumeFlowRate fuelFlow = 30e-6/60 "Flow rate for the fuel";
-      parameter VolumeFlowRate cathodeFlow = 30E-5/60 
-        "Flow rate for the cathodic loop";
-      parameter Temperature T_cooler_out = 350;
-      parameter Temperature T_condenser = 320;
-      
-      Mixer mixer annotation (extent=[-16,-40; 4,-20]);
-      Pump pump "The anodic-loop pump" 
-                annotation (extent=[-70,-36; -58,-24]);
-      annotation (Diagram);
-      Cooler cooler "The solution-loop cooler" 
-                    annotation (extent=[-10,-14; 12,6]);
-      PureMethanolSource pureMethanolSource "A substitute for an actual tank" 
-                                            annotation (extent=[2,-58; 10,-50]);
-      Pump fuelPump "The smaller fuel pump" 
-                    annotation (extent=[-10,-58; -2,-50]);
-      Separator degasser "The CO2-degasser" 
-                          annotation (extent=[18,-14; 38,6]);
-      SinkPort co2sink "The gas outlet of the degasser" 
-                        annotation (extent=[42,-4; 50,4]);
-      FuelCell fuelCell annotation (extent=[-46,-8; -24,14]);
-      EnvironmentPort environment "The air from the environment" 
-        annotation (extent=[-84,16; -64,36]);
-      GasFlowController blower "The mass-flow controller" 
-        annotation (extent=[-72,4; -64,12]);
-      Cooler cathodeCooler "The cathode-side cooler" 
-                    annotation (extent=[-10,4; 12,24]);
-      Separator condenser "The water-recuperating unit" 
-                          annotation (extent=[44,4; 64,24]);
-      SinkPort airSink "The gas outlet of the condenser" 
-                        annotation (extent=[74,14; 82,22]);
-    equation 
-      connect(pump.inlet, mixer.outlet) 
-        annotation (points=[-64.12,-30; -14,-30], style(pattern=0));
-      connect(fuelPump.outlet, mixer.inlet3) 
-        annotation (points=[-6,-50; -6,-44; -6,-38; -6,-38], style(pattern=0));
-      connect(pureMethanolSource.c, fuelPump.inlet) 
-        annotation (points=[6,-54; -6.08,-54], style(pattern=0));
-      connect(degasser.inlet, cooler.outlet)  annotation (points=[18,-4; 16.335,
-            -4; 16.335,-4; 14.67,-4; 14.67,-4; 11.34,-4],
-          style(pattern=0));
-      connect(degasser.liquidOutlet, mixer.inlet1)  annotation (points=[35,-8; 
-            34,-8; 34,-12; -6,-12; -6,-22], style(pattern=0));
-      connect(co2sink.flowPort, degasser.gasOutlet) 
-        annotation (points=[42.4,3.88578e-17; 40,3.88578e-17; 40,0; 38,0; 38,
-            6.66134e-16; 35,6.66134e-16],                style(pattern=0));
-      connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-24,
-            -0.08; -14,-0.08; -14,-4; -9.34,-4], style(pattern=0));
-      connect(fuelCell.anode_inlet, pump.outlet) 
-        annotation (points=[-46,-0.3; -64,-0.3; -64,-24], style(pattern=0));
-      connect(environment.c, blower.inlet) annotation (points=[-83,21; -89.5,21;
-            -89.5,8; -68.08,8], style(pattern=0));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-68,12;
-            -58,12; -58,6.3; -46,6.3], style(pattern=0));
-      connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=
-            [-9.34,14; -12,14; -12,6.3; -24,6.3], style(pattern=0));
-      connect(cathodeCooler.outlet, condenser.inlet) 
-        annotation (points=[11.34,14; 44,14], style(pattern=0));
-      connect(condenser.liquidOutlet, mixer.inlet2) 
-        annotation (points=[61,10; 62,10; 62,-30; 2,-30], style(pattern=0));
-      connect(airSink.flowPort, condenser.gasOutlet) 
-        annotation (points=[74.4,18; 61,18], style(pattern=0));
-      
-      pump.V = anodeFlow;
-      blower.V = cathodeFlow;
-      fuelPump.V = fuelFlow;
-      cooler.outletTemperature.T = T_cooler_out;
-      cathodeCooler.outletTemperature.T = T_condenser;
-      
-    end TestLoop;
   end Test;
   
 end Flow;
