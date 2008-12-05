@@ -14,19 +14,12 @@ type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s")
     
     annotation (Documentation(info="<html>
 <p>This is a connector for the various tank units; it ensures continuity of enthalpy and
-molar flows. It consists of two flow variables, the <em>enthalpy flow</em> and the total
-<em>molar flow</em>, and of the <em>composition array</em>. In addition, there are two
-other variables, the composition and the molar enthalpy of the tank to which the CheckPoint
-is connected.</p>
-<p>The enthalpy flow is defined as the enthalpy necessary to bring the
-components in the molar-flow array from standard conditions, which is defined as 298.15 K
-with water and methanol in liquid phase and other components in gas phase, to their actual
-conditions of temperature and phase, at environmental pressure.</p>
-<p>The Checkpoint connectors should <em>not</em> be connected between tanks; a FlowConnector
-should instead be between these, to whose sides the CheckPoints are connected. This is
-necessary because at some point it must be decided what composition and enthalpy content
-to use, the one up- or downstream of the connection, and this decision cannot be made in
-either tank object (because it lacks the values for the other one).</p>
+molar flows. It consists of two flow variables, the <em>enthalpy flow</em> and the array of 
+<em>molar flows</em>.</p>
+<p>The enthalpy flow is defined as the enthalpy necessary to bring the components in the 
+molar-flow array from standard conditions, which is defined as starting from fundamental 
+elements in their native state, to the actual ones. Using this definition, it is fairly 
+easy to model chemical reactions.</p>
 </html>"), Icon(Rectangle(extent=[-100,100; 100,-100], style(
             pattern=0,
             fillColor=1,
@@ -42,7 +35,11 @@ either tank object (because it lacks the values for the other one).</p>
             pattern=0,
             gradient=3,
             fillColor=1,
-            rgbfillColor={255,0,0}))));
+            rgbfillColor={255,0,0}))), 
+      Documentation(info="<html>
+<p>This is a simple port to make the temperature of an object available for graphic
+connections.</p>
+</html>"));
   end TemperaturePort;
   
   model Plug "A class that blocks a flow connection" 
@@ -54,7 +51,8 @@ either tank object (because it lacks the values for the other one).</p>
             thickness=4,
             fillColor=7,
             rgbfillColor={255,255,255}))), Documentation(info="<html>
-<p>This simple item sets the connected flow to zero.</p>
+<p>This simple item sets the connected flows to zero, effectively \"plugging\"
+connectors on other items.</p>
 </html>"));
     FlowPort c   annotation (extent=[-90,-10; -70,10]);
   equation 
@@ -136,9 +134,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
             thickness=4,
             fillColor=7,
             rgbfillColor={255,255,255}))), Documentation(info="<html>
-<p>This item is a source for methanol-water solutions. Parameter <tt>C</tt>
-allows to set the concentration in moler per <em>cubic metre</em>; note that
-this is 1000 times the normal scale (1M = 1000 mol/m).</p>
+<p>This item is a source for a pure methanol stream.</p>
 </html>"));
   end PureMethanolSource;
   
@@ -191,11 +187,8 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     c.H = h_air*sum(c.n);
     
     annotation (Documentation(info="<html>
-<p>This dummy object is used whenever a system flow goes to the environment, e.g.
-the gas outlet of separators.</p>
-<p>If fluid is drawn from this object, it will have the composition of air with
-the relative humidity set in the outer variable <tt>RH_env</tt>, which can have
-values from 0 (dry air) to 100 (saturated air).</p>
+<p>This object generates a gas flow corresponding to ambient air, including the
+effect of humidity.</p>
 </html>"), Icon(
         Polygon(points=[20,-40; 46,42; 74,-40; 20,-40], style(
             pattern=0,
@@ -249,7 +242,11 @@ values from 0 (dry air) to 100 (saturated air).</p>
             thickness=4,
             fillColor=7,
             rgbfillColor={255,255,255},
-            fillPattern=1))));
+            fillPattern=1))), 
+      Documentation(info="<html>
+<p>This very simple object is a terminal for flows leaving the system and
+about which we do not care much.</p>
+</html>"));
     FlowPort flowPort annotation (extent=[-120,-30; -60,30]);
   end SinkPort;
   
@@ -283,15 +280,21 @@ classes could specialize).</p>
 </html>"),
       Diagram);
     
+    annotation (Documentation(info="<html>
+<p>This class allows to set a certain overall molar or mass flow. It is not
+immediately possible to set a <em>volume</em> flow, because this would entail
+calculating the phase equilibrium, which we are not doing here (see child
+classes).</p>
+</html>"));
   end FlowController;
   
   model GasFlowController "A flow controller with only gas phase" 
     extends FlowController;
     annotation (Icon,     Documentation(info="<html>
-<p>This class implements a mass flow controller with field volumetric units. Since
-there are two different standards (the actual \"standard\" at 0 Celsius and the Norm
+<p>This class implements a mass flow controller with volumetric units (\"field units\").
+Since there are two different standards (the actual \"standard\" at 0 Celsius and the \"norm\"
 at 70 Fahrenheit), it is necessary to adjust the reference temperature; the default
-assumes zero Celsius (\"standard\" value).</p>
+assumes zero Celsius (so-called \"standard\" value).</p>
 <p>The flow assumes that all components are in gas phase and takes their density from
 the Thermo library, where the ideal gas law is (usually) assumed.</p>
 </html>"));
@@ -313,9 +316,9 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
     extends FlowController;
     annotation (Icon,        Documentation(info="<html>
 <p>This class implements a liquid pump with field volumetric units. It will be
-necessary to somehow specify its operating temperature to make it work: for
-example, depending on flow direction, it might be the temperature of the element 
-upstream or the one downstream.</p>
+necessary to somehow specify its operating temperature to make it work, since
+volume changes with temperature: for example, depending on flow direction, it 
+might be the temperature of the element upstream or the one downstream.</p>
 <p>The flow assumes that only water and methanol are present and are completely
 in liquid phase; it takes their density from the Thermo library.</p>
 </html>"));
@@ -360,7 +363,18 @@ in liquid phase; it takes their density from the Thermo library.</p>
               thickness=4,
               fillColor=7,
               rgbfillColor={0,0,0},
-              fillPattern=1))));
+              fillPattern=1))), 
+      Documentation(info="<html>
+<p>This basic unit takes a flow and returns it unchanged, while actually
+performing an equilibrium calculation and figuring out the temperature of
+the flow given its associated enthalpic flow.</p>
+<p>This unit can be used in different situations to extract the temperature
+of a flow, which is also presented with a temperature port in order to
+be used in the graphical editor. It can also be used to <em>set</em> the
+temperature, provided that the enthalpic flow can be modified in some other
+unit.</p>
+</html>"));
+      import Modelica.SIunits.MoleFraction;
     
       import Thermo.h;
       import Thermo.p_vap;
@@ -384,16 +398,17 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
       Real beta "The vapour fraction";
     
-      Real z_m = inlet.n[1]/sum(inlet.n);
-      Real z_w = inlet.n[2]/sum(inlet.n);
+      MoleFraction z_m = inlet.n[1]/sum(inlet.n);
+      MoleFraction z_w = inlet.n[2]/sum(inlet.n);
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
     
       beta = Thermo.rachfordRice(z_m, z_w, T);
+    
       vapour + condensate = inlet.n[LiquidSpecies];
       vapour = { inlet.n[i]*beta*p_vap(T,i)/p_env / (1+beta*(p_vap(T,i)/p_env -1)) for i in LiquidSpecies};
     
@@ -443,10 +458,17 @@ in liquid phase; it takes their density from the Thermo library.</p>
         Line(points=[-80,-40; 80,-40], style(
             color=0,
             rgbcolor={0,0,0},
-            thickness=4))), Diagram);
+            thickness=4))), Diagram, 
+      Documentation(info="<html>
+<p>The separator unit splits a flow in its gaseous and liquid components</p>
+<p>It uses a <tt>FlowTemperature</tt> object internally for phase calculations,
+and has an additional temperature port connected to the one on the
+<tt>FlowTemperature</tt> object so that it is not necessary to place an
+additional object down- or upstream to measure the temperature.</p>
+</html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(pattern=0));
@@ -509,7 +531,12 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=4,
             fillColor=0,
             rgbfillColor={0,0,0},
-            fillPattern=1))));
+            fillPattern=1))), 
+      Documentation(info="<html>
+<p>This is the most basic form for a heat exchanger. It simply relates the loss in enthalpic
+flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed to a protected
+(i.e. invisible to the user) sink object.</p>
+</html>"));
     TemperaturePort inletTemperature "Temperature of the entering flow" 
       annotation (extent=[-92,20; -80,32]);
     TemperaturePort outletTemperature "Temperature of the exiting flow" 
@@ -521,52 +548,50 @@ in liquid phase; it takes their density from the Thermo library.</p>
     SinkPort sinkPort annotation (extent=[6,-52; 26,-32]);
   equation 
     connect(flowTemperature_inlet.inlet, inlet) annotation (points=[-68,
-          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16],
+          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16], 
         style(
-        pattern=0,
-        thickness=4,
-        fillColor=7,
-        rgbfillColor={255,255,255},
+        thickness=2, 
+        fillColor=7, 
+        rgbfillColor={255,255,255}, 
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
-          -58,26; -58,10],     style(
-        pattern=0,
-        thickness=4,
-        fillColor=7,
-        rgbfillColor={255,255,255},
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
+          -58,26; -58,10], style(
+        color=1, 
+        rgbcolor={255,0,0}, 
+        thickness=2, 
+        fillColor=7, 
+        rgbfillColor={255,255,255}, 
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
-          60,26; 86,26],        style(
-        pattern=0,
-        thickness=4,
-        fillColor=7,
-        rgbfillColor={255,255,255},
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
+          60,26; 86,26], style(
+        color=1, 
+        rgbcolor={255,0,0}, 
+        thickness=2, 
+        fillColor=7, 
+        rgbfillColor={255,255,255}, 
         fillPattern=1));
     connect(flowTemperature_outlet.outlet, outlet) annotation (points=[70,
           6.10623e-16; 80,6.10623e-16; 80,-2.22045e-16; 94,-2.22045e-16], style(
-        pattern=0,
-        thickness=4,
-        fillColor=7,
-        rgbfillColor={255,255,255},
+        thickness=2, 
+        fillColor=7, 
+        rgbfillColor={255,255,255}, 
         fillPattern=1));
     
     flowTemperature_inlet.outlet.n + flowTemperature_outlet.inlet.n = 0*flowTemperature_inlet.outlet.n;
     flowTemperature_inlet.outlet.H = flowTemperature_outlet.inlet.H + coolingDuty;
     
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
-      annotation (points=[-48,6.10623e-16; 1,6.10623e-16; 1,6.10623e-16; 50,
-          6.10623e-16], style(
-        pattern=0,
-        thickness=2,
-        fillColor=7,
-        rgbfillColor={255,255,255},
+      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16; 
+          1,6.10623e-16; 1,6.10623e-16; 50,6.10623e-16], style(
+        thickness=2, 
+        fillColor=7, 
+        rgbfillColor={255,255,255}, 
         fillPattern=1));
     connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points=[7,-42; 0,
-          -42; 0,6.10623e-16; -48,6.10623e-16],          style(
-        pattern=0,
-        thickness=2,
-        fillColor=7,
-        rgbfillColor={255,255,255},
+          -42; 0,6.10623e-16; -48,6.10623e-16], style(
+        thickness=2, 
+        fillColor=7, 
+        rgbfillColor={255,255,255}, 
         fillPattern=1));
   end Cooler;
   
@@ -574,15 +599,21 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.AmountOfSubstance;
-    import Thermo.LiquidPhase;
+    import Modelica.SIunits.Concentration;
+    import Thermo.Methanol;
+    import Thermo.GasSpecies;
     import Thermo.LiquidSpecies;
+    import Thermo.LiquidPhase;
     import Thermo.h;
+    import Thermo.mw;
+    import Thermo.rho;
     
     outer Temperature T_env "The environment temperature.";
     
     parameter Temperature T_0 = T_env "The initial temperature.";
-    parameter AmountOfSubstance n_MeOH_0 = 0.0 "Initial moles of methanol.";
-    parameter AmountOfSubstance n_H2O_0 = 10.0 "Initial moles of water.";
+    parameter AmountOfSubstance n_0 = 10.0 "Initial moles in the mixer";
+    parameter Concentration c_MeOH_0 = 1000.0 
+      "Initial methanol concentration in the mixer.";
     
     FlowPort outlet "The mixer's outlet" 
                           annotation (extent=[-90,-10; -70,10]);
@@ -632,10 +663,19 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=4,
             fillColor=7,
             rgbfillColor={255,255,255},
-            fillPattern=1))));
+            fillPattern=1))), 
+      Documentation(info="<html>
+<p>The mixer features three input flows, one for the anodic loop, one for recovered
+water and another for methanol inlet, and an output for the anodic loop. It is the 
+only unit featuring a full mass and energy balance.</p>
+<p>The outlet compositions are the same as the mass balance's molar fractions, 
+implying a perfect mixing; the enthalpy flow is also proportional to the internal-energy
+holdup.</p>
+<p>It is possible to set the initial methanol concentration to some specific value, 
+by default it is 1 M.</p>
+</html>"));
     
-    AmountOfSubstance n[size(Thermo.AllSpecies,1)](start={n_MeOH_0,n_H2O_0,0,0,0}) 
-      "The molar holdup";
+    AmountOfSubstance n[size(Thermo.AllSpecies,1)] "The molar holdup";
     Modelica.SIunits.InternalEnergy U(start=0) "The mixer's internal energy";
     
   equation 
@@ -648,6 +688,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
     outlet.H / sum(outlet.n) = U / sum(n);
     
   initial equation 
+    sum(n) = n_0;
+    n[GasSpecies] = zeros(size(GasSpecies,1));
+    n[Methanol] / sum(n[i]*mw(i)/rho(T_0,i,LiquidPhase) for i in LiquidSpecies) = c_MeOH_0;
     U = sum(n[i]*h(T_0,i,LiquidPhase) for i in LiquidSpecies);
     
   end Mixer;
@@ -666,7 +709,33 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=4,
             fillColor=71,
             rgbfillColor={85,170,255}))), Diagram,
-      DymolaStoredErrors);
+      DymolaStoredErrors, 
+      Documentation(info="<html>
+<p>This class implements a DMFC fuel cell from the point of view of reactant flows. A
+modelling of the voltage is <em>not</em> included, and must be implemented by child classes.
+A temperature port is featured.</p>
+<p>The two inlets and the two outlets are connected to the \"nexus\", an internal protected
+(i.e. invisible to the user) object, that accounts for components lost in reactions and
+energy that leaves as electric power (=I*V).</p>
+<p>There are fundamentally three ways by which components can appear or disappear in 
+streams:</p>
+<ul>
+<li>Reaction: anode loses methanol and water, cathode loses oxygen and obtains water; proportional
+to current.</li>
+<li>Water drag: water leaves the anode and arrives at the cathode; proportional to the reaction, and
+therefore to current.</li>
+<li>Methanol crossover: anode loses methanol, cathode loses oxygen and obtains water; proportional
+to the crossover current.</li>
+</ul>
+<p>The crossover current is calculated as proportional to the catalyst-layer concentration of
+methanol on the anode, the methanol diffusion coefficient in the membrane and the inverse of the 
+membrane's thickness. In turn, the difference between bulk and catalyst-layer concentration of 
+methanol is proportional to the sum of crossover and reaction current densities.</p>
+<p>Finally, the class calculates some quantities of interest, such as the anodic methanol 
+concentration, and the cathodic partial pressures of oxygen and water. Note that all these are
+based on the <em>exiting</em> flow.</p>
+
+</html>"));
     import Modelica.SIunits.Length;
     import Modelica.SIunits.DiffusionCoefficient;
     import Modelica.SIunits.Velocity;
@@ -732,17 +801,15 @@ in liquid phase; it takes their density from the Thermo library.</p>
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     /* This group of constant vectors represents the coefficients by which
    * current and crossover current must be multiplied to find the flows
-   * associated to reaction, water drag and crossover.
-   * Note: the *_drag terms are parameters, not constants, since k_drag
-   * can be modified. */
+   * associated to reaction, water drag and crossover. */
     constant Real[:] cathode_current = {0, 1/2/F, -1/4/F, 0, 0};
     constant Real[:] anode_current = {-1/6/F, -1/6/F, 0, 1/6/F, 0};
-    parameter Real[:] cathode_drag = {0, k_drag/F, 0, 0, 0};
-    parameter Real[:] anode_drag = {0, -k_drag/F, 0, 0, 0};
     constant Real[:] cathode_crossover = {0, 1/3/F, -1/4/F, 1/6/F, 0};
     constant Real[:] anode_crossover = {-1/6/F, 0, 0, 0, 0};
-    
-    Temperature T = Tm.T "Cell temperature, a helper variable";
+    /* Note: the *_drag terms are parameters, not constants, since k_drag
+   * can be modified. */
+    parameter Real[:] cathode_drag = {0, k_drag/F, 0, 0, 0};
+    parameter Real[:] anode_drag = {0, -k_drag/F, 0, 0, 0};
     
   equation 
     connect(anodeT.outlet, anode_outlet) 
@@ -769,9 +836,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
     connect(cathodeT.Tm, anodeT.Tm) annotation (points=[70,40; 70,44; 46,44; 46,
           -16; 70,-16; 70,-20],
                         style(color=1, rgbcolor={255,0,0}));
-    anode_inlet.n + anode_outlet.n + (anode_current+anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
     
     // Anode-side mass balance, accounting for reaction, drag and crossover
+    anode_inlet.n + anode_outlet.n + (anode_current+anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
     // Cathode-side mass balance, accounting for reaction, drag and crossover
     cathode_inlet.n + cathode_outlet.n + (cathode_current+cathode_drag)*I + cathode_crossover*I_c = zeros(size(AllSpecies,1));
     
@@ -779,7 +846,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
     nexus.flowPort.H = I*V;
     
     // Definition of anodic methanol concentration: using _outlet_ values
-    c_a = anodeT.condensate[Methanol] / sum(anodeT.condensate[i]*mw(i)/Thermo.rho(T,i,LiquidPhase) for i in LiquidSpecies);
+    c_a = anodeT.condensate[Methanol] / sum(anodeT.condensate[i]*mw(i)/Thermo.rho(Tm.T,i,LiquidPhase) for i in LiquidSpecies);
     // Definition of oxygen partial pressure: using _outlet_ values
     p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     // Definition of water partial pressure (on the cathode side): using _outlet_ values
@@ -800,6 +867,10 @@ in liquid phase; it takes their density from the Thermo library.</p>
   equation 
     V = V_cell;
     
+    annotation (Documentation(info="<html>
+<p>This trivial class inherits from the <tt>FuelCell</tt> class and allows to set a 
+constant voltage for the cell.</p>
+</html>"));
   end ConstantVoltageFuelCell;
   
   package Test "Package of test cases" 
@@ -815,7 +886,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
       EnvironmentPort environmentPort annotation (extent=[-50,26; -30,46]);
       SinkPort sinkPort annotation (extent=[40,6; 48,14]);
     equation 
-      sum(flowTemp.inlet.n) = 1;
+      // Running from time 0 to 1 will test negative flows too, i.e..
+      sum(flowTemp.inlet.n) = time-0.5;
       
       connect(sinkPort.flowPort, flowTemp.outlet) 
         annotation (points=[40.4,10; 5.55112e-16,10],
@@ -943,18 +1015,18 @@ in liquid phase; it takes their density from the Thermo library.</p>
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=1, rgbcolor={255,0,0}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
             -1.3,12; -1.3,11.9; 6,11.9], style(color=1, rgbcolor={255,0,0}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
             -36,-18], style(color=1, rgbcolor={255,0,0}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=1, rgbcolor={255,0,0}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=1, rgbcolor={255,0,0}));
       connect(cathodeSink.flowPort, fuelCell.cathode_outlet) annotation (points=[62.3,21;
             52.15,21; 52.15,22.1; 42,22.1],          style(color=1, rgbcolor={
               255,0,0}));
-      connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13; 
+      connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9],            style(color=1, rgbcolor=
               {255,0,0}));
       
