@@ -35,7 +35,7 @@ easy to model chemical reactions.</p>
             pattern=0,
             gradient=3,
             fillColor=1,
-            rgbfillColor={255,0,0}))), 
+            rgbfillColor={255,0,0}))),
       Documentation(info="<html>
 <p>This is a simple port to make the temperature of an object available for graphic
 connections.</p>
@@ -242,7 +242,7 @@ effect of humidity.</p>
             thickness=4,
             fillColor=7,
             rgbfillColor={255,255,255},
-            fillPattern=1))), 
+            fillPattern=1))),
       Documentation(info="<html>
 <p>This very simple object is a terminal for flows leaving the system and
 about which we do not care much.</p>
@@ -330,7 +330,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     
-    Temperature T "Temperature of the passing flow.";
+    outer Temperature T_env "Environment temperature";
+    
+    Temperature T(start=T_env) "Temperature of the passing flow.";
     VolumeFlowRate V "Standard volume flow rate.";
     
   equation 
@@ -363,7 +365,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
               thickness=4,
               fillColor=7,
               rgbfillColor={0,0,0},
-              fillPattern=1))), 
+              fillPattern=1))),
       Documentation(info="<html>
 <p>This basic unit takes a flow and returns it unchanged, while actually
 performing an equilibrium calculation and figuring out the temperature of
@@ -403,7 +405,7 @@ unit.</p>
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
     
@@ -458,7 +460,7 @@ unit.</p>
         Line(points=[-80,-40; 80,-40], style(
             color=0,
             rgbcolor={0,0,0},
-            thickness=4))), Diagram, 
+            thickness=4))), Diagram,
       Documentation(info="<html>
 <p>The separator unit splits a flow in its gaseous and liquid components</p>
 <p>It uses a <tt>FlowTemperature</tt> object internally for phase calculations,
@@ -468,7 +470,7 @@ additional object down- or upstream to measure the temperature.</p>
 </html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(pattern=0));
@@ -531,7 +533,7 @@ additional object down- or upstream to measure the temperature.</p>
             thickness=4,
             fillColor=0,
             rgbfillColor={0,0,0},
-            fillPattern=1))), 
+            fillPattern=1))),
       Documentation(info="<html>
 <p>This is the most basic form for a heat exchanger. It simply relates the loss in enthalpic
 flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed to a protected
@@ -548,50 +550,50 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     SinkPort sinkPort annotation (extent=[6,-52; 26,-32]);
   equation 
     connect(flowTemperature_inlet.inlet, inlet) annotation (points=[-68,
-          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16], 
+          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16],
         style(
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
           -58,26; -58,10], style(
-        color=1, 
-        rgbcolor={255,0,0}, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        color=1,
+        rgbcolor={255,0,0},
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
           60,26; 86,26], style(
-        color=1, 
-        rgbcolor={255,0,0}, 
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        color=1,
+        rgbcolor={255,0,0},
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
     connect(flowTemperature_outlet.outlet, outlet) annotation (points=[70,
           6.10623e-16; 80,6.10623e-16; 80,-2.22045e-16; 94,-2.22045e-16], style(
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
     
     flowTemperature_inlet.outlet.n + flowTemperature_outlet.inlet.n = 0*flowTemperature_inlet.outlet.n;
     flowTemperature_inlet.outlet.H = flowTemperature_outlet.inlet.H + coolingDuty;
     
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
-      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16; 
+      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16;
           1,6.10623e-16; 1,6.10623e-16; 50,6.10623e-16], style(
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
     connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points=[7,-42; 0,
           -42; 0,6.10623e-16; -48,6.10623e-16], style(
-        thickness=2, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        thickness=2,
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
   end Cooler;
   
@@ -663,7 +665,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
             thickness=4,
             fillColor=7,
             rgbfillColor={255,255,255},
-            fillPattern=1))), 
+            fillPattern=1))),
       Documentation(info="<html>
 <p>The mixer features three input flows, one for the anodic loop, one for recovered
 water and another for methanol inlet, and an output for the anodic loop. It is the 
@@ -709,7 +711,7 @@ by default it is 1 M.</p>
             thickness=4,
             fillColor=71,
             rgbfillColor={85,170,255}))), Diagram,
-      DymolaStoredErrors, 
+      DymolaStoredErrors,
       Documentation(info="<html>
 <p>This class implements a DMFC fuel cell from the point of view of reactant flows. A
 modelling of the voltage is <em>not</em> included, and must be implemented by child classes.
@@ -1015,11 +1017,11 @@ constant voltage for the cell.</p>
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=1, rgbcolor={255,0,0}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
             -1.3,12; -1.3,11.9; 6,11.9], style(color=1, rgbcolor={255,0,0}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
             -36,-18], style(color=1, rgbcolor={255,0,0}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
             -18,26; -18,22.1; 6,22.1], style(color=1, rgbcolor={255,0,0}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=1, rgbcolor={255,0,0}));
