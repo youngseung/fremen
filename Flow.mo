@@ -21,8 +21,8 @@ molar-flow array from standard conditions, which is defined as starting from fun
 elements in their native state, to the actual ones. Using this definition, it is fairly 
 easy to model chemical reactions.</p>
 </html>"), Icon(Rectangle(extent=[-102,100; 98,-100], style(
-            pattern=0, 
-            fillColor=62, 
+            pattern=0,
+            fillColor=62,
             rgbfillColor={0,127,127}))));
   end FlowPort;
   
@@ -421,7 +421,7 @@ unit.</p>
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
     
@@ -499,7 +499,7 @@ temperature and concentration of methanol in the liquid phase of the flow.</p>
         cm.c = 0;
       end if;
     
-      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,100], style(
         pattern=0,
         thickness=2,
@@ -558,10 +558,10 @@ additional object down- or upstream to measure the temperature.</p>
 </html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
-          6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62, 
+          6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
           rgbcolor={0,127,127}));
     connect(ft.outlet, gasOutlet) annotation (points=[10,6.10623e-16; 40,
           6.10623e-16; 40,40; 70,40], style(color=62, rgbcolor={0,127,127}));
@@ -639,14 +639,14 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     SinkPort sinkPort annotation (extent=[6,-52; 26,-32]);
   equation 
     connect(flowTemperature_inlet.inlet, inlet) annotation (points=[-68,
-          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16], 
+          6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16],
         style(
-        color=62, 
-        rgbcolor={0,127,127}, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        color=62,
+        rgbcolor={0,127,127},
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
           -58,26; -58,10], style(
         color=1,
         rgbcolor={255,0,0},
@@ -654,7 +654,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
           60,26; 86,26], style(
         color=1,
         rgbcolor={255,0,0},
@@ -664,10 +664,10 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillPattern=1));
     connect(flowTemperature_outlet.outlet, outlet) annotation (points=[70,
           6.10623e-16; 80,6.10623e-16; 80,-2.22045e-16; 94,-2.22045e-16], style(
-        color=62, 
-        rgbcolor={0,127,127}, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        color=62,
+        rgbcolor={0,127,127},
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
     
     flowTemperature_inlet.outlet.n + flowTemperature_outlet.inlet.n = 0*flowTemperature_inlet.outlet.n;
@@ -675,17 +675,17 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
       annotation (points=[-48,6.10623e-16; 50,6.10623e-16], style(
-        color=62, 
-        rgbcolor={0,127,127}, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        color=62,
+        rgbcolor={0,127,127},
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
     connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points=[7,-42; 0,
           -42; 0,6.10623e-16; -48,6.10623e-16], style(
-        color=62, 
-        rgbcolor={0,127,127}, 
-        fillColor=7, 
-        rgbfillColor={255,255,255}, 
+        color=62,
+        rgbcolor={0,127,127},
+        fillColor=7,
+        rgbfillColor={255,255,255},
         fillPattern=1));
   end Cooler;
   
@@ -705,7 +705,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     outer Temperature T_env "The environment temperature.";
     
     parameter Temperature T_0 = T_env "The initial temperature.";
-    parameter AmountOfSubstance n_0 = 10.0 "Initial moles in the mixer";
+    parameter AmountOfSubstance n_0 = 1.0 "Initial moles in the mixer";
     parameter Concentration c_MeOH_0 = 1000.0 
       "Initial methanol concentration in the mixer.";
     
@@ -896,6 +896,7 @@ based on the <em>exiting</em> flow.</p>
     SinkPort nexus "Connection of all flows" 
                       annotation (extent=[-32,-10; -12,10]);
     
+  protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     /* This group of constant vectors represents the coefficients by which
    * current and crossover current must be multiplied to find the flows
@@ -938,9 +939,9 @@ based on the <em>exiting</em> flow.</p>
       annotation (points=[-64,-40; -64,-60; -90,-60], style(pattern=0));
     connect(anodeOutletTC.cm, cm_out) 
       annotation (points=[70,-40; 70,-60; 90,-60], style(pattern=0));
+    anode_inlet.n + anode_outlet.n + (anode_current+anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
     
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + (anode_current+anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
     
     // Cathode-side mass balance, accounting for reaction, drag and crossover
     cathode_inlet.n + cathode_outlet.n + (cathode_current+cathode_drag)*I + cathode_crossover*I_c = zeros(size(AllSpecies,1));
@@ -959,6 +960,9 @@ based on the <em>exiting</em> flow.</p>
     
     // Equivalent crossover current density in A/m^2.
     i_c = 6*F*(D_M/d_M * c_ac);
+    
+    // Sanity check: crash simulation if conditions are unphysical
+    assert( c_ac >= 0, "Methanol catalyst-layer concentration is negative ("+String(c_ac)+")");
     
   end FuelCell;
   
@@ -1017,24 +1021,24 @@ constant voltage for the cell.</p>
     equation 
       connect(flowConcentration.inlet, methanolSolution.c) annotation (points=[
             -6,20; -40,20; -40,13; -73,13], style(
-          color=62, 
-          rgbcolor={0,127,127}, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          color=62,
+          rgbcolor={0,127,127},
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
       connect(flowConcentration.inlet, environmentPort.c) annotation (points=[
             -6,20; -56,20; -56,51; -51,51], style(
-          color=62, 
-          rgbcolor={0,127,127}, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          color=62,
+          rgbcolor={0,127,127},
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
-      connect(flowConcentration.outlet, gasSink.flowPort) annotation (points=[14,20; 
+      connect(flowConcentration.outlet, gasSink.flowPort) annotation (points=[14,20;
             46.4,20], style(
-          color=62, 
-          rgbcolor={0,127,127}, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          color=62,
+          rgbcolor={0,127,127},
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
       
       sum(environmentPort.c.n) = -airFlow;
@@ -1065,9 +1069,9 @@ constant voltage for the cell.</p>
         annotation (points=[-73,13; -22,13], style(color=62, rgbcolor={0,127,
               127}));
       connect(separator.liquidOutlet, liquidSink.flowPort) 
-        annotation (points=[18.8,3; 18,3; 18,-12; 46.4,-12], style(color=62, 
+        annotation (points=[18.8,3; 18,3; 18,-12; 46.4,-12], style(color=62,
             rgbcolor={0,127,127}));
-      connect(separator.gasOutlet, gasSink.flowPort) annotation (points=[18.8,23; 
+      connect(separator.gasOutlet, gasSink.flowPort) annotation (points=[18.8,23;
             18.4,23; 18.4,34; 46.4,34], style(color=62, rgbcolor={0,127,127}));
     end SeparatorTest;
     
@@ -1083,19 +1087,19 @@ constant voltage for the cell.</p>
       annotation (Diagram);
     equation 
       connect(sinkPort.flowPort, cooler.outlet) annotation (points=[60.4,
-            3.88578e-17; 38,3.88578e-17; 38,1.06581e-15; 18.68,1.06581e-15], 
+            3.88578e-17; 38,3.88578e-17; 38,1.06581e-15; 18.68,1.06581e-15],
           style(
-          color=62, 
-          rgbcolor={0,127,127}, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          color=62,
+          rgbcolor={0,127,127},
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
       connect(cooler.inlet, environmentPort.c) annotation (points=[-22.68,
             1.06581e-15; -76.05,1.06581e-15; -76.05,25; -59,25], style(
-          color=62, 
-          rgbcolor={0,127,127}, 
-          fillColor=7, 
-          rgbfillColor={255,255,255}, 
+          color=62,
+          rgbcolor={0,127,127},
+          fillColor=7,
+          rgbfillColor={255,255,255},
           fillPattern=1));
       
       sum(environmentPort.c.n) = -1;
@@ -1167,11 +1171,11 @@ constant voltage for the cell.</p>
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
