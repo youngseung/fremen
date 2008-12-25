@@ -705,7 +705,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     outer Temperature T_env "The environment temperature.";
     
     parameter Temperature T_0 = T_env "The initial temperature.";
-    parameter AmountOfSubstance n_0 = 1.0 "Initial moles in the mixer";
+    parameter AmountOfSubstance n_0 = 1.0 "Initial moles in the mixer.";
     parameter Concentration c_MeOH_0 = 1000.0 
       "Initial methanol concentration in the mixer.";
     
