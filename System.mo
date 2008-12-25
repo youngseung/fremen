@@ -19,7 +19,7 @@ package System "DMFC systems"
                         annotation (extent=[32,-14; 52,6]);
     Flow.SinkPort co2sink "The gas outlet of the degasser" 
                       annotation (extent=[62,-4; 70,4]);
-    Flow.ConstantVoltageFuelCell fuelCell 
+    replaceable Flow.FuelCell fuelCell 
                       annotation (extent=[-46,-8; -24,14]);
     Flow.EnvironmentPort environment "The air from the environment" 
       annotation (extent=[-84,16; -64,36]);
@@ -80,7 +80,7 @@ package System "DMFC systems"
   end Reference;
   
   model Reference_NoControl "The reference DMFC system, no control applied" 
-    extends Reference;
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell);
     
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
@@ -107,7 +107,7 @@ package System "DMFC systems"
   annotation (uses(Modelica(version="2.2.1")));
   model Reference_SimpleControl 
     "The reference DMFC system, some simple control loops" 
-    extends Reference;
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell);
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Thermo.Oxygen;
@@ -132,12 +132,13 @@ package System "DMFC systems"
    * assumes we can perfectly read the mixer concentration, but also because
    * it case of excess concentration we could pull methanol out of it! */
     fuelPump.V = k_c * (mixer.c_MeOH_0 - fuelCell.cm_in.c);
-    pump.V = anodeFlow;
     
     // Directly specified variables
+    pump.V = anodeFlow;
     cooler.outletTemperature.T = T_cooler_out;
     cathodeCooler.outletTemperature.T = T_condenser;
     fuelCell.I = I_cell;
     
+    annotation (Diagram);
   end Reference_SimpleControl;
 end System;
