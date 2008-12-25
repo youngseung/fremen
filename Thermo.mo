@@ -739,21 +739,15 @@ public
     constant Real b = C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
     constant Real c = 1.0-z_methanol-z_water;
     constant Real delta = b*b - 4*a*c;
+    constant Real beta_sol = (-b-sqrt(delta))/(2*a);
     
   algorithm 
     assert( C_methanol > C_water, "Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
     
-    if C_water >= 0.0 then // Too high temperature for condensation.
+    if C_water >= 0.0 or beta_sol > 1.0 then
       beta := 1.0;
-    else // Cases when condensation is possible.
-      beta := (-b-sqrt(delta)) / (2*a);
-    end if;
-    
-    // Make sure that the returned beta is always in [0,1].
-    if beta < 0.0 then
-      beta := 0.0;
-    elseif beta > 1.0 then
-      beta := 1.0;
+    else
+      beta := beta_sol;
     end if;
     
     annotation(derivative=drachfordRice_dt, Documentation(info="<html>
@@ -786,78 +780,15 @@ particular, when passing the boiling temperature of methanol, one of the asympto
 Rachford-Rice equation h(&beta;) moves from the right-hand to the left-hand plane, meaning
 we have to pick a different solution when we pass beyond this temperature.</p>
  
-<p>We have to cater for (almost) all cases of missing components: we need to be able to extract 
-sensible results from the case of no methanol, no water, only gas etc. This sums up to seven 
-cases (we reject the case with no components as it is nonsensical), times three temperature
-brackets (less than methanol's boiling temperature, between methanol's and water's, and beyond
-water's), yielding 21 cases; fortunately many of these can be grouped, as per the following
-table:</p>
- 
-<style type=\"text/css\">
-table.z {
-        border: 1px solid;
-        border-collapse: collapse;
-        text-align: center;
-}
-table.z th {
-        border: 1px solid;
-        padding: 3px;
-}
-table.z td {
-        border: 1px solid;
-        padding: 3px;
-}
-table.z td.vap { background-color: red; }
-table.z td.liq { background-color: green; }
-table.z td.eq { background-color: yellow; }
-</style>
- 
-<table class=\"z\">
-<tr><th>Components present</th>
-<th>T &lt; T<sub>boil, CH<sub>3</sub>OH</sub></th>
-<th>T<sub>boil, CH<sub>3</sub>OH</sub> &lt; T &lt; T<sub>boil, H<sub>2</sub>O</sub></th>
-<th>T &gt; T<sub>boil, H<sub>2</sub>O</sub></th></tr>
- 
-<tr>
-<th>All components</th>
-<td class=\"eq\">Lower root</td>
-<td class=\"eq\">Higher root</td>
-<td rowspan=\"7\" class=\"vap\">No condensation<br/>&beta;=1</td>
-</tr>
- 
-<tr>
-<th>No methanol</th>
-<td colspan=\"2\" class=\"eq\">Water-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>H<sub>2</sub>O</sub> > 0</td>
-</tr>
- 
-<tr>
-<th>Only water</th>
-<td colspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
-</tr>
- 
-<tr>
-<th>No gas</th>
-<td rowspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
-<td class=\"eq\">Water-methanol equilibrium<br/>&beta;=-(C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>+
-C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub>)/C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub></td>
-</tr>
- 
-<tr>
-<th>Only methanol</th>
-<td rowspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
-</tr>
- 
-<tr>
-<th>No water</th>
-<td class=\"eq\">Methanol-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>CH<sub>3</sub>OH</sub> > 0</td>
-</tr>
- 
-<tr>
-<th>Only gas</th>
-<td colspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
-</tr>
- 
-</table>
+<p>There are three main cases:</p>
+<ul>
+<li>If C<sub>H<sub>2</sub>O</sub> is larger than zero, it means that water cannot condense, therefore much less methanol; as no condensation is possible, &beta; is exactly 1. Notice that the Rachford-Rice solution would be negative (i.e. nonsensical) since this case cannot present any vapour-liquid equilibrium, no matter the compositions.</li>
+<li>If C<sub>H<sub>2</sub>O</sub> is smaller than zero, yet C<sub>CH<sub>3</sub>OH</sub> is larger, we need to select the <em>second</em> or larger solution.</li>
+<li>Otherwise, we select the <em>first</em> or smaller solution.</li>
+</ul>
+<p>Notice that the two cases of higher and lower solution have <em>the same mathematical expression</em>, since the coefficient of &beta;<sup>2</sup> changes sign in correspondance of the change in root selection; therefore, we do not need to change the sign in front of the root of &Delta;.</p>
+
+<p>Finally, since the polynomial can yield solutions larger than 1, &beta; must be limited to the interval between 0 an 1, and any solution larger than 1 will return a value of exactly 1.</p>
  
 <h3>References</h3>
 <p>Whitson, Curtis H., and Michelsen, Michael L.: <em>The negative flash</em>, Fluid Phase Equilibria 53, 51&ndash;71, 1989.</p>
