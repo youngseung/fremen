@@ -745,33 +745,8 @@ public
     
     if C_water >= 0.0 then // Too high temperature for condensation.
       beta := 1.0;
-    elseif C_methanol > 0.0 then // Intermediate temperature
-      if z_water > 0.0 and z_methanol > 0.0 and z_gas > 0.0 then // All components are present
-        /* NOTE: we are still using the minus sign, even though we want the larger solution,
-       * because if we are here we can be sure that a < 0! */
-        beta := (-b - sqrt(delta)) / (2*a);
-      elseif z_water > 0.0 and z_gas > 0.0 then // Only water and gas, simple solution.
-        beta := - z_gas / C_water;
-      elseif z_water > 0.0 and z_methanol > 0.0 then // Water-methanol equilibrium.
-        beta := - (C_water*z_water + C_methanol*z_methanol) / (C_water*C_methanol);
-      elseif z_water > 0.0 then // Only case left with water: there is only water.
-        beta := 0.0;
-      else // Only case left: there is no water, so no condensation is possible.
-        beta := 1.0;
-      end if;
-    else // Low temperature, below methanol's boiling point.
-      if z_water > 0.0 and z_methanol > 0.0 and z_gas > 0.0 then // All components are present
-        beta := (-b - sqrt(delta)) / (2*a);
-      elseif z_water > 0.0 and z_gas > 0.0 then // Only water and gas, simple solution.
-        beta := - z_gas / C_water;
-      elseif z_methanol > 0.0 and z_gas > 0.0 then // Only methanol and gas, simple solution.
-        beta := - z_gas / C_methanol;
-      elseif z_gas > 0.0 then // Only case with gas left: there is only gas.
-        beta := 1.0;
-      else // All other cases with no gas.
-        beta := 0.0;
-      end if;
-      
+    else // Cases when condensation is possible.
+      beta := (-b-sqrt(delta)) / (2*a);
     end if;
     
     // Make sure that the returned beta is always in [0,1].
