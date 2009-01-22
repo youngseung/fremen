@@ -355,7 +355,7 @@ isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt
   end BasicTank;
   
   partial model StirredTank "A generic stirred tank with an undefined shape." 
-    extends Equilibrium(T(start=T_env,fixed=true));
+    extends Equilibrium(T(start=298.15,fixed=true));
     extends ExtensiveBalances(m=1);
     
     import Modelica.SIunits.AmountOfSubstance;
@@ -376,9 +376,6 @@ isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt
     import Thermo.GasSpecies;
     import Thermo.LiquidPhase;
     import Thermo.GasPhase;
-    
-    outer Temperature T_env "Environment temperature.";
-    outer Pressure p_env "Environment pressure.";
     
     parameter String name = "Unnamed stirred tank" "Tank identifier.";
     parameter HeatCapacity Cp = 100 "Heat capacity of tank (glass, lid, ...).";
@@ -418,7 +415,7 @@ isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt
     
   equation 
     // Exchange of heat with the environment.
-    Q = A_sur * k_h * (T_env - T);
+    Q = A_sur * k_h * (298.15 - T);
     
     // Allocation of internal energy. See each term for a description.
     U = tankSensibleHeat + gasSpeciesEnergy + liquidSpeciesEnergy;
