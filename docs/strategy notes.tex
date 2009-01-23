@@ -1,10 +1,18 @@
 \documentclass[a4paper,10pt]{article}
 \usepackage{amsmath}
+\usepackage[usenames]{color}
+
 \newcommand{\MeOH}{\ensuremath{\mathrm{CH_3OH}}}
 \newcommand{\HHO}{\ensuremath{\mathrm{H_2O}}}
 \newcommand{\OO}{\ensuremath{\mathrm{O_2}}}
 \newcommand{\NN}{\ensuremath{\mathrm{N_2}}}
 \newcommand{\COO}{\ensuremath{\mathrm{CO_2}}}
+
+\newcommand{\Parameter}[1]{\textcolor{green}{#1}}
+\newcommand{\Measurement}[1]{\textcolor{red}{#1}}
+\newcommand{\Estimate}[1]{\textcolor{blue}{#1}}
+
+\newcommand{\DER}[2]{\ensuremath{\frac{\mathrm{d}\,#1}{\mathrm{d}\,#2}}}
 
 %opening
 \title{Continuous Control in DMFC Systems}
@@ -31,7 +39,7 @@ The main disturbances are the reaction, which results in:
 \end{itemize}
 
 In addition, the methanol cross-over depends on the methanol concentration on
-the anode, and produces some \COO{} at the cathode; otherwise, it is similar to
+the anode, and produces some \COO\ at the cathode; otherwise, it is similar to
 reaction.
 
 The current (and thereby the reaction rate) is easily measured, whereas the
@@ -55,7 +63,7 @@ blowers can set their instructed flow rates reliably enough by themselves.
 
 Concentration measurements are expensive, slow and we would rather avoid them.
 The concentration of methanol is however stable: more methanol means more
-crossover in the cell (and also more loss in the \COO{} separator, though that
+crossover in the cell (and also more loss in the \COO\ separator, though that
 should be of lesser importance). Since the main disturbance, the current, is
 measurable, feedforward should be an option.
 
@@ -92,7 +100,7 @@ feedforward control. The dynamics of methanol concentration should be stable,
 since there are two stabilising terms:
 \begin{itemize}
 \item more methanol means more crossover;
-\item more methanol means more methanol loss in the \COO{} separation stage.
+\item more methanol means more methanol loss in the \COO\ separation stage.
 \end{itemize}
 It remains to be seen whether these two factors are enough to provide a decent
 dynamic performance.
@@ -104,6 +112,107 @@ Temperature can be influenced in a variety of ways. Obviously the cooler on the
 anodic loop is a good tool to reduce the temperature. However, if temperature
 must be raised, fuel feed may be used to increase concentration and thereby
 methanol crossover.
+
+\pagebreak
+\section{Tentative Control System}
+These are some ideas for the simplest set of controllers. Avoid any excessive
+optimisations here, and \emph{keep it simple}.
+
+\subsection{Disturbance Specification}
+The only significant disturbance for now is current. A DMFC stack will be
+connected to a user through a battery, which will handle the fast transients.
+
+We can model a random disturbance by passing a random signal through a low-pass
+filter with a time constant in the same order of magnitude of the time the
+buffer battery can function on its own, say 10 minutes. Alternatively, we can
+use a standard cycle and pass it through the low-pass filter.
+
+Parameters such as environment temperature and humidity are unlikely to change
+over a simulation (much larger bandwidth), so if anything the algorithm should
+adapt to these parameters but not to track their variations.
+
+\subsection{Oxygen}
+Use feedforward, with $\lambda$ control. Typically $\lambda=2$, and will be a
+parameter. Will need an estimate on the crossover to compensate for it.
+
+\begin{equation}
+\dot n_\text{air} = \frac{\Parameter{\lambda}}{x_\OO^\text{env}} \,
+\frac{\Measurement{I}+\Estimate{I_c}}{4\,F}
+\end{equation}
+
+
+\subsection{Temperature}
+Feedback is cheap (thermocouple). A P or PI controller may be enough. For
+cooling manipulate the loop cooler, for heating use cascade with inlet
+methanol concentration.
+
+\begin{equation}
+u = K_c \left[ (T^\text{ref}-T) +
+\frac{1}{\tau_I}\int_0^t (T^\text{ref}-T) \,\mathrm{d}\,t \right]
+\end{equation}
+
+If $u>0$, methanol concentration will be increased; if $u<0$, loop cooling will
+be used instead.
+
+\subsection{Methanol Outlet Concentration}
+Outlet concentration should be set so that an increase in current cannot deplete
+the methanol concentration. The outlet level must therefore be set according to
+the specific dynamics of the disturbance (the current) and of the system itself,
+i.e. how much time an increased concentration from the mixer needs to reach the
+cell.
+
+Note that increasing the loop flow rate will:
+\begin{itemize}
+\item almost immediately increase the outlet concentration, even if the inlet
+one still has to change;
+\item reduce the time necessary for the increased mixer concentration to
+propagate to the inlet.
+\end{itemize}
+It seems therefore reasonable to control the outlet concentration with the loop
+flow rate.
+
+\subsection{Methanol Inlet Concentration}
+The inlet concentration, instead, will be set by the fuel flow, which is the
+remaining manipulable variable.
+
+We do not want a concentration measurement (expensive, cumbersome and slow), so
+we are going to use feedforward. This assumes the system dynamics is stable and
+its disturbances are either measurable ($I$) or estimable with a certain
+confidence ($I_c$).
+
+The inlet concentration is, in our model, equal to the mixer concentration
+(transients are assumed not to occur between mixer and cell):
+\begin{equation}
+c^\text{in} = c^\text{mixer} = \frac{n_\MeOH}{V}
+\end{equation}
+
+We also assume that solution volume $V$ is kept constant by another loop or at
+least changes very slowly:
+
+\begin{equation}
+\begin{aligned}
+\DER{n_\MeOH}{t} & = \dot n_\text{fuel} - \frac{I}{6\,F}
+- \frac{I_c(i,c,T)}{6\,F}\\
+& = u - \alpha\,I - \beta\,c
+\end{aligned}
+\end{equation}
+
+The system is stable as long as $\beta>0$, which is the case for any value of
+crossover. Once the parameters $\alpha$ and $\beta$ are estimated (both could
+in theory vary with temperature), it would be elementary to state the
+feedforward control law:
+\begin{equation}
+n_\text{fuel} = \alpha\,\Measurement{I} + \beta\,\Estimate{c}
+\end{equation}
+
+However, while we do have a measurement on $I$, we need to estimate $c$. Since
+the system is stable, we will use $\Estimate{c} = c^\text{ref}$.
+
+
+
+
+
+
 
 
 
@@ -172,14 +281,14 @@ The water lost in the anode is:
 \frac{13}{6}\frac{i}{F} = 2.166 \frac{i}{F}
 \end{equation}
 
-Whereas the water lost in the anode-loop \COO{} separator is (assuming no
+Whereas the water lost in the anode-loop \COO\ separator is (assuming no
 methanol present, as a conservative estimate):
 \begin{equation}
 \dot n_\HHO = \frac{x_\HHO(T)}{1-x_\HHO(T)}\,\frac{i}{6\,F}
 \end{equation}
 
 Where $x_\HHO$ is the equilibrium vapour fraction in air at the temperature
-of the \COO{} separator.
+of the \COO\ separator.
 
 Typical values of the term multiplying $\frac{i}{F}$ are:
 \begin{equation}
@@ -192,7 +301,7 @@ Typical values of the term multiplying $\frac{i}{F}$ are:
 \end{cases}
 \end{equation}
 
-It appears that the water loss in the \COO{} separator is, in all cases of
+It appears that the water loss in the \COO\ separator is, in all cases of
 interest, one order of magnitude smaller than the loss in the reaction and
 drag terms.
 
