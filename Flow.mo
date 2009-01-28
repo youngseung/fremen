@@ -29,6 +29,11 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
 <p>The rate of a reaction on a mole-per-surface-area basis.</p>
 </html>"));
   
+type CatalystCoverage = Real(final quantity="Catalyst coverage", final unit="", min=0, max=1) 
+    annotation (Documentation(info="<html>
+<p>Fraction of catalytic sites occupied by a certain species.</p>
+</html>"));
+  
   connector FlowPort "What passes through a control surface" 
     
     flow MolarFlowRate[size(Thermo.AllSpecies,1)] n;
@@ -50,7 +55,7 @@ easy to model chemical reactions.</p>
   
   connector TemperaturePort "A connector providing temperature values." 
     
-    Modelica.SIunits.Temperature T "The temperature, in kelvin.";
+    Modelica.SIunits.Temperature T "Temperature";
     
     annotation (Diagram, Icon(
                         Ellipse(extent=[-100,100; 100,-100],style(
@@ -66,7 +71,7 @@ connections.</p>
   
   connector ConcentrationPort "A connector providing concentration values." 
     
-    Modelica.SIunits.Concentration c "Concentration in mol/m^3.";
+    Modelica.SIunits.Concentration c "Methanol concentration";
     
     annotation (Diagram, Icon(
                         Ellipse(extent=[-100,100; 100,-100], style(
@@ -117,12 +122,11 @@ connectors on other items.</p>
     
     outer Temperature T_env;
     
-    parameter Modelica.SIunits.Concentration C = 1000 
-      "Concentration of methanol in water, mol/m³.";
-    parameter Temperature T = T_env "Source temperature.";
+    parameter Modelica.SIunits.Concentration C = 1000 "Methanol concentration";
+    parameter Temperature T = T_env "Temperature";
     
-    MoleFraction x_ch3oh "Molar fraction of methanol.";
-    MoleFraction x_h2o "Molar fraction of water.";
+    MoleFraction x_ch3oh "Methanol molar fraction";
+    MoleFraction x_h2o "Water molar fraction";
     
     FlowPort c "Connection point of the source" 
       annotation (extent=[-20,-20; 20,20]);
@@ -192,21 +196,21 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.MoleFraction;
     
-    outer Real RH_env "The relative humidity in the laboratory, in percent.";
-    outer Temperature T_env "The temperature in the laboratory.";
-    outer Pressure p_env "The atmospheric pressure.";
+    outer Real RH_env "Environment relative humidity";
+    outer Temperature T_env "Environment temperature";
+    outer Pressure p_env "Environment pressure";
     
-    MoleFraction y_h2o "Molar fraction of water in environment air";
-    MoleFraction y_o2 "Molar fraction of oxygen in environment air";
-    MoleFraction y_n2 "Molar fraction of nitrogen in environment air";
+    MoleFraction y_h2o "Water molar fraction";
+    MoleFraction y_o2 "Oxygen molar fraction";
+    MoleFraction y_n2 "Nitrogen molar fraction";
     
-    MolarEnthalpy h_air "The molar enthalpy of air in the current conditions.";
+    MolarEnthalpy h_air "Air molar enthalpy";
     
     FlowPort c   annotation (extent=[-100,-60; -80,-40]);
   protected 
-    MolarEnthalpy h_n2 "The molar enthalpy of nitrogen.";
-    MolarEnthalpy h_o2 "The molar enthalpy of oxygen.";
-    MolarEnthalpy h_h2o "The molar enthalpy of water vapour.";
+    MolarEnthalpy h_n2 "Nitrogen molar enthalpy";
+    MolarEnthalpy h_o2 "Oxygen molar enthalpy";
+    MolarEnthalpy h_h2o "Water-vapour molar enthalpy";
     
   equation 
     y_o2 / 0.21 = y_n2 / 0.79; // The O2/N2 ratio.
@@ -294,8 +298,8 @@ about which we do not care much.</p>
     import Thermo.mw;
     import Thermo.AllSpecies;
     
-    MolarFlowRate F;
-    Modelica.SIunits.MassFlowRate m;
+    MolarFlowRate F "Molar flow rate";
+    Modelica.SIunits.MassFlowRate m "Mass flow rate";
     FlowPort inlet "Unit inlet"   annotation (extent=[-12,-10; 8,10]);
     FlowPort outlet "Unit outlet"   annotation (extent=[-10,90; 10,110]);
   equation 
@@ -344,8 +348,8 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     
-    VolumeFlowRate V "Volumetric flow rate.";
-    parameter Temperature T = 273.15 "Reference temperature for standard flow.";
+    VolumeFlowRate V "Volumetric flow rate";
+    parameter Temperature T = 273.15 "Reference temperature";
   equation 
     V = sum({inlet.n[i] * mw(i) / rho(T, i, GasPhase) for i in AllSpecies});
     
@@ -430,21 +434,22 @@ unit.</p>
                      annotation (extent=[90,-10; 110,10]);
       TemperaturePort Tm                annotation (extent=[-10,90; 10,110]);
     
-      Modelica.SIunits.Temperature T(start=298.15) = Tm.T;
+      Modelica.SIunits.Temperature T(start=298.15) = Tm.T "Flow temperature";
     
       outer Modelica.SIunits.Pressure p_env;
     
-      MolarFlowRate[size(LiquidSpecies,1)] vapour(each min=0);
-      MolarFlowRate[size(LiquidSpecies,1)] condensate(each min=0);
+      MolarFlowRate[size(LiquidSpecies,1)] vapour(each min=0) "Vapour flows";
+      MolarFlowRate[size(LiquidSpecies,1)] condensate(each min=0) 
+      "Liquid flows";
     
-      Real beta "The vapour fraction";
+      Real beta "Vapour fraction";
     
-      MoleFraction z_m = inlet.n[1]/sum(inlet.n);
-      MoleFraction z_w = inlet.n[2]/sum(inlet.n);
+      MoleFraction z_m = inlet.n[1]/sum(inlet.n) "Methanol molar fraction";
+      MoleFraction z_w = inlet.n[2]/sum(inlet.n) "Water molar fraction";
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
       beta = Thermo.rachfordRice(z_m, z_w, T);
@@ -521,7 +526,7 @@ temperature and concentration of methanol in the liquid phase of the flow.</p>
         cm.c = 0;
       end if;
     
-      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,100], style(
         pattern=0,
         thickness=2,
@@ -580,7 +585,7 @@ additional object down- or upstream to measure the temperature.</p>
 </html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
@@ -654,7 +659,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
       annotation (extent=[-92,20; -80,32]);
     TemperaturePort outletTemperature "Temperature of the exiting flow" 
       annotation (extent=[80,20; 92,32]);
-    Modelica.SIunits.Heat coolingDuty "The heat removed by the cooler.";
+    Modelica.SIunits.Heat coolingDuty "Removed heat";
   protected 
     FlowTemperature flowTemperature_inlet annotation (extent=[-68,-10; -48,10]);
     FlowTemperature flowTemperature_outlet annotation (extent=[50,-10; 70,10]);
@@ -668,7 +673,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
           -58,26; -58,10], style(
         color=1,
         rgbcolor={255,0,0},
@@ -676,7 +681,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
           60,26; 86,26], style(
         color=1,
         rgbcolor={255,0,0},
@@ -696,7 +701,8 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     flowTemperature_inlet.outlet.H = flowTemperature_outlet.inlet.H + coolingDuty;
     
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
-      annotation (points=[-48,6.10623e-16; 50,6.10623e-16], style(
+      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16; 
+          1,6.10623e-16; 1,6.10623e-16; 50,6.10623e-16],    style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=7,
@@ -724,12 +730,11 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     import Thermo.mw;
     import Thermo.rho;
     
-    outer Temperature T_env "The environment temperature.";
+    outer Temperature T_env "Environment temperature";
     
-    parameter Temperature T_0 = T_env "The initial temperature.";
-    parameter AmountOfSubstance n_0 = 1.0 "Initial moles in the mixer.";
-    parameter Concentration c_MeOH_0 = 1000.0 
-      "Initial methanol concentration in the mixer.";
+    parameter Temperature T_0 = T_env "Initial temperature";
+    parameter AmountOfSubstance n_0 = 1.0 "Initial moles";
+    parameter Concentration c_MeOH_0 = 1000.0 "Initial methanol concentration";
     
     FlowPort outlet "The mixer's outlet" 
                           annotation (extent=[-90,-10; -70,10]);
@@ -791,8 +796,8 @@ holdup.</p>
 by default it is 1 M.</p>
 </html>"));
     
-    AmountOfSubstance n[size(Thermo.AllSpecies,1)] "The molar holdup";
-    Modelica.SIunits.InternalEnergy U(start=0) "The mixer's internal energy";
+    AmountOfSubstance n[size(Thermo.AllSpecies,1)] "Molar holdup";
+    Modelica.SIunits.InternalEnergy U(start=0) "Internal energy";
     
   equation 
     der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
@@ -876,13 +881,12 @@ based on the <em>exiting</em> flow.</p>
     import Thermo.Water;
     import Thermo.Oxygen;
     
-    outer Pressure p_env "The environment pressure";
+    outer Pressure p_env "Environment pressure";
     
     parameter Length d_M = 142E-6 "Membrane thickness";
-    parameter DiffusionCoefficient D_M = 5E-10 
-      "Methanol diffusion coefficient in the membrane.";
+    parameter DiffusionCoefficient D_M = 5E-10 "Methanol diffusion coefficient";
     parameter Velocity k_ad = 20E-6 "Mass transport coefficient";
-    parameter Real k_drag = 4 "Drag factor coefficient";
+    parameter Real k_drag = 4 "Drag factor";
     parameter Area A = 26E-4 "Membrane area";
     
     FlowPort cathode_inlet "The cathode flow's inlet" 
@@ -898,30 +902,16 @@ based on the <em>exiting</em> flow.</p>
     ConcentrationPort cm_in annotation (extent=[-100,-70; -80,-50]);
     ConcentrationPort cm_out annotation (extent=[80,-70; 100,-50]);
     
-    CurrentDensity i "Electrical current flowing through the cell.";
-    Current I = i * A "The overall cell current.";
-    CurrentDensity i_r1 "The reaction current density for methanol adsorption.";
-    Current I_r1 = i_r1 * A 
-      "The equivalent overall cell current due to methanol adsorption.";
-    CurrentDensity i_r2 "The reaction current density for water adsorption.";
-    Current I_r2 = i_r2 * A 
-      "The equivalent overall cell current due to water adsorption.";
-    CurrentDensity i_r3 "The reaction current density for OH- desorption .";
-    Current I_r3 = i_r3 * A 
-      "The equivalent overall cell current due to OH- desorption.";
-    CurrentDensity i_rc "The cathodic reaction current density.";
-    Current I_rc = i_rc * A 
-      "The equivalent overall cell current due to the cathodic reaction.";
-    CurrentDensity i_c "Equivalent current density due to methanol crossover.";
-    Current I_c = i_c * A 
-      "The equivalent overall cell current due to crossover.";
+    CurrentDensity i "Current density";
+    Current I = i * A "Current";
+    CurrentDensity i_c "Crossover current density";
+    Current I_c = i_c * A "Crossover current";
     Voltage V "Cell voltage";
     
-    Concentration c_a = anodeOutletTC.cm.c 
-      "Anodic methanol concentration (outlet).";
-    Concentration c_ac "Catalyst-layer anodic methanol concentration.";
-    PartialPressure p_o2 "Oxygen partial pressure.";
-    PartialPressure p_h2o "Water vapour partial pressure in the cathode.";
+    Concentration c_a = anodeOutletTC.cm.c "Methanol concentration";
+    Concentration c_ac "Catalyst-layer methanol concentration";
+    PartialPressure p_o2 "Oxygen partial pressure";
+    PartialPressure p_h2o "Cathodic water partial pressure";
     
   protected 
     FlowTemperature cathodeT "Temperature measurement on the cathode" 
@@ -937,9 +927,7 @@ based on the <em>exiting</em> flow.</p>
    * current and crossover current must be multiplied to find the flows
    * associated to reaction, crossover and drag. */
     constant Real[:] cathode_reaction = {0, 1/2/F, -1/4/F, 0, 0};
-    constant Real[:] anode_reaction1 = {-1/4/F, 0, 0, 0, 0};
-    constant Real[:] anode_reaction2 = {0, -1/F, 0, 0, 0};
-    constant Real[:] anode_reaction3 = {0, 0, 0, 1/F, 0};
+    constant Real[:] anode_reaction = {-1/6/F, -1/6/F, 0, 1/6/F, 0};
     constant Real[:] cathode_crossover = {0, 1/3/F, -1/4/F, 1/6/F, 0};
     constant Real[:] anode_crossover = {-1/6/F, 0, 0, 0, 0};
     /* Note: the *_drag terms are parameters, not constants, since k_drag
@@ -948,22 +936,22 @@ based on the <em>exiting</em> flow.</p>
     parameter Real[:] anode_drag = {0, -k_drag/F, 0, 0, 0};
   equation 
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + anode_reaction1*I_r1 + anode_reaction2*I_r2 + anode_reaction3*I_r3 + anode_drag*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
+    anode_inlet.n + anode_outlet.n + (anode_reaction + anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
     
     // Cathode-side mass balance, accounting for reaction, drag and crossover
-    cathode_inlet.n + cathode_outlet.n + cathode_reaction*I_rc + cathode_drag*I + cathode_crossover*I_c = zeros(size(AllSpecies,1));
+    cathode_inlet.n + cathode_outlet.n + (cathode_reaction + cathode_drag)*I + cathode_crossover*I_c = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
     nexus.flowPort.H = I*V;
     
-    // Definition of oxygen partial pressure: using _outlet_ values
+    // Definition of oxygen partial pressure: using _outlet_ values FIXME why this formula? Explain better...
     p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     
     // Definition of water partial pressure (on the cathode side): using _outlet_ values
     p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     
     // Methanol transport: binds c_a, c_ac and i (i_c is a function of c_ac).
-    k_ad * (c_a-c_ac) = i_c/(6*F) + i_r1/(4*F);
+    k_ad * (c_a-c_ac) = (i_c+i)/6/F;
     
     // Equivalent crossover current density in A/m^2.
     i_c = 6*F*(D_M/d_M * c_ac);
@@ -1007,10 +995,6 @@ based on the <em>exiting</em> flow.</p>
     
     parameter Modelica.SIunits.Voltage V_cell = 0.5 "Cell voltage";
   equation 
-    i = 3*i_r1/2;
-    i = 6*i_r2;
-    i = 6*i_r3;
-    i = i_rc;
     V = V_cell;
     
     annotation (Documentation(info="<html>
@@ -1022,18 +1006,12 @@ constant voltage for the cell.</p>
   model TheveninFuelCell "A simplified DMFC with constant voltage" 
     extends FuelCell;
     
-    parameter ArealResistance r = 13.3E-6 "The cell's areal resistance.";
-    parameter Modelica.SIunits.Resistivity rho = r / d_M 
-      "The membrane resistivity (assuming no other contributions).";
-    parameter Modelica.SIunits.Resistance R = r / A 
-      "The cell's overall resistance.";
+    parameter ArealResistance r = 13.3E-6 "Areal resistance";
+    parameter Modelica.SIunits.Resistivity rho = r / d_M "Membrane resistivity";
+    parameter Modelica.SIunits.Resistance R = r / A "Resistance";
     
-    parameter Modelica.SIunits.Voltage V0 = 0.6 "The open-circuit voltage.";
+    parameter Modelica.SIunits.Voltage V0 = 0.6 "Open-circuit voltage";
   equation 
-    i = 3*i_r1/2;
-    i = 6*i_r2;
-    i = 6*i_r3;
-    i = i_rc;
     V = V0 - R*I;
     
     annotation (Documentation(info="<html>
@@ -1049,70 +1027,49 @@ current.</p>
 </html>"));
   end TheveninFuelCell;
   
-  model OvervoltageFuelCell "Fuel cell with detailed overvoltage model" 
+  model OvervoltageFuelCell 
+    "Fuel cell with effect of crossover current on overvoltage" 
     extends FuelCell;
     
-    import Modelica.SIunits.Voltage;
+    import Modelica.Math.log;
     import Modelica.Constants.R;
     
-    parameter SurfaceConcentration c_Pt = 0.117 
-      "Active surface concentration of Pt";
-    parameter SurfaceConcentration c_Ru = 0.165 
-      "Active surface concentration of Ru";
-    parameter ArealCapacitance C_a = 3348 "Anodic double-layer capacitance";
-    parameter ArealCapacitance C_c = 907 "Cathodic double-layer capacitance";
+    constant Integer n = 6 "Number of electrons exchanged in ORR";
+    parameter Real alpha = 0.5 "Cathodic symmmetry factor";
+    parameter Modelica.SIunits.CurrentDensity i_0 = 5E-2 
+      "Exchange current density";
     
-    parameter ArealReactionRate r_10 =  1.6E-4 
-      "Reaction constant for methanol adsorption.";
-    parameter ArealReactionRate r_20a = 7.2E-4 
-      "Reaction constant for water adsorption.";
-    parameter ArealReactionRate r_20d = 9.91E4 
-      "Reaction constant for OH- desorption.";
-    parameter ArealReactionRate r_30 =  0.19 
-      "Reaction constant for CO oxidation.";
-    parameter ArealReactionRate r_c0 =  4E-6 
-      "Reaction constant for cathodic reaction";
+    parameter ArealResistance r = 13.3E-6 "Areal resistance";
+    parameter Modelica.SIunits.Resistivity rho = r / d_M "Membrane resistivity";
+    parameter Modelica.SIunits.Resistance R_el = r / A "Resistance";
     
-    parameter Real alpha_2 = 0.5 
-      "Charge transfer coefficient for water adsorption.";
-    parameter Real alpha_c = 0.18 
-      "Charge transfer coefficient for the cathodic reaction.";
-    parameter Real beta_CO = 0.5 
-      "Symmetry parameter for Frumkin-Temkin adsorption on Pt.";
-    parameter Real beta_OH = 0.5 
-      "Symmetry parameter for Frumkin-Temkin adsorption on Ru.";
-    parameter Real g_CO = 11 
-      "Inhomogenity factor for Frumkin-Temkin adsorption on Pt.";
-    parameter Real g_OH = 0.43 
-      "Inhomogenity factor for Frumkin-Temkin adsorption on Ru.";
+    parameter Modelica.SIunits.Voltage V0 = 0.6 "Open-circuit voltage";
     
-    parameter ArealResistance R_el = 13.3E-6 
-      "Ohmic resistance of the membrane.";
-    parameter Voltage V_0 = 1.213 "Standard cell voltage.";
-    
-    Real theta_CO "Surface coverage of Pt with adsorbed CO";
-    Real theta_OH "Surface coverage of Rh with adsorbed OH";
-    Voltage eta_a "Anodic overvoltage";
-    Voltage eta_c "Cathodic overvoltage";
-    ArealReactionRate r_1 = i_r1/4*F "Reaction rate for methanol adsorption.";
-    ArealReactionRate r_2 = i_r2/F "Reaction rate for water adsorption.";
-    ArealReactionRate r_3 = i_r3/F "Reaction rate for CO oxidation.";
-    ArealReactionRate r_c = i_rc/6*F "Reaction rate for cathodi reaction."; // FIXME Stoichiometric coefficient is dubious
-    
+    Modelica.SIunits.Voltage delta_eta "Overvoltage caused by crossover";
   equation 
-    der(theta_CO)  = (r_1 - r_3)/c_Pt;
-    der(theta_OH)  = (r_2 - r_3)/c_Ru;
-    C_a * der(eta_a)  = i - i_r1 - i_r2 - i_r3;
-    C_c * der(eta_c)  = i - i_rc + i_c;
+    if i + i_c < i_0 then // This will never happen in practical cases.
+      delta_eta = 0;
+    elseif i < i_0 then // This is used almost only for open circuit.
+      delta_eta = R * Tm.T / alpha / n / F * log( (i + i_c)/i_0);
+    else // This is the most common case.
+      delta_eta = R * Tm.T / alpha / n / F * log(1 + i_c/i);
+    end if;
     
-    r_1 = r_10 * exp(-beta_CO*g_CO*(theta_CO-0.5))*c_ac*(1-theta_CO);
-    r_2 = r_20d * exp(alpha_2*F*eta_a/R/Tm.T) * exp(-beta_OH*g_OH*(theta_OH-0.5))*(1-theta_OH)
-        - r_20a * exp(-(1-alpha_2)*F*eta_a/R/Tm.T) * exp((1-beta_OH)*g_OH*(theta_OH-0.5))*theta_OH; // TODO check coefficients
-    r_3 = r_30 * exp((1-beta_CO)*g_CO*(theta_CO-0.5))*theta_CO*theta_OH;
-    r_c = r_c0 * exp(-alpha_c*F/R/Tm.T*eta_c);
+    V = V0 - R_el*I - delta_eta;
     
-    V = V_0 - eta_a - eta_c - R_el * i;
-    
+    annotation (Documentation(info="<html>
+<p>This model is a simple Thevenin model with an additional term accounting for
+the effect of methanol crossover on the overvoltage.</p>
+<p>Crossover will keep the oxygen reduction reaction going even when there is no
+current passing through the cell (in fact this is when crossover is at its maximum),
+meaning that the cathodic overvoltage will never be close to zero as long as there 
+is methanol in the anode side: this means that Tafel equation is an acceptable 
+approximation in all conditions.</p>
+<p>For the case when i is greater than the exchange current density, the formula
+for the additional voltage loss due to crossover is very simple and does not require 
+any additional parameters; otherwise, the exchange current density must be used in
+the calculation.</p>
+</html>"));
   end OvervoltageFuelCell;
   
   package Test "Package of test cases" 
@@ -1281,10 +1238,12 @@ current.</p>
               0,127,127}));
     end MixerTest;
     
-    partial model CellTest "Generic test suite for fuel-cell models." 
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
+    partial model CellTest "Generic test suite for fuel-cell models" 
+      inner parameter Modelica.SIunits.Pressure p_env = 101325 
+        "Environment pressure";
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15 
+        "Enviroment temperature";
+      inner parameter Real RH_env = 60 "Environment relative humidity";
       
       parameter Modelica.SIunits.VolumeFlowRate anodeFlow = 30E-6/60 
         "Anodic volumetric flow rate";
@@ -1319,8 +1278,8 @@ current.</p>
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
-      
       fuelCell.I = I_cell;
+      
       pump.V = anodeFlow;
       heater.outletTemperature.T = anodeInletTemperature;
       blower.V = cathodeFlow;
@@ -1334,7 +1293,7 @@ current.</p>
     model TheveninCellTest "Test for the Thevenin-circuit model" 
       extends CellTest(redeclare TheveninFuelCell fuelCell);
     end TheveninCellTest;
-
+    
     model OvervoltageCellTest "Test for the Thevenin-circuit model" 
       extends CellTest(redeclare OvervoltageFuelCell fuelCell);
     end OvervoltageCellTest;
