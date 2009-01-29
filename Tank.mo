@@ -1033,7 +1033,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
     end TestExtensiveBalances;
     
     
-    model TestStirredTank "Test for the generic stirred tank" 
+    model TestStirredtank "Test for the generic stirred tank" 
       
       inner parameter Real RH_env = 60;
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
@@ -1062,7 +1062,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       tank.z[2] = 0.99;
       tank.z[3] / 0.21 = tank.z[5] / 0.79;
       
-    end TestStirredTank;
+    end TestStirredtank;
     
     model TestFuelTank "A simple test for the FuelTank class" 
       
