@@ -241,7 +241,7 @@ values from 0 (dry air) to 100 (saturated air).</p>
     import Thermo.rachfordRice;
     
     Temperature T(start=298.15) "Representative temperature.";
-    Real beta(min=0.0,max=1.0);
+    parameter Real beta = 0;
     
     MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
       "Overall molar fraction.";
@@ -251,10 +251,9 @@ values from 0 (dry air) to 100 (saturated air).</p>
       "Gaseous molar fraction.";
     
   equation 
-  for beta in 0.0:   0.01:  1.0 loop
     // Component material balance.
     z = y*beta + x*(1-beta);
-    end for;
+    
     /* Notes on mole-fraction consistency:
    * We assume that z is given and sums to 1. Then, it follows that:
    * 1) sum(x) = 1 is linearly dependent with sum(z) = 1, the Rathford-Rice relation and material balance.
