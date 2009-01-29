@@ -241,9 +241,7 @@ values from 0 (dry air) to 100 (saturated air).</p>
     import Thermo.rachfordRice;
     
     Temperature T(start=298.15) "Representative temperature.";
-    
-    Real beta(min=0.0,max=1.0) = rachfordRice(z[1], z[2], T) 
-      "Gas mole fraction.";
+    Real beta(min=0.0,max=1.0);
     
     MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
       "Overall molar fraction.";
@@ -253,9 +251,10 @@ values from 0 (dry air) to 100 (saturated air).</p>
       "Gaseous molar fraction.";
     
   equation 
+  for beta in 0.0:   0.01:  1.0 loop
     // Component material balance.
     z = y*beta + x*(1-beta);
-    
+    end for;
     /* Notes on mole-fraction consistency:
    * We assume that z is given and sums to 1. Then, it follows that:
    * 1) sum(x) = 1 is linearly dependent with sum(z) = 1, the Rathford-Rice relation and material balance.
@@ -298,13 +297,12 @@ functions.</p>
     
   equation 
     der(n) = {sum(flows[j].F * flows[j].z[i] for j in 1:m) for i in AllSpecies};
-    der(U) =  sum(flows[j].H                 for j in 1:m) + Q;
+    der(U) = sum(flows[j].H for j in 1:m) + Q;
     
   end ExtensiveBalances;
   
-  
   partial model StirredTank "A generic stirred tank with an undefined shape." 
-    extends Equilibrium(T(start=298.15,fixed=true));
+    extends Equilibrium(T(start=273.15,fixed=true));
     extends ExtensiveBalances(m=1);
     
     import Modelica.SIunits.AmountOfSubstance;
@@ -1031,7 +1029,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
       Q = -0.5;
       
     end TestExtensiveBalances;
-    
     
     model TestStirredtank "Test for the generic stirred tank" 
       
