@@ -746,6 +746,8 @@ public
     
     if C_water >= 0.0 or beta_sol > 1.0 then
       beta := 1.0;
+    elseif beta_sol < 0.0 then // Should never happen, but rounding errors can give -1e-17.
+      beta := 0.0;
     else
       beta := beta_sol;
     end if;
