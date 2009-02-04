@@ -42,8 +42,6 @@ package System "DMFC systems"
           -89.5,8; -68.08,8], style(color=62, rgbcolor={0,127,127}));
     connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-68,12;
           -58,12; -58,6.3; -46,6.3], style(color=62, rgbcolor={0,127,127}));
-    connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[2.66,76;
-          0,76; 0,6.3; -24,6.3], style(color=62, rgbcolor={0,127,127}));
     connect(cathodeCooler.outlet, condenser.inlet) 
       annotation (points=[23.34,76; 56,76], style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
@@ -77,10 +75,13 @@ package System "DMFC systems"
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
+    connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[
+          2.66,76; -10,76; -10,6.3; -24,6.3], style(color=62, rgbcolor={0,127,
+            127}));
   end Reference;
   
   model Reference_NoControl "The reference DMFC system, no control applied" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell);
+    extends Reference(redeclare Flow.OvervoltageFuelCell fuelCell);
     
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
@@ -107,7 +108,7 @@ package System "DMFC systems"
   annotation (uses(Modelica(version="2.2.1")));
   model Reference_SimpleControl 
     "The reference DMFC system, some simple control loops" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell);
+    extends Reference(redeclare Flow.OvervoltageFuelCell fuelCell);
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Thermo.Oxygen;
