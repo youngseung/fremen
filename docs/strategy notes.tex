@@ -208,11 +208,22 @@ n_\text{fuel} = \alpha\,\Measurement{I} + \beta\,\Estimate{c}
 However, while we do have a measurement on $I$, we need to estimate $c$. Since
 the system is stable, we will use $\Estimate{c} = c^\text{ref}$.
 
+When the reference is changed, and supposing that the solution volume is known,
+it could be possible to add or remove the correct quantity of methanol rapidly
+by setting an additional feedforward term:
+\begin{equation}
+n_\text{fuel} = \alpha\,\Measurement{I} + \beta\,c^\text{ref} +
+\DER{c^\text{ref}}{t}\,V_\text{sol}
+\end{equation}
 
+It is likely that in case of steps the saturation limit for the input will be
+reached; in such cases an integrator of some sort may keep memory of this, in
+order to maintain the flow at maximum or minimum for as long as necessary. (this
+part needs formalisation.)
 
-
-
-
+The derivative on $c^\text{ref}$ can be realised with a realisable derivative
+element obtained by cutting off at a certain frequency, using an appropriate
+approximating transfer function.
 
 
 
