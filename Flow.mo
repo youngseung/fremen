@@ -428,6 +428,7 @@ unit.</p>
       import Thermo.LiquidSpecies;
       import Thermo.GasPhase;
       import Thermo.LiquidPhase;
+      import Modelica.Constants.eps;
     
       FlowPort inlet annotation (extent=[-110,-10; -90,10]);
       FlowPort outlet 
@@ -585,7 +586,7 @@ additional object down- or upstream to measure the temperature.</p>
 </html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
@@ -673,7 +674,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
           -58,26; -58,10], style(
         color=1,
         rgbcolor={255,0,0},
@@ -681,7 +682,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
           60,26; 86,26], style(
         color=1,
         rgbcolor={255,0,0},
@@ -701,7 +702,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     flowTemperature_inlet.outlet.H = flowTemperature_outlet.inlet.H + coolingDuty;
     
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
-      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16; 
+      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16;
           1,6.10623e-16; 1,6.10623e-16; 50,6.10623e-16],    style(
         color=62,
         rgbcolor={0,127,127},
@@ -962,7 +963,7 @@ based on the <em>exiting</em> flow.</p>
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
     connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -46,30; 
+                                        annotation (points=[-100,30; -46,30;
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -40,
@@ -970,7 +971,7 @@ based on the <em>exiting</em> flow.</p>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30; 
+    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30;
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -980,7 +981,7 @@ based on the <em>exiting</em> flow.</p>
           44; 36,-20; 70,-20], style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
+    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30;
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1033,24 +1034,28 @@ current.</p>
     
     import Modelica.Math.log;
     import Modelica.Constants.R;
+    import Modelica.SIunits.Voltage;
+    import Modelica.SIunits.CurrentDensity;
+    import Modelica.SIunits.Resistivity;
+    import Modelica.SIunits.Resistance;
     
     constant Integer n = 6 "Number of electrons exchanged in ORR";
+    
     parameter Real alpha = 0.5 "Cathodic symmmetry factor";
-    parameter Modelica.SIunits.CurrentDensity i_0 = 5E-2 
-      "Exchange current density";
+    parameter CurrentDensity i_0 = 5E-2 "Exchange current density";
     
     parameter ArealResistance r = 13.3E-6 "Areal resistance";
-    parameter Modelica.SIunits.Resistivity rho = r / d_M "Membrane resistivity";
-    parameter Modelica.SIunits.Resistance R_el = r / A "Resistance";
+    parameter Resistivity rho = r / d_M "Membrane resistivity";
+    parameter Resistance R_el = r / A "Resistance";
     
-    parameter Modelica.SIunits.Voltage V0 = 0.6 "Open-circuit voltage";
+    parameter Voltage V0 = 0.9 "Open-circuit voltage without crossover";
+    Voltage delta_eta "Overvoltage caused by crossover";
     
-    Modelica.SIunits.Voltage delta_eta "Overvoltage caused by crossover";
   equation 
     if i + i_c < i_0 then // This will never happen in practical cases.
       delta_eta = 0;
     elseif i < i_0 then // This is used almost only for open circuit.
-      delta_eta = R * Tm.T / alpha / n / F * log( (i + i_c)/i_0);
+      delta_eta = R * Tm.T / alpha / n / F * log((i + i_c)/i_0);
     else // This is the most common case.
       delta_eta = R * Tm.T / alpha / n / F * log(1 + i_c/i);
     end if;
@@ -1266,11 +1271,11 @@ the calculation.</p>
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
