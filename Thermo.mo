@@ -633,9 +633,9 @@ protected
     constant Pressure p_env = 101325 "Environment pressure";
   algorithm 
     if n == Methanol then
-      der_K := p_env/p_ch3oh(T)^2*dp_ch3oh_dT(T);
+      der_K := dp_ch3oh_dT(T)/p_env;
     elseif n == Water then
-      der_K := p_env/p_h2o(T)^2*dp_h2o_dT(T);
+      der_K := dp_h2o_dT(T)/p_env;
     else
       der_K := 0.0;
     end if;
@@ -789,7 +789,7 @@ we have to pick a different solution when we pass beyond this temperature.</p>
 <li>Otherwise, we select the <em>first</em> or smaller solution.</li>
 </ul>
 <p>Notice that the two cases of higher and lower solution have <em>the same mathematical expression</em>, since the coefficient of &beta;<sup>2</sup> changes sign in correspondance of the change in root selection; therefore, we do not need to change the sign in front of the root of &Delta;.</p>
-
+ 
 <p>Finally, since the polynomial can yield solutions larger than 1, &beta; must be limited to the interval between 0 an 1, and any solution larger than 1 will return a value of exactly 1.</p>
  
 <h3>References</h3>
