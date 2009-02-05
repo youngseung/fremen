@@ -239,9 +239,12 @@ values from 0 (dry air) to 100 (saturated air).</p>
     import Thermo.GasSpecies;
     import Thermo.AllSpecies;
     import Thermo.rachfordRice;
+    import Thermo.Methanol;
+    import Thermo.Water;
     
-    Temperature T(start=273.15) "Representative temperature.";
-    parameter Real beta = 0.2;
+    Temperature T "Representative temperature.";
+  //  parameter Real beta = 0.2;
+    Real beta = rachfordRice(z[Methanol], z[Water], T);
     
     MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
       "Overall molar fraction.";
@@ -301,7 +304,7 @@ functions.</p>
   end ExtensiveBalances;
   
   partial model StirredTank "A generic stirred tank with an undefined shape." 
-    extends Equilibrium(T(start=273.15,fixed=true));
+    extends Equilibrium(T(start=T_env,fixed=true));
     extends ExtensiveBalances(m=1);
     
     import Modelica.SIunits.AmountOfSubstance;
@@ -331,6 +334,8 @@ functions.</p>
       "Surface area of contact between tank and environment";
     parameter Volume V = 1E-3 "Total volume of the tank.";
     
+    outer Temperature T_env "Environment temperature";
+    
     AmountOfSubstance n_tot(min=0) = sum(n) "Total moles.";
     
     AmountOfSubstance n_g_tot(min=0) = beta * n_tot "Total moles of gas.";
@@ -347,7 +352,7 @@ functions.</p>
     MolarEnthalpy h_g = sum(h(T,i,GasPhase)*y[i] for i in AllSpecies) 
       "The molar enthalpy of the mixture in gas phase.";
     
-    InternalEnergy tankSensibleHeat = Cp*(T-298.15) 
+    InternalEnergy tankSensibleHeat = Cp*(T-T_env) 
       "The heat accumulated in the tank's solid parts, such as glass, lid, etc.";
     InternalEnergy gasSpeciesEnergy = sum(h(T,i,GasPhase)*beta*n_tot*y[i] for i in AllSpecies) 
       "The internal energy of the gaseous species.";
@@ -361,7 +366,7 @@ functions.</p>
     
   equation 
     // Exchange of heat with the environment.
-    Q = A_sur * k_h * (298.15 - T);
+    Q = A_sur * k_h * (T_env - T);
     
     // Allocation of internal energy. See each term for a description.
     U = tankSensibleHeat + gasSpeciesEnergy + liquidSpeciesEnergy;
@@ -1035,6 +1040,11 @@ in liquid phase; it takes their density from the Thermo library.</p>
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       
+      import Thermo.Methanol;
+      import Thermo.Water;
+      import Thermo.Oxygen;
+      import Thermo.Nitrogen;
+      
       model MyStirredTank 
         extends StirredTank(m=2);
       end MyStirredTank;
@@ -1054,10 +1064,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       tank.flows[2].H=tank.flows[2].F*tank.h_tot;
       
     initial equation 
-      tank.z[1] = 0.;
-      tank.z[2] = 0.99;
-      tank.z[3] / 0.21 = tank.z[5] / 0.79;
-      
+      tank.z[Methanol] = 0.;
+      tank.z[Water] = 0.99;
+      tank.z[Oxygen] / 0.21 = tank.z[Nitrogen] / 0.79;
     end TestStirredtank;
     
     model TestFuelTank "A simple test for the FuelTank class" 
