@@ -633,7 +633,7 @@ protected
     constant Pressure p_env = 101325 "Environment pressure";
   algorithm 
     if n == Methanol then
-      der_K := -p_env/p_ch3oh(T)^2*dp_ch3oh_dT(T);
+      der_K := p_env/p_ch3oh(T)^2*dp_ch3oh_dT(T);
     elseif n == Water then
       der_K := p_env/p_h2o(T)^2*dp_h2o_dT(T);
     else
