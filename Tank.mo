@@ -241,7 +241,7 @@ values from 0 (dry air) to 100 (saturated air).</p>
     import Thermo.rachfordRice;
     
     Temperature T(start=273.15) "Representative temperature.";
-    parameter Real beta = 1.0;
+    parameter Real beta = 0.2;
     
     MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
       "Overall molar fraction.";
