@@ -917,7 +917,8 @@ Binary, Ternary, and Quaternary Systems</em>, Industrial and Engineering Chemist
   end rachfordRice;
   
 protected 
-  function drachfordRice "The vapour fraction of a methanol-water-gas mixture." 
+  function drachfordRice_dt 
+    "The vapour fraction of a methanol-water-gas mixture." 
     input MoleFraction z_methanol "The methanol fraction.";
     input MoleFraction z_water "The water fraction.";
     input Temperature T 
@@ -958,5 +959,5 @@ protected
     
     annotation (Documentation(info="<html>
 </html>"));
-  end drachfordRice;
+  end drachfordRice_dt;
 end Thermo;
