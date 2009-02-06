@@ -113,6 +113,9 @@ liquid level).</p>
     import Thermo.mw;
     import Thermo.rho;
     import Thermo.h;
+    import Thermo.Methanol;
+    import Thermo.Water;
+    import Thermo.LiquidPhase;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.MoleFraction;
@@ -130,13 +133,13 @@ liquid level).</p>
       annotation (extent=[-20,-20; 20,20]);
   equation 
     assert( C >= 0, "Negative concentration given in MethanolSolution object.");
-    assert( C <= rho(T,1,2)/mw(1), "Methanol concentration over limit (" + String(mw(1)/rho(T,1,2)) + " mol/m³).");
+    assert( C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m³).");
     
-    C = x_ch3oh / ( x_ch3oh*mw(1)/rho(T,1,2) + x_h2o*mw(2)/rho(T,2,2));
+    C = x_ch3oh / ( x_ch3oh*mw(Methanol)/rho(T,Methanol,LiquidPhase) + x_h2o*mw(Water)/rho(T,Water,LiquidPhase));
     x_ch3oh + x_h2o = 1.0;
     
     p.z_local = {x_ch3oh, x_h2o, 0, 0, 0};
-    p.h_local = x_ch3oh*h(T,1,2) + x_h2o*h(T,2,2);
+    p.h_local = x_ch3oh*h(T,Methanol,LiquidPhase) + x_h2o*h(T,Water,LiquidPhase);
     
     annotation (Icon(Ellipse(extent=[-100,100; 100,-100],
                                                       style(
@@ -381,7 +384,8 @@ functions.</p>
 classes, and combines them adding the constraint of a fixed volume.</p>
 <p>The number of flows <em>m</em> cannot be set to zero; if you need such a
 isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt>.</p>
-</html>"), Icon);
+</html>"), Icon,
+      DymolaStoredErrors);
   end StirredTank;
   
   partial model VerticalCylindricalTank 
@@ -502,7 +506,8 @@ exclude presence of water in gas phase;</li>
 </ul>
 <p>Our laboratory's mixer has an internal diameter of 74 millimetres and a volume of
 0.5 litres.</p>
-</html>"),   Icon);
+</html>"),   Icon, 
+      Diagram);
     
     CheckPoint flow1 = flows[1] "Connection at the bottom of the tank." 
                      annotation (extent=[-40,-90; -20,-70]);
@@ -526,12 +531,12 @@ exclude presence of water in gas phase;</li>
     flows[5].z_local = y;
     flows[5].h_local = h_g;
     
-  initial equation 
-    z[1] = 0.0; // (Almost) no methanol in initial solution
-    level = 0.5 * V / A; // Half-full
-    z[4] = 0.0; // No CO2 in gas
-    y[5] / 0.79 = y[3] / 0.21; // N2/O2 in air proportions
-    
+  /*initial equation 
+  z[1] = 0.0; // (Almost) no methanol in initial solution
+  level = 0.5 * V / A; // Half-full
+  z[4] = 0.0; // No CO2 in gas
+  y[5] / 0.79 = y[3] / 0.21; // N2/O2 in air proportions
+*/
   end Mixer;
   
   model Separator "A gas-liquid separator" 
@@ -681,41 +686,9 @@ which is used to transfer heat with other elements.</p>
 </html>"));
   end HeatExchangerPipe;
   
-  model GasPipeSegment 
-     extends GasTank(m=2, name="Gas-pipe segment");
-  equation 
-    for i in 1:m loop
-      flows[i].z_local = z;
-      flows[i].h_local = h_tot;
-    end for;
-  end GasPipeSegment;
   
-  model GasPipe "A pipe whose contents are in gas phase" 
-    parameter Integer n = 10 "Number of segments";
-    replaceable GasPipeSegment[n] segments(each V=1e-4);
-  protected 
-    FlowConnector[n-1] connections;
-  equation 
-    for i in 1:(n-1) loop
-      connect( segments[i].flows[2], connections[i].port1);
-      connect( connections[i].port2, segments[i+1].flows[1]);
-    end for;
-  end GasPipe;
   
-  model HeatExchangerGasPipeSegment 
-    "A section of a gas pipe passing through a heat exchanger." 
-    extends GasPipeSegment(m=3, name="Pipe section in heat exchanger");
-    
-  equation 
-    /* These variables are unused, but must be initialised to some dummy
-   * value, or the count of equations and variables will not square.*/
-    flows[3].F = 0;
-    flows[3].z = zeros(size(Thermo.AllSpecies,1));
-  end HeatExchangerGasPipeSegment;
   
-  model HeatExchangerGasPipe 
-    extends GasPipe(redeclare HeatExchangerGasPipeSegment segments[n]);
-  end HeatExchangerGasPipe;
   
   model HeatExchanger "A heat exchanger with two sides" 
     
@@ -1115,7 +1088,10 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       MethanolSolution source annotation (extent=[-86,8; -66,28]);
     equation 
-      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6;
+      mixer.flow1.F = 1;
+      mixer.flow2.F = 0.5;
+      
+      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6; 
             -40,-6; -40,4.2; -36,4.2],  style(pattern=0, thickness=2));
       connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-24.04,
             52; -30,52; -30,37.8],
@@ -1138,7 +1114,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           fillColor=46,
           rgbfillColor={127,127,0},
           fillPattern=7));
-      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51;
+      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51; 
             -32,-51; -32,4.2], style(
           pattern=0,
           thickness=2,
@@ -1152,9 +1128,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
           fillColor=46,
           rgbfillColor={127,127,0},
           fillPattern=7));
-      flowConnector.port2.F = 1;
-      flowConnector3.port2.F = 0.5;
-      
       connect(source.p, flowConnector.port1) annotation (points=[-76,18; -76,-6;
             -58.04,-6],      style(pattern=0, thickness=2));
     end TestMixer;
@@ -1184,7 +1157,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(BottomSeparatorConnector.port1, separator.liquidOutlet) 
-                                                           annotation (points=[20.8,-34;
+                                                           annotation (points=[20.8,-34; 
             8.2,-34; 8.2,-10],               style(
           pattern=0,
           thickness=2,
@@ -1196,13 +1169,13 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port1, separator.gasOutlet) 
-                                                         annotation (points=[22.8,26;
+                                                         annotation (points=[22.8,26; 
             8,26; 8,2; 8.2,2],              style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(FuelTankToSeparatorConnector.port2, separator.feed) 
-                                                    annotation (points=[-40.8,-4;
+                                                    annotation (points=[-40.8,-4; 
             -41.6,-4; -41.6,-4; -38,-4; -38,-4; -33.4,-4],
                                                style(
           pattern=0,
@@ -1211,7 +1184,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       source.p.F = -1;
       der(separator.level) = 0;
-      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14;
+      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14; 
             -62,-4; -55.2,-4],     style(pattern=0, thickness=2));
     end TestSeparator;
     
