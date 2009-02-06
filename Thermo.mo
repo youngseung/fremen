@@ -295,6 +295,7 @@ protected
   algorithm 
     // This is the Antoine Law itself. Note the conversion bar->Pa.
     p := 10.0^(A - B/(T + C))*1e5;
+    annotation(derivative=AntoineLawDerivative);
     annotation (Documentation(info="<html>
 <p>This abstract function implements Antoine's law for vapour pressure.</p>
 </html>"));
@@ -302,15 +303,18 @@ protected
   
 protected 
   partial function AntoineLawDerivative 
+    import Modelica.Math.log;
     input Temperature T;
+    input Real der_T;
     output Real der_p;
   protected 
+    constant Real k = log(10);
     parameter Real A;
     parameter Real B;
     parameter Real C;
   algorithm 
-    // This is Antoine Law's derivative with respect to temperature. Note the conversion bar->Pa.
-    der_p := (B*10.0^(A - B/(T + C)))/(T+C)^2*1e5;
+    // This is Antoine Law's derivative with respect to time. Note the conversion bar->Pa.
+    der_p := k*B*10.0^(A - B/(T + C))/(T+C)^2*1e5 * der_T;
     
   end AntoineLawDerivative;
   
@@ -321,6 +325,7 @@ protected
       A=4.65430,
       B=1435.264,
       C=-64.848);
+    annotation(derivative=dp_h2o_dt);
     annotation (Documentation(info="<html>
 <p>This function returns the vapour pressure of water given the temperature. Data from
 <a href=\"http://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=4#Thermo-Phase\">NIST</a>
@@ -329,13 +334,13 @@ protected
   end p_h2o;
   
 protected 
-  function dp_h2o_dT 
+  function dp_h2o_dt 
     extends AntoineLawDerivative(
       T(min=255.8, max=373.0),
       A=4.65430,
       B=1435.264,
       C=-64.848);
-  end dp_h2o_dT;
+  end dp_h2o_dt;
   
 protected 
   function p_ch3oh 
@@ -344,6 +349,7 @@ protected
       A=5.20409,
       B=1581.341,
       C=-33.50);
+    annotation(derivative=dp_ch3oh_dt);
     annotation (Documentation(info="<html>
 <p>This function returns the vapour pressure of methanol given the temperature. Data from
 <a href=\"http://webbook.nist.gov/cgi/cbook.cgi?ID=C67561&Mask=4#Thermo-Phase\">NIST</a>
@@ -352,13 +358,13 @@ protected
   end p_ch3oh;
   
 protected 
-  function dp_ch3oh_dT 
+  function dp_ch3oh_dt 
     extends AntoineLawDerivative(
       T(min=288.0, max=356.83),
       A=5.20409,
       B=1581.341,
       C=-33.50);
-  end dp_ch3oh_dT;
+  end dp_ch3oh_dt;
   
 protected 
   function LinearInterpolation 
@@ -519,7 +525,7 @@ public
     else
       assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
-    annotation(derivative=dh_dT, Documentation(info="<html>
+    annotation(derivative=dh_dt, Documentation(info="<html>
 <p>Returns the specific enthalpy of the given component at the given temperature and 
 in the given phase; the reference state is always 298.15 K.</p><p>For non-elementary species,
 such as water or carbon dioxide, the specific enthalpy formation for the element in 
@@ -532,15 +538,15 @@ the given phase; the reference state is always 298.15 K.</p>
   end h;
   
 protected 
-  function dh_dT "Derivative of the enthalpy function" 
+  function dh_dt "Derivative of the molar enthalpy function" 
     input Temperature T;
     input Integer n "Component";
     input Integer p "Phase";
     input Real der_T "The rate of variation of temperature.";
-    output MolarHeatCapacity c;
+    output Real der_h;
   algorithm 
-    c := cp(T,n,p);
-  end dh_dT;
+    der_h := cp(T, n, p)*der_T;
+  end dh_dt;
   
 public 
   function cp 
@@ -585,11 +591,28 @@ public
     else
       assert(false, "Vapour pressure of species "+speciesName(n)+" requested.");
     end if;
-    annotation(derivative=dp_vap_dT);
+    annotation(derivative=dp_vap_dt);
     annotation (Documentation(info="<html>
 <p>Returns the vapour pressure of the given component at the given temperature.</p>
 </html>"));
   end p_vap;
+  
+protected 
+  function dp_vap_dt 
+    input Temperature T;
+    input Integer n "Component";
+    input Real der_T;
+    output Real der_p;
+  algorithm 
+    if n == 1 then
+      der_p := dp_ch3oh_dt(T,der_T);
+    elseif n == 2 then
+      der_p := dp_h2o_dt(T,der_T);
+    else
+      assert(false, "Error: vapour Pressure of component "+String(n)+" requested.");
+    end if;
+    
+  end dp_vap_dt;
   
 public 
   function K 
@@ -608,7 +631,7 @@ public
       assert(false, "Equilibrium constant of species "+speciesName(n)+" requested.");
     end if;
     
-    annotation(derivative=dK_dT, Documentation(info="<html>
+    annotation(derivative=dK_dt, Documentation(info="<html>
 <p>This function provides the chemical-equilibrium y/x ratio of liquid versus gaseous
 molar fraction.</p>
 <p>Note that this function assumes environmental pressure (101325 Pa).</p>
@@ -624,7 +647,7 @@ liquid phase, by setting their K-value to be zero.</p>
   end K;
   
 protected 
-  function dK_dT 
+  function dK_dt 
     input Temperature T "Temperature.";
     input Integer n "Component.";
     input Real der_T "The derivative of temperature.";
@@ -633,30 +656,13 @@ protected
     constant Pressure p_env = 101325 "Environment pressure";
   algorithm 
     if n == Methanol then
-      der_K := dp_ch3oh_dT(T)/p_env;
+      der_K := dp_ch3oh_dt(T,der_T)/p_env;
     elseif n == Water then
-      der_K := dp_h2o_dT(T)/p_env;
+      der_K := dp_h2o_dt(T,der_T)/p_env;
     else
       der_K := 0.0;
     end if;
-  end dK_dT;
-  
-protected 
-  function dp_vap_dT 
-    input Temperature T;
-    input Integer n "Component";
-    input Real der_T;
-    output Real der_p;
-  algorithm 
-    if n == 1 then
-      der_p := dp_ch3oh_dT(T);
-    elseif n == 2 then
-      der_p := dp_h2o_dT(T);
-    else
-      assert(false, "Error: vapour Pressure of component "+String(n)+" requested.");
-    end if;
-    
-  end dp_vap_dT;
+  end dK_dt;
   
 public 
   function rho 
@@ -680,7 +686,7 @@ public
       // NOTE Assuming ideal gas.
       RHO := mw(n)*p_env/R/T;
     end if;
-    annotation(derivative=drho_dT);
+    annotation(derivative=drho_dt);
     annotation (Documentation(info="<html>
 <p>Returns the density of the given component at the given temperature and in the given phase.
 For gases, the ideal gas lawo is assumed; for liquids, a linear interpolation on data is
@@ -694,14 +700,14 @@ molar heat capacity, vapour pressure, molecular weight and so on.</p>
 </html>"));
   
 protected 
-  function drho_dT "Derivative of the density function" 
+  function drho_dt "Derivative of the density function" 
     import Modelica.Constants.R;
     
     input Temperature T;
     input Integer n "The component code";
     input Integer p "Phase";
     input Real der_T "The rate of variation of temperature";
-    output Real der_rho "The derivative drho/dT";
+    output Real der_rho "The derivative drho/dt";
     
   protected 
     constant Pressure p_env=101325.0;
@@ -719,7 +725,7 @@ protected
       // NOTE Assuming ideal gas.
       der_rho := -mw(n)*p_env/R/T^2*der_T;
     end if;
-  end drho_dT;
+  end drho_dt;
   
 public 
   function rachfordRice "The vapour fraction of a methanol-water-gas mixture." 
@@ -911,8 +917,7 @@ Binary, Ternary, and Quaternary Systems</em>, Industrial and Engineering Chemist
   end rachfordRice;
   
 protected 
-  function drachfordRice_dt 
-    "The vapour fraction of a methanol-water-gas mixture." 
+  function drachfordRice "The vapour fraction of a methanol-water-gas mixture." 
     input MoleFraction z_methanol "The methanol fraction.";
     input MoleFraction z_water "The water fraction.";
     input Temperature T 
@@ -953,5 +958,5 @@ protected
     
     annotation (Documentation(info="<html>
 </html>"));
-  end drachfordRice_dt;
+  end drachfordRice;
 end Thermo;
