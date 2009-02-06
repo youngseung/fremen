@@ -527,7 +527,7 @@ temperature and concentration of methanol in the liquid phase of the flow.</p>
         cm.c = 0;
       end if;
     
-      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,100], style(
         pattern=0,
         thickness=2,
@@ -872,6 +872,7 @@ based on the <em>exiting</em> flow.</p>
     import Modelica.SIunits.PartialPressure;
     import Modelica.SIunits.Resistance;
     import Modelica.SIunits.Resistivity;
+    import Modelica.Constants.eps;
     
     import Thermo.mw;
     import Thermo.LiquidPhase;
@@ -903,16 +904,18 @@ based on the <em>exiting</em> flow.</p>
     ConcentrationPort cm_in annotation (extent=[-100,-70; -80,-50]);
     ConcentrationPort cm_out annotation (extent=[80,-70; 100,-50]);
     
-    CurrentDensity i "Current density";
+    CurrentDensity i(min=0) "Current density";
     Current I = i * A "Current";
-    CurrentDensity i_c "Crossover current density";
+    CurrentDensity i_c(min=0) "Crossover current density";
     Current I_c = i_c * A "Crossover current";
     Voltage V "Cell voltage";
     
-    Concentration c_a = anodeOutletTC.cm.c "Methanol concentration";
+    Concentration c_a = anodeOutletTC.cm.c 
+      "Methanol concentration, outlet is representative";
     Concentration c_ac "Catalyst-layer methanol concentration";
-    PartialPressure p_o2 "Oxygen partial pressure";
-    PartialPressure p_h2o "Cathodic water partial pressure";
+    PartialPressure p_o2 "Oxygen partial pressure, outlet is representative";
+    PartialPressure p_h2o 
+      "Cathodic water partial pressure, outlet is representative";
     
   protected 
     FlowTemperature cathodeT "Temperature measurement on the cathode" 
@@ -945,10 +948,10 @@ based on the <em>exiting</em> flow.</p>
     // The energy "lost" from the heat balance is the electrical power.
     nexus.flowPort.H = I*V;
     
-    // Definition of oxygen partial pressure: using _outlet_ values FIXME why this formula? Explain better...
+    // Definition of oxygen partial pressure. On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     
-    // Definition of water partial pressure (on the cathode side): using _outlet_ values
+    // Definition of water partial pressure (on the cathode side). On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     
     // Methanol transport: binds c_a, c_ac and i (i_c is a function of c_ac).
@@ -958,12 +961,14 @@ based on the <em>exiting</em> flow.</p>
     i_c = 6*F*(D_M/d_M * c_ac);
     
     // Sanity check: crash simulation if conditions are unphysical
-    assert( c_ac >= 0, "Methanol catalyst-layer concentration is negative ("+String(c_ac)+")");
+    assert( c_ac > -eps, "Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
+    assert( max(cathode_outlet.n) < eps, "Some components are entering from the cathode outlet.");
+    assert( max(anode_outlet.n) < eps, "Some components are entering from the anode outlet.");
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
     connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -46,30;
+                                        annotation (points=[-100,30; -46,30; 
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -40,
@@ -971,7 +976,7 @@ based on the <em>exiting</em> flow.</p>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30;
+    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30; 
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -981,7 +986,7 @@ based on the <em>exiting</em> flow.</p>
           44; 36,-20; 70,-20], style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30;
+    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
