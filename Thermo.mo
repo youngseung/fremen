@@ -960,4 +960,39 @@ protected
     annotation (Documentation(info="<html>
 </html>"));
   end drachfordRice_dt;
+  
+public 
+  package Test 
+    model Test_p_vap "Test case for vapour pressure" 
+      import Modelica.SIunits.Temperature;
+      import Modelica.SIunits.PartialPressure;
+      
+      parameter Temperature T0 = 273.15 "Starting temperature";
+      
+      Temperature T = T0+time "Varying temperature, linear with time";
+      PartialPressure p_meoh "Partial pressure of methanol";
+      PartialPressure p_h2o "Partial pressure of water";
+      Real derivative_error_meoh 
+        "Error in the analytic vs. calculated derivative for methanol";
+      Real derivative_error_h2o 
+        "Error in the analytic vs. calculated derivative for water";
+      
+      function approximateDerivativePvap 
+        input Temperature T;
+        input Integer i;
+        parameter Real eps = 0.001;
+        output Real der_T;
+      algorithm 
+        der_T := (p_vap(T+eps,i)-p_vap(T-eps,i))/(2*eps);
+      end approximateDerivativePvap;
+      
+    equation 
+      p_meoh = p_vap(T, Methanol);
+      p_h2o = p_vap(T, Water);
+      
+      derivative_error_meoh = approximateDerivativePvap(T,Methanol) - dp_vap_dt(T, Methanol, der(T));
+      derivative_error_h2o = approximateDerivativePvap(T,Water) - dp_vap_dt(T, Water, der(T));
+    end Test_p_vap;
+    
+  end Test;
 end Thermo;
