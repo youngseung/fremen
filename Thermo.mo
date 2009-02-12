@@ -333,7 +333,7 @@ protected
 </html>"));
   end p_h2o;
   
-protected 
+public 
   function dp_h2o_dt 
     extends AntoineLawDerivative(
       T(min=255.8, max=373.0),
