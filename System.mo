@@ -5,79 +5,113 @@ package System "DMFC systems"
     inner parameter Modelica.SIunits.Temperature T_env = 298.15;
     inner parameter Real RH_env = 60;
     
-    Flow.Mixer mixer annotation (extent=[-10,-74; 10,-54]);
+    Flow.Mixer mixer annotation (extent=[-10,-42; 10,-22]);
     Flow.Pump pump "The anodic-loop pump" 
-              annotation (extent=[-74,-70; -62,-58]);
+              annotation (extent=[-50,-38; -38,-26]);
     annotation (Diagram);
-    Flow.Cooler cooler "The solution-loop cooler" 
-                  annotation (extent=[4,-14; 26,6]);
+    Flow.Cooler anodeCooler "The solution-loop cooler" 
+                  annotation (extent=[0,-10; 22,10]);
     Flow.PureMethanolSource pureMethanolSource 
-      "A substitute for an actual tank"   annotation (extent=[8,-92; 16,-84]);
+      "A substitute for an actual tank"   annotation (extent=[30,-58; 42,-46]);
     Flow.Pump fuelPump "The smaller fuel pump" 
-                  annotation (extent=[-4,-92; 4,-84]);
+                  annotation (extent=[8,-58; 20,-46]);
     Flow.Separator degasser "The CO2-degasser" 
-                        annotation (extent=[32,-14; 52,6]);
+                        annotation (extent=[32,-10; 52,10]);
     Flow.SinkPort co2sink "The gas outlet of the degasser" 
-                      annotation (extent=[62,-4; 70,4]);
+                      annotation (extent=[54,20; 62,28]);
     replaceable Flow.FuelCell fuelCell 
-                      annotation (extent=[-46,-8; -24,14]);
+                      annotation (extent=[-50,-12; -14,22]);
     Flow.EnvironmentPort environment "The air from the environment" 
-      annotation (extent=[-84,16; -64,36]);
+      annotation (extent=[-82,22; -62,42]);
     Flow.GasFlowController blower "The mass-flow controller" 
-      annotation (extent=[-72,4; -64,12]);
+      annotation (extent=[-74,2; -66,10]);
     Flow.Cooler cathodeCooler "The cathode-side cooler" 
-                  annotation (extent=[2,66; 24,86]);
+                  annotation (extent=[0,0; 22,20]);
     Flow.Separator condenser "The water-recuperating unit" 
-                        annotation (extent=[56,66; 76,86]);
+                        annotation (extent=[54,0; 72,20]);
     Flow.SinkPort airSink "The gas outlet of the condenser" 
-                      annotation (extent=[86,76; 94,84]);
+                      annotation (extent=[74,28; 82,36]);
+    replaceable Modelica.Electrical.Analog.Sources.ConstantCurrent I_cell(I=5) 
+      "Current passing through the cell" annotation (extent=[-52,34; -32,54]);
+    Modelica.Electrical.Analog.Basic.Ground ground
+      annotation (extent=[-32,-30; -18,-16]);
   equation 
     connect(pump.inlet, mixer.outlet) 
-      annotation (points=[-68.12,-64; -8,-64], style(color=62, rgbcolor={0,127,
+      annotation (points=[-44.12,-32; -8,-32], style(color=62, rgbcolor={0,127,
             127}));
     connect(pureMethanolSource.c, fuelPump.inlet) 
-      annotation (points=[12,-88; -0.08,-88], style(color=62, rgbcolor={0,127,
+      annotation (points=[36,-52; 13.88,-52], style(color=62, rgbcolor={0,127,
             127}));
-    connect(environment.c, blower.inlet) annotation (points=[-83,21; -89.5,21;
-          -89.5,8; -68.08,8], style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-68,12;
-          -58,12; -58,6.3; -46,6.3], style(color=62, rgbcolor={0,127,127}));
+    connect(environment.c, blower.inlet) annotation (points=[-81,27; -89.5,27; 
+          -89.5,6; -70.08,6], style(color=62, rgbcolor={0,127,127}));
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
+          -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(cathodeCooler.outlet, condenser.inlet) 
-      annotation (points=[23.34,76; 56,76], style(color=62, rgbcolor={0,127,127}));
+      annotation (points=[21.34,10; 54,10], style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
-      annotation (points=[1.05471e-16,-84; 1.05471e-16,-78; 0,-72; 6.10623e-16,
-          -72], style(color=62, rgbcolor={0,127,127}));
-    connect(cooler.outlet, degasser.inlet) annotation (points=[25.34,-4; 27.005,
-          -4; 27.005,-4; 28.67,-4; 28.67,-4; 32,-4], style(color=62, rgbcolor={
+      annotation (points=[14,-46; 0,-46; 0,-40; 6.10623e-16,-40],
+                style(color=62, rgbcolor={0,127,127}));
+    connect(anodeCooler.outlet, degasser.inlet) 
+                                           annotation (points=[21.34,
+          5.32907e-16; 27.005,5.32907e-16; 27.005,6.10623e-16; 32,6.10623e-16],
+                                                     style(color=62, rgbcolor={
             0,127,127}));
-    connect(degasser.gasOutlet, co2sink.flowPort) annotation (points=[49,
-          6.66134e-16; 38.5,6.66134e-16; 38.5,3.88578e-17; 62.4,3.88578e-17],
+    connect(degasser.gasOutlet, co2sink.flowPort) annotation (points=[49,4; 48,
+          4; 48,24; 54.4,24],
         style(color=62, rgbcolor={0,127,127}));
     connect(condenser.gasOutlet, airSink.flowPort) 
-      annotation (points=[73,80; 86.4,80], style(color=62, rgbcolor={0,127,127}));
+      annotation (points=[69.3,14; 70,14; 70,32; 74.4,32],
+                                           style(color=62, rgbcolor={0,127,127}));
     connect(condenser.liquidOutlet, mixer.waterInlet) 
-      annotation (points=[73,72; 74,72; 74,-64; 8,-64], style(color=62,
+      annotation (points=[69.3,6; 70,6; 70,-32; 8,-32], style(color=62,
           rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (points=[49,-8; 
-          48,-8; 48,-46; 6.10623e-16,-46; 6.10623e-16,-56], style(color=62,
+    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (points=[49,-4; 
+          48,-4; 48,-14; 0,-14; 0,-24; 6.10623e-16,-24],    style(color=62,
           rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-24,-0.3; 
-          -10,-0.3; -10,-4; 4.66,-4], style(
+    connect(fuelCell.anode_outlet, anodeCooler.inlet) 
+                                                 annotation (points=[-14,-0.1; 
+          -14,0; -4,0; -4,5.32907e-16; 0.66,5.32907e-16],
+                                      style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-46,-0.3; 
-          -68,-0.3; -68,-58], style(
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+          -50,0; -76,0; -76,-26; -44,-26],
+                              style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[
-          2.66,76; -10,76; -10,6.3; -24,6.3], style(color=62, rgbcolor={0,127,
+    connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[0.66,10; 
+          -14,10; -14,10.1],                  style(color=62, rgbcolor={0,127,
             127}));
+    connect(I_cell.n, fuelCell.plus) annotation (points=[-32,44; -32,15.2], 
+        style(
+        color=3, 
+        rgbcolor={0,0,255}, 
+        pattern=0, 
+        fillColor=43, 
+        rgbfillColor={255,85,85}, 
+        fillPattern=1));
+    connect(I_cell.p, fuelCell.minus) annotation (points=[-52,44; -58,44; -58,
+          -16; -32,-16; -32,-5.2], style(
+        color=3, 
+        rgbcolor={0,0,255}, 
+        pattern=0, 
+        fillColor=43, 
+        rgbfillColor={255,85,85}, 
+        fillPattern=1));
+    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -32,-16; -32,
+          -5.2], style(
+        color=3, 
+        rgbcolor={0,0,255}, 
+        pattern=0, 
+        fillColor=43, 
+        rgbfillColor={255,85,85}, 
+        fillPattern=1));
   end Reference;
   
   model Reference_NoControl "The reference DMFC system, no control applied" 
@@ -93,17 +127,15 @@ package System "DMFC systems"
       "Flow rate for the cathodic loop";
     parameter Temperature T_cooler_out = 350;
     parameter Temperature T_condenser = 320;
-    parameter Modelica.SIunits.Current I_cell = 0 "Cell current";
     
   equation 
     pump.V = anodeFlow;
-    
     blower.V = cathodeFlow;
     fuelPump.V = fuelFlow;
-    cooler.outletTemperature.T = T_cooler_out;
+    anodeCooler.outletTemperature.T = T_cooler_out;
     cathodeCooler.outletTemperature.T = T_condenser;
-    fuelCell.I = I_cell;
     
+    annotation (Diagram);
   end Reference_NoControl;
   annotation (uses(Modelica(version="2.2.1")));
   model Reference_SimpleControl 
@@ -119,7 +151,6 @@ package System "DMFC systems"
     parameter Real k_c = 1 "P-control constant for concentration";
     parameter Temperature T_cooler_out = 340;
     parameter Temperature T_condenser = 320;
-    parameter Modelica.SIunits.Current I_cell = 0 "Cell current";
     
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
@@ -136,9 +167,8 @@ package System "DMFC systems"
     
     // Directly specified variables
     pump.V = anodeFlow;
-    cooler.outletTemperature.T = T_cooler_out;
+    anodeCooler.outletTemperature.T = T_cooler_out;
     cathodeCooler.outletTemperature.T = T_condenser;
-    fuelCell.I = I_cell;
     
     annotation (Diagram);
   end Reference_SimpleControl;
