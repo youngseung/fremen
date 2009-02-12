@@ -47,10 +47,13 @@ molar flows. It consists of two flow variables, the <em>enthalpy flow</em> and t
 molar-flow array from standard conditions, which is defined as starting from fundamental 
 elements in their native state, to the actual ones. Using this definition, it is fairly 
 easy to model chemical reactions.</p>
-</html>"), Icon(Rectangle(extent=[-102,100; 98,-100], style(
+</html>"), Icon(Rectangle(extent=[-100,100; 100,-100],style(
             pattern=0,
             fillColor=62,
-            rgbfillColor={0,127,127}))));
+            rgbfillColor={0,127,127})), Text(
+          extent=[-100,160; 100,100], 
+          string="%name", 
+          style(color=62, rgbcolor={0,127,127}))));
   end FlowPort;
   
   connector TemperaturePort "A connector providing temperature values." 
@@ -62,7 +65,10 @@ easy to model chemical reactions.</p>
             pattern=0,
             gradient=3,
             fillColor=1,
-            rgbfillColor={255,0,0}))),
+            rgbfillColor={255,0,0})), Text(
+          extent=[-100,158; 100,100], 
+          string="%name", 
+          style(color=1, rgbcolor={255,0,0}))),
       Documentation(info="<html>
 <p>This is a simple port to make the temperature of an object available for graphic
 connections.</p>
@@ -78,7 +84,10 @@ connections.</p>
             pattern=0,
             gradient=3,
             fillColor=71,
-            rgbfillColor={85,170,255}))),
+            rgbfillColor={85,170,255})), Text(
+          extent=[-100,160; 100,100], 
+          string="%name", 
+          style(color=69, rgbcolor={0,128,255}))),
       Documentation(info="<html>
 <p>This is a simple port to make the methanol concentration of a flow available
 for graphic connections.</p>
@@ -171,11 +180,10 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     c.H = c.n[Methanol]*h(T_env,Methanol,LiquidPhase);
     
     annotation (Icon(Ellipse(extent=[-100,100; 100,-100], style(
-            color=67,
-            rgbcolor={85,255,255},
-            thickness=4,
-            fillColor=7,
-            rgbfillColor={255,255,255}))), Documentation(info="<html>
+            pattern=0, 
+            thickness=4, 
+            fillColor=1, 
+            rgbfillColor={255,0,0}))),     Documentation(info="<html>
 <p>This item is a source for a pure methanol stream.</p>
 </html>"));
   end PureMethanolSource;
@@ -258,7 +266,16 @@ effect of humidity.</p>
             pattern=0,
             gradient=3,
             fillColor=51,
-            rgbfillColor={255,255,85}))),
+            rgbfillColor={255,255,85})), 
+        Text(
+          extent=[-100,160; 100,100], 
+          style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            fillColor=43, 
+            rgbfillColor={255,85,85}, 
+            fillPattern=1), 
+          string="%name")),
       Diagram);
   end EnvironmentPort;
   
@@ -314,20 +331,21 @@ about which we do not care much.</p>
             rgbcolor={0,0,0},
             thickness=2,
             fillColor=7,
-            rgbfillColor={255,255,255}))),
-                              Documentation(info="<html>
+            rgbfillColor={255,255,255})),Text(
+          extent=[-100,160; 100,100],
+          style(
+            color=0,
+            rgbcolor={0,0,0},
+            fillColor=43,
+            rgbfillColor={255,85,85},
+            fillPattern=1),
+          string="%name")),   Documentation(info="<html>
 <p>This class allows to set a certain overall molar or mass flow. It is not
 immediately possible to set a <em>volume</em> flow, because this would entail
 calculating the phase equilibrium, which we are not doing here (though child
 classes could specialize).</p>
 </html>"),
       Diagram);
-    annotation (Documentation(info="<html>
-<p>This class allows to set a certain overall molar or mass flow. It is not
-immediately possible to set a <em>volume</em> flow, because this would entail
-calculating the phase equilibrium, which we are not doing here (see child
-classes).</p>
-</html>"));
     
   end FlowController;
   
@@ -450,7 +468,7 @@ unit.</p>
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
       beta = Thermo.rachfordRice(z_m, z_w, T);
@@ -527,7 +545,7 @@ temperature and concentration of methanol in the liquid phase of the flow.</p>
         cm.c = 0;
       end if;
     
-      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,100], style(
         pattern=0,
         thickness=2,
@@ -576,7 +594,16 @@ temperature and concentration of methanol in the liquid phase of the flow.</p>
         Line(points=[-80,-40; 80,-40], style(
             color=0,
             rgbcolor={0,0,0},
-            thickness=4))), Diagram,
+            thickness=4)), 
+        Text(
+          extent=[-100,100; 100,40], 
+          style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            fillColor=43, 
+            rgbfillColor={255,85,85}, 
+            fillPattern=1), 
+          string="%name")), Diagram,
       Documentation(info="<html>
 <p>The separator unit splits a flow in its gaseous and liquid components</p>
 <p>It uses a <tt>FlowTemperature</tt> object internally for phase calculations,
@@ -586,7 +613,7 @@ additional object down- or upstream to measure the temperature.</p>
 </html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
@@ -650,7 +677,16 @@ additional object down- or upstream to measure the temperature.</p>
             thickness=4,
             fillColor=0,
             rgbfillColor={0,0,0},
-            fillPattern=1))),
+            fillPattern=1)), 
+        Text(
+          extent=[-102,82; 100,20], 
+          style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            fillColor=43, 
+            rgbfillColor={255,85,85}, 
+            fillPattern=1), 
+          string="%name")),
       Documentation(info="<html>
 <p>This is the most basic form for a heat exchanger. It simply relates the loss in enthalpic
 flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed to a protected
@@ -674,7 +710,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
+    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26; 
           -58,26; -58,10], style(
         color=1,
         rgbcolor={255,0,0},
@@ -682,7 +718,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
+    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10; 
           60,26; 86,26], style(
         color=1,
         rgbcolor={255,0,0},
@@ -702,7 +738,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     flowTemperature_inlet.outlet.H = flowTemperature_outlet.inlet.H + coolingDuty;
     
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
-      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16;
+      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16; 
           1,6.10623e-16; 1,6.10623e-16; 50,6.10623e-16],    style(
         color=62,
         rgbcolor={0,127,127},
@@ -785,7 +821,16 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
             thickness=4,
             fillColor=7,
             rgbfillColor={255,255,255},
-            fillPattern=1))),
+            fillPattern=1)), 
+        Text(
+          extent=[-100,160; 100,100], 
+          style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            fillColor=43, 
+            rgbfillColor={255,85,85}, 
+            fillPattern=1), 
+          string="%name")),
       Documentation(info="<html>
 <p>The mixer features three input flows, one for the anodic loop, one for recovered
 water and another for methanol inlet, and an output for the anodic loop. It is the 
@@ -873,6 +918,8 @@ based on the <em>exiting</em> flow.</p>
     import Modelica.SIunits.Resistance;
     import Modelica.SIunits.Resistivity;
     import Modelica.Constants.eps;
+    import Modelica.Electrical.Analog.Interfaces.PositivePin;
+    import Modelica.Electrical.Analog.Interfaces.NegativePin;
     
     import Thermo.mw;
     import Thermo.LiquidPhase;
@@ -904,11 +951,16 @@ based on the <em>exiting</em> flow.</p>
     ConcentrationPort cm_in annotation (extent=[-100,-70; -80,-50]);
     ConcentrationPort cm_out annotation (extent=[80,-70; 100,-50]);
     
+    PositivePin plus "Pole connected to the cathode" 
+                                      annotation (extent=[-10,50; 10,70]);
+    NegativePin minus "Pole connected to the anode" 
+                                    annotation (extent=[-10,-70; 10,-50]);
+    
     CurrentDensity i(min=0) "Current density";
     Current I = i * A "Current";
     CurrentDensity i_c(min=0) "Crossover current density";
     Current I_c = i_c * A "Crossover current";
-    Voltage V "Cell voltage";
+    Voltage V = plus.v - minus.v "Cell voltage";
     
     Concentration c_a = anodeOutletTC.cm.c 
       "Methanol concentration, outlet is representative";
@@ -959,6 +1011,10 @@ based on the <em>exiting</em> flow.</p>
     
     // Equivalent crossover current density in A/m^2.
     i_c = 6*F*(D_M/d_M * c_ac);
+    
+    // Connect the electrical pin currents, and set them equal to the cell current.
+    plus.i + minus.i = 0;
+    plus.i = I;
     
     // Sanity check: crash simulation if conditions are unphysical
     assert( c_ac > -eps, "Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
@@ -1249,6 +1305,9 @@ the calculation.</p>
     end MixerTest;
     
     partial model CellTest "Generic test suite for fuel-cell models" 
+      
+      import Modelica.Electrical.Analog.Sources.ConstantCurrent;
+      
       inner parameter Modelica.SIunits.Pressure p_env = 101325 
         "Environment pressure";
       inner parameter Modelica.SIunits.Temperature T_env = 298.15 
@@ -1261,7 +1320,6 @@ the calculation.</p>
         "Cathodic volumetric flow rate";
       parameter Modelica.SIunits.Temperature anodeInletTemperature = 330 
         "Anodic inlet temperature";
-      parameter Modelica.SIunits.Current I_cell = 0 "Cell current";
       
       replaceable FuelCell fuelCell 
                         annotation (extent=[6,0; 42,34]);
@@ -1273,14 +1331,17 @@ the calculation.</p>
       GasFlowController blower annotation (extent=[-42,18; -34,26]);
       SinkPort anodeSink annotation (extent=[62,10; 68,16]);
       SinkPort cathodeSink annotation (extent=[62,18; 68,24]);
+      ConstantCurrent I_cell(I=5) annotation (extent=[24,-26; 44,-6]);
+      Modelica.Electrical.Analog.Basic.Ground ground 
+        "Negative pole to zero voltage" annotation (extent=[2,-36; 22,-16]);
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
@@ -1288,12 +1349,15 @@ the calculation.</p>
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
-      fuelCell.I = I_cell;
-      
+      connect(I_cell.p, fuelCell.minus) annotation (points=[24,-16; 24,6.8], 
+          style(color=3, rgbcolor={0,0,255}));
+      connect(I_cell.n, fuelCell.plus) annotation (points=[44,-16; 84,-16; 84,
+            50; 24,50; 24,27.2], style(color=3, rgbcolor={0,0,255}));
+      connect(ground.p, I_cell.p) annotation (points=[12,-16; 24,-16], style(
+            color=3, rgbcolor={0,0,255}));
       pump.V = anodeFlow;
       heater.outletTemperature.T = anodeInletTemperature;
       blower.V = cathodeFlow;
-      
     end CellTest;
     
     model ConstantVoltageCellTest "Test for the constant-voltage model" 
