@@ -958,8 +958,8 @@ based on the <em>exiting</em> flow.</p>
     
     CurrentDensity i(min=0) "Current density";
     Current I = i * A "Current";
-    CurrentDensity i_c(min=0) "Crossover current density";
-    Current I_c = i_c * A "Crossover current";
+    CurrentDensity i_x(min=0) "Crossover current density";
+    Current I_x = i_x * A "Crossover current";
     Voltage V = plus.v - minus.v "Cell voltage";
     
     Concentration c_a = anodeOutletTC.cm.c 
@@ -992,10 +992,10 @@ based on the <em>exiting</em> flow.</p>
     parameter Real[:] anode_drag = {0, -k_drag/F, 0, 0, 0};
   equation 
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + (anode_reaction + anode_drag)*I + anode_crossover*I_c = zeros(size(AllSpecies,1));
+    anode_inlet.n + anode_outlet.n + (anode_reaction + anode_drag)*I + anode_crossover*I_x = zeros(size(AllSpecies,1));
     
     // Cathode-side mass balance, accounting for reaction, drag and crossover
-    cathode_inlet.n + cathode_outlet.n + (cathode_reaction + cathode_drag)*I + cathode_crossover*I_c = zeros(size(AllSpecies,1));
+    cathode_inlet.n + cathode_outlet.n + (cathode_reaction + cathode_drag)*I + cathode_crossover*I_x = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
     nexus.flowPort.H = I*V;
@@ -1006,11 +1006,11 @@ based on the <em>exiting</em> flow.</p>
     // Definition of water partial pressure (on the cathode side). On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     
-    // Methanol transport: binds c_a, c_ac and i (i_c is a function of c_ac).
-    k_ad * (c_a-c_ac) = (i_c+i)/6/F;
+    // Methanol transport: binds c_a, c_ac and i (i_x is a function of c_ac).
+    k_ad * (c_a-c_ac) = (i_x+i)/6/F;
     
     // Equivalent crossover current density in A/m^2.
-    i_c = 6*F*(D_M/d_M * c_ac);
+    i_x = 6*F*(D_M/d_M * c_ac);
     
     // Connect the electrical pin currents, and set them equal to the cell current.
     plus.i + minus.i = 0;
@@ -1113,12 +1113,12 @@ current.</p>
     Voltage delta_eta "Overvoltage caused by crossover";
     
   equation 
-    if i + i_c < i_0 then // This will never happen in practical cases.
+    if i + i_x < i_0 then // This will never happen in practical cases.
       delta_eta = 0;
     elseif i < i_0 then // This is used almost only for open circuit.
-      delta_eta = R * Tm.T / alpha / n / F * log((i + i_c)/i_0);
+      delta_eta = R * Tm.T / alpha / n / F * log((i + i_x)/i_0);
     else // This is the most common case.
-      delta_eta = R * Tm.T / alpha / n / F * log(1 + i_c/i);
+      delta_eta = R * Tm.T / alpha / n / F * log(1 + i_x/i);
     end if;
     
     V = V0 - R_el*I - delta_eta;
