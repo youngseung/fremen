@@ -468,7 +468,7 @@ unit.</p>
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
       beta = Thermo.rachfordRice(z_m, z_w, T);
@@ -613,7 +613,7 @@ additional object down- or upstream to measure the temperature.</p>
 </html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
@@ -630,7 +630,6 @@ additional object down- or upstream to measure the temperature.</p>
   end Separator;
   
   model Cooler "A simplified heat exchanger" 
-    
     FlowPort inlet annotation (extent=[-100,-6; -88,6]);
     FlowPort outlet annotation (extent=[88,-6; 100,6]);
     annotation (Diagram, Icon(
@@ -692,15 +691,16 @@ additional object down- or upstream to measure the temperature.</p>
 flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed to a protected
 (i.e. invisible to the user) sink object.</p>
 </html>"));
-    TemperaturePort inletTemperature "Temperature of the entering flow" 
+    TemperaturePort inT "Temperature of the entering flow" 
       annotation (extent=[-92,20; -80,32]);
-    TemperaturePort outletTemperature "Temperature of the exiting flow" 
+    TemperaturePort outT "Temperature of the exiting flow" 
       annotation (extent=[80,20; 92,32]);
     Modelica.SIunits.Heat coolingDuty "Removed heat";
+    outer Modelica.SIunits.Temperature T_env "Environment temperature";
   protected 
     FlowTemperature flowTemperature_inlet annotation (extent=[-68,-10; -48,10]);
     FlowTemperature flowTemperature_outlet annotation (extent=[50,-10; 70,10]);
-    SinkPort sinkPort annotation (extent=[6,-52; 26,-32]);
+    SinkPort sinkPort annotation (extent=[8,-50; 28,-30]);
   equation 
     connect(flowTemperature_inlet.inlet, inlet) annotation (points=[-68,
           6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16],
@@ -710,7 +710,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inletTemperature, flowTemperature_inlet.Tm) annotation (points=[-86,26;
+    connect(inT, flowTemperature_inlet.Tm)              annotation (points=[-86,26; 
           -58,26; -58,10], style(
         color=1,
         rgbcolor={255,0,0},
@@ -718,7 +718,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outletTemperature) annotation (points=[60,10;
+    connect(flowTemperature_outlet.Tm, outT)              annotation (points=[60,10; 
           60,26; 86,26], style(
         color=1,
         rgbcolor={255,0,0},
@@ -733,25 +733,25 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    flowTemperature_inlet.outlet.n + flowTemperature_outlet.inlet.n = 0*flowTemperature_inlet.outlet.n;
-    
-    flowTemperature_inlet.outlet.H = flowTemperature_outlet.inlet.H + coolingDuty;
-    
     connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
-      annotation (points=[-48,6.10623e-16; -23.5,6.10623e-16; -23.5,6.10623e-16;
-          1,6.10623e-16; 1,6.10623e-16; 50,6.10623e-16],    style(
+      annotation (points=[-48,6.10623e-16; 2,-3.36456e-22; 2,6.10623e-16; 50,
+          6.10623e-16],                                     style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points=[7,-42; 0,
-          -42; 0,6.10623e-16; -48,6.10623e-16], style(
+    connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points=[9,-40; 0,
+          -40; 0,6.10623e-16; -48,6.10623e-16], style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
+    
+    inlet.n + outlet.n = 0*inlet.n;
+    inlet.H = outlet.H + coolingDuty;
+    
   end Cooler;
   
   model Mixer "A unit mixing four molar flows." 
@@ -843,8 +843,9 @@ by default it is 1 M.</p>
 </html>"));
     
     AmountOfSubstance n[size(Thermo.AllSpecies,1)] "Molar holdup";
-    Modelica.SIunits.InternalEnergy U(start=0) "Internal energy";
+    Modelica.SIunits.InternalEnergy U "Internal energy";
     Concentration c "Methanol concentration";
+    Temperature T(start=T_0,fixed=true) "Mixer temperature";
     
   equation 
     der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
@@ -855,13 +856,13 @@ by default it is 1 M.</p>
     // Bind outlet's H to specific internal energy and outlet flow
     outlet.H / sum(outlet.n) = U / sum(n);
     
-    c = n[Methanol] / sum(n[i]*mw(i)/rho(T_0,i,LiquidPhase) for i in LiquidSpecies);
+    c = n[Methanol] / sum(n[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies);
+    U = sum(n[i]*h(T,i,LiquidPhase) for i in LiquidSpecies);
     
   initial equation 
     sum(n) = n_0;
     n[GasSpecies] = zeros(size(GasSpecies,1));
-    n[Methanol] / sum(n[i]*mw(i)/rho(T_0,i,LiquidPhase) for i in LiquidSpecies) = c_MeOH_0;
-    U = sum(n[i]*h(T_0,i,LiquidPhase) for i in LiquidSpecies);
+    n[Methanol] / sum(n[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) = c_MeOH_0;
     
   end Mixer;
   
@@ -1020,7 +1021,7 @@ based on the <em>exiting</em> flow.</p>
     plus.i = I;
     
     // Sanity check: crash simulation if conditions are unphysical
-    assert( c_ac > -eps, "Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
+    assert( c_ac >= 0, "Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
     assert( max(cathode_outlet.n) < eps, "Some components are entering from the cathode outlet.");
     assert( max(anode_outlet.n) < eps, "Some components are entering from the anode outlet.");
     
@@ -1243,6 +1244,8 @@ the calculation.</p>
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
       
+      parameter Modelica.SIunits.Temperature T_set = 320;
+      
       EnvironmentPort environmentPort annotation (extent=[-60,20; -40,40]);
       SinkPort sinkPort annotation (extent=[60,-4; 68,4]);
       Cooler cooler annotation (extent=[-24,-20; 20,20]);
@@ -1265,7 +1268,7 @@ the calculation.</p>
           fillPattern=1));
       
       sum(environmentPort.c.n) = -1;
-      cooler.outletTemperature.T = cooler.inletTemperature.T - time;
+      cooler.outT.T = cooler.inT.T - time;
       
     end CoolerTest;
     
