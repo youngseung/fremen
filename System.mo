@@ -172,15 +172,23 @@ package System "DMFC systems"
   end Reference_SimpleControl;
   
   model Reference_ASME "The reference DMFC system to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell);
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell(V_cell=0.5), mixer(
+          T_0=310));
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.CurrentDensity;
     import Modelica.SIunits.Current;
+    import Modelica.SIunits.AmountOfSubstance;
     import Modelica.SIunits.Time;
+    import Flow.MolarFlowRate;
     import Thermo.Oxygen;
     import Thermo.Water;
+    import Thermo.Methanol;
+    import Thermo.LiquidPhase;
+    import Thermo.rho;
+    import Thermo.mw;
+    import Thermo.K;
     
     parameter Real lambda_c = 2 "Air excess ratio";
     parameter Real lambda_a = 2 "Methanol solution excess ratio";
@@ -196,9 +204,11 @@ package System "DMFC systems"
       "Estimate of the cross-over current";
     
     parameter Time tau_w = 600 "Water control design time";
-    Real f_M "Methanol degasser loss factor"; // TODO
+    Real f_M "Methanol degasser loss factor";
     Real Kp "Proportionality constant for water content control";
-    Real delta_n = sum(mixer.n) - mixer.n_0 "Difference of moles in the mixer";
+    discrete AmountOfSubstance nh2o_0 "Initial moles of water";
+    AmountOfSubstance delta_n = mixer.n[Water] - nh2o_0 
+      "Change in water moles in the mixer";
     
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
@@ -210,16 +220,20 @@ package System "DMFC systems"
     // Solution inflow, also controlled with lambda control.
     pump.V = lambda_a / mixer.c * (fuelCell.I+I_x_est)/6/F;
     
-    // Fuel flow feedforward control TODO define f_M!
-    fuelPump.F = (1-b)/6/F + a*fuelCell.A/6/F * c_a_ref + f_M * c_a_ref * fuelCell.I;
-    f_M = 10E-11 * 10^((condenser.Tm.T-310)/42);
+    // Fuel flow feedforward control
+    fuelPump.F = (1-b)/6/F*fuelCell.I + a*fuelCell.A/6/F * c_a_ref + f_M * c_a_ref * fuelCell.I;
+    f_M = K(degasser.Tm.T,Methanol)/(rho(degasser.Tm.T,Water,LiquidPhase)/mw(Water)) * fuelCell.I/(6*F*(1-K(degasser.Tm.T,Water)-K(degasser.Tm.T,Methanol)));
     
     // Water content feedback control
     condenser.Tm.T = 330 + Kp * delta_n;
     Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.Tm.T, 1));
     
     // Constant temperature in the cell assumed to be maintained by misterious stranger.
-    der(fuelCell.Tm.T) = 0;
+    der(mixer.T) = 0;
+    
+    when initial() then
+      nh2o_0 = mixer.n[Water];
+    end when;
     
   end Reference_ASME;
 end System;
