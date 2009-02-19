@@ -468,7 +468,7 @@ unit.</p>
     
     equation 
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
       beta = Thermo.rachfordRice(z_m, z_w, T);
@@ -613,7 +613,7 @@ additional object down- or upstream to measure the temperature.</p>
 </html>"));
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
@@ -710,7 +710,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inT, flowTemperature_inlet.Tm)              annotation (points=[-86,26; 
+    connect(inT, flowTemperature_inlet.Tm)              annotation (points=[-86,26;
           -58,26; -58,10], style(
         color=1,
         rgbcolor={255,0,0},
@@ -718,7 +718,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outT)              annotation (points=[60,10; 
+    connect(flowTemperature_outlet.Tm, outT)              annotation (points=[60,10;
           60,26; 86,26], style(
         color=1,
         rgbcolor={255,0,0},
@@ -759,6 +759,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.AmountOfSubstance;
     import Modelica.SIunits.Concentration;
+    import Modelica.SIunits.Volume;
     import Thermo.Methanol;
     import Thermo.GasSpecies;
     import Thermo.LiquidSpecies;
@@ -770,7 +771,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     outer Temperature T_env "Environment temperature";
     
     parameter Temperature T_0 = T_env "Initial temperature";
-    parameter AmountOfSubstance n_0 = 1.0 "Initial moles";
+    parameter Volume V_0 = 5E-6 "Initial volume";
     parameter Concentration c_MeOH_0 = 1000.0 "Initial methanol concentration";
     
     FlowPort outlet "The mixer's outlet" 
@@ -846,6 +847,7 @@ by default it is 1 M.</p>
     Modelica.SIunits.InternalEnergy U "Internal energy";
     Concentration c "Methanol concentration";
     Temperature T(start=T_0,fixed=true) "Mixer temperature";
+    Volume V "Solution volume";
     
   equation 
     der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
@@ -856,13 +858,14 @@ by default it is 1 M.</p>
     // Bind outlet's H to specific internal energy and outlet flow
     outlet.H / sum(outlet.n) = U / sum(n);
     
-    c = n[Methanol] / sum(n[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies);
     U = sum(n[i]*h(T,i,LiquidPhase) for i in LiquidSpecies);
+    V = sum( n[i]*mw(i)/rho(T, i, LiquidPhase) for i in LiquidSpecies);
+    c = n[Methanol] / V;
     
   initial equation 
-    sum(n) = n_0;
+    V = V_0;
     n[GasSpecies] = zeros(size(GasSpecies,1));
-    n[Methanol] / sum(n[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) = c_MeOH_0;
+    c = c_MeOH_0;
     
   end Mixer;
   
@@ -1028,7 +1031,7 @@ based on the <em>exiting</em> flow.</p>
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
     connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -46,30; 
+                                        annotation (points=[-100,30; -46,30;
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -40,
@@ -1036,7 +1039,7 @@ based on the <em>exiting</em> flow.</p>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30; 
+    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30;
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1046,7 +1049,7 @@ based on the <em>exiting</em> flow.</p>
           44; 36,-20; 70,-20], style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
+    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30;
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1291,10 +1294,10 @@ the calculation.</p>
       
       annotation (Diagram);
       sum(fuelTank.c.n) = -0.1;
-      
       sum(anodicLoop.c.n) = -1;
       sum(condenser.c.n) = -0.4;
       sum(mixer.outlet.n) = -1.5;
+      
       connect(flowTemperature.outlet, sinkPort.flowPort) 
         annotation (points=[-44,-16; -27.6,-16], style(color=62, rgbcolor={0,
               127,127}));

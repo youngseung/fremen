@@ -172,14 +172,13 @@ package System "DMFC systems"
   end Reference_SimpleControl;
   
   model Reference_ASME "The reference DMFC system to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell(V_cell=0.5), mixer(
-          T_0=310));
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell(V_cell=0.5), mixer(T_0=323));
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.CurrentDensity;
     import Modelica.SIunits.Current;
-    import Modelica.SIunits.AmountOfSubstance;
+    import Modelica.SIunits.Volume;
     import Modelica.SIunits.Time;
     import Flow.MolarFlowRate;
     import Thermo.Oxygen;
@@ -206,9 +205,8 @@ package System "DMFC systems"
     parameter Time tau_w = 600 "Water control design time";
     Real f_M "Methanol degasser loss factor";
     Real Kp "Proportionality constant for water content control";
-    discrete AmountOfSubstance nh2o_0 "Initial moles of water";
-    AmountOfSubstance delta_n = mixer.n[Water] - nh2o_0 
-      "Change in water moles in the mixer";
+    discrete Volume V_0 "Initial mixer volume";
+    Volume delta_V = mixer.V - V_0 "Volume change in the mixer";
     
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
@@ -225,15 +223,16 @@ package System "DMFC systems"
     f_M = K(degasser.Tm.T,Methanol)/(rho(degasser.Tm.T,Water,LiquidPhase)/mw(Water)) * fuelCell.I/(6*F*(1-K(degasser.Tm.T,Water)-K(degasser.Tm.T,Methanol)));
     
     // Water content feedback control
-    condenser.Tm.T = 330 + Kp * delta_n;
+    condenser.Tm.T = 330 + Kp * rho(mixer.T, Water, LiquidPhase) / mw(Water) * delta_V;
     Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.Tm.T, 1));
     
     // Constant temperature in the cell assumed to be maintained by misterious stranger.
-    der(mixer.T) = 0;
+    der(fuelCell.Tm.T) = 0;
     
     when initial() then
-      nh2o_0 = mixer.n[Water];
+      V_0 = mixer.V;
     end when;
     
+    annotation (experiment(StopTime=7200), experimentSetupOutput);
   end Reference_ASME;
 end System;
