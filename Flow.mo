@@ -768,11 +768,11 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     import Thermo.mw;
     import Thermo.rho;
     
-    outer Temperature T_env "Environment temperature";
+    outer parameter Temperature T_env = 298.15 "Environment temperature";
     
     parameter Temperature T_0 = T_env "Initial temperature";
     parameter Volume V_0 = 5E-6 "Initial volume";
-    parameter Concentration c_MeOH_0 = 1000.0 "Initial methanol concentration";
+    parameter Concentration c_0 = 1000.0 "Initial methanol concentration";
     
     FlowPort outlet "The mixer's outlet" 
                           annotation (extent=[-90,-10; -70,10]);
@@ -845,9 +845,9 @@ by default it is 1 M.</p>
     
     AmountOfSubstance n[size(Thermo.AllSpecies,1)] "Molar holdup";
     Modelica.SIunits.InternalEnergy U "Internal energy";
-    Concentration c "Methanol concentration";
-    Temperature T(start=T_0,fixed=true) "Mixer temperature";
-    Volume V "Solution volume";
+    Concentration c(start=c_0, fixed=true) "Methanol concentration";
+    Temperature T(start=T_0, fixed=true) "Mixer temperature";
+    Volume V(start=V_0, fixed=true) "Solution volume";
     
   equation 
     der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
@@ -863,9 +863,7 @@ by default it is 1 M.</p>
     c = n[Methanol] / V;
     
   initial equation 
-    V = V_0;
     n[GasSpecies] = zeros(size(GasSpecies,1));
-    c = c_MeOH_0;
     
   end Mixer;
   

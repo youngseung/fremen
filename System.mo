@@ -172,7 +172,8 @@ package System "DMFC systems"
   end Reference_SimpleControl;
   
   model Reference_ASME "The reference DMFC system to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell(V_cell=0.5), mixer(T_0=323));
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell(V_cell=0.5), mixer(T(fixed=
+              false), V(fixed=true)));
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Concentration;
@@ -193,6 +194,8 @@ package System "DMFC systems"
     parameter Real lambda_a = 2 "Methanol solution excess ratio";
     parameter Concentration c_a_ref = 1000 
       "Target anodic methanol concentration";
+    parameter Temperature T_cell = 333 
+      "Artificially maintained cell temperature";
     
     parameter Real a = 6*F*fuelCell.k_ad*b "Estimated dependence of i_x on c_a";
     parameter Real b = 1/(fuelCell.k_ad*fuelCell.d_M/fuelCell.D_M +1) 
@@ -227,12 +230,13 @@ package System "DMFC systems"
     Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.Tm.T, 1));
     
     // Constant temperature in the cell assumed to be maintained by misterious stranger.
-    der(fuelCell.Tm.T) = 0;
+    fuelCell.Tm.T = T_cell;
     
     when initial() then
       V_0 = mixer.V;
     end when;
     
-    annotation (experiment(StopTime=7200), experimentSetupOutput);
+    annotation (experiment(StopTime=7200), experimentSetupOutput, 
+      Diagram);
   end Reference_ASME;
 end System;
