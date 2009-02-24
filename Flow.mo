@@ -405,6 +405,18 @@ in liquid phase; it takes their density from the Thermo library.</p>
   
     model FlowTemperature "A unit that calculates the temperature of a flow." 
     
+      import Modelica.SIunits.MoleFraction;
+    
+      import Thermo.h;
+      import Thermo.p_vap;
+      import Thermo.AllSpecies;
+      import Thermo.GasSpecies;
+      import Thermo.LiquidSpecies;
+      import Thermo.GasPhase;
+      import Thermo.LiquidPhase;
+      import Thermo.Water;
+      import Thermo.Methanol;
+    
       annotation (Diagram, Icon(
           Ellipse(extent=[-100,100; 100,-100], style(
               color=0,
@@ -437,40 +449,26 @@ be used in the graphical editor. It can also be used to <em>set</em> the
 temperature, provided that the enthalpic flow can be modified in some other
 unit.</p>
 </html>"));
-      import Modelica.SIunits.MoleFraction;
-    
-      import Thermo.h;
-      import Thermo.p_vap;
-      import Thermo.AllSpecies;
-      import Thermo.GasSpecies;
-      import Thermo.LiquidSpecies;
-      import Thermo.GasPhase;
-      import Thermo.LiquidPhase;
-      import Modelica.Constants.eps;
-    
       FlowPort inlet annotation (extent=[-110,-10; -90,10]);
       FlowPort outlet 
                      annotation (extent=[90,-10; 110,10]);
       TemperaturePort Tm                annotation (extent=[-10,90; 10,110]);
     
-      Modelica.SIunits.Temperature T(start=298.15) = Tm.T "Flow temperature";
+      outer parameter Modelica.SIunits.Pressure p_env;
+      outer parameter Modelica.SIunits.Temperature T_env;
     
-      outer Modelica.SIunits.Pressure p_env;
+      Modelica.SIunits.Temperature T(start=T_env) = Tm.T "Flow temperature";
+      MoleFraction beta "Vapour fraction";
     
       MolarFlowRate[size(LiquidSpecies,1)] vapour(each min=0) "Vapour flows";
       MolarFlowRate[size(LiquidSpecies,1)] condensate(each min=0) 
       "Liquid flows";
     
-      Real beta "Vapour fraction";
-    
-      MoleFraction z_m = inlet.n[1]/sum(inlet.n) "Methanol molar fraction";
-      MoleFraction z_w = inlet.n[2]/sum(inlet.n) "Water molar fraction";
+      MoleFraction z_m = inlet.n[Methanol]/sum(inlet.n) 
+      "Methanol molar fraction";
+      MoleFraction z_w = inlet.n[Water]/sum(inlet.n) "Water molar fraction";
     
     equation 
-      connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
-          5,5.55112e-16; 100,5.55112e-16],
-                                         style(pattern=0));
       beta = Thermo.rachfordRice(z_m, z_w, T);
     
       vapour + condensate = inlet.n[LiquidSpecies];
@@ -479,6 +477,11 @@ unit.</p>
       // Note that this works only because LiquidSpecies is a vector starting with 1, otherwise the second term would not work.
       inlet.H = sum( inlet.n[i]*h(T, i, GasPhase) for i in GasSpecies) +
                 sum( vapour[i]*h(T, i, GasPhase) + condensate[i]*h(T, i, LiquidPhase) for i in LiquidSpecies);
+    
+      connect(inlet, outlet) 
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
+          5,5.55112e-16; 100,5.55112e-16],
+                                         style(pattern=0));
     
     end FlowTemperature;
   
@@ -545,7 +548,7 @@ temperature and concentration of methanol in the liquid phase of the flow.</p>
         cm.c = 0;
       end if;
     
-      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
+      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
           5.55112e-16,100], style(
         pattern=0,
         thickness=2,
@@ -943,24 +946,6 @@ based on the <em>exiting</em> flow.</p>
     parameter Real k_drag = 4 "Drag factor";
     parameter Area A = 26E-4 "Membrane area";
     
-    FlowPort cathode_inlet "The cathode flow's inlet" 
-      annotation (extent=[-110,20; -90,40]);
-    FlowPort cathode_outlet "The cathode flow's outlet" 
-      annotation (extent=[90,20; 110,40]);
-    FlowPort anode_inlet "The anode flow's inlet" 
-      annotation (extent=[-110,-40; -90,-20]);
-    FlowPort anode_outlet "The cathode flow's outlet" 
-      annotation (extent=[90,-40; 110,-20]);
-    TemperaturePort Tm "Cell temperature connector" 
-                                          annotation (extent=[-10,-10; 10,10]);
-    ConcentrationPort cm_in annotation (extent=[-100,-70; -80,-50]);
-    ConcentrationPort cm_out annotation (extent=[80,-70; 100,-50]);
-    
-    PositivePin plus "Pole connected to the cathode" 
-                                      annotation (extent=[-10,50; 10,70]);
-    NegativePin minus "Pole connected to the anode" 
-                                    annotation (extent=[-10,-70; 10,-50]);
-    
     CurrentDensity i(min=0) "Current density";
     Current I = i * A "Current";
     CurrentDensity i_x(min=0) "Crossover current density";
@@ -974,6 +959,22 @@ based on the <em>exiting</em> flow.</p>
     PartialPressure p_h2o 
       "Cathodic water partial pressure, outlet is representative";
     
+    FlowPort cathode_inlet "The cathode flow's inlet" 
+      annotation (extent=[-110,20; -90,40]);
+    FlowPort cathode_outlet "The cathode flow's outlet" 
+      annotation (extent=[90,20; 110,40]);
+    FlowPort anode_inlet "The anode flow's inlet" 
+      annotation (extent=[-110,-40; -90,-20]);
+    FlowPort anode_outlet "The cathode flow's outlet" 
+      annotation (extent=[90,-40; 110,-20]);
+    TemperaturePort Tm "Cell temperature connector" 
+                                          annotation (extent=[-10,-10; 10,10]);
+    ConcentrationPort cm_in annotation (extent=[-100,-70; -80,-50]);
+    ConcentrationPort cm_out annotation (extent=[80,-70; 100,-50]);
+    PositivePin plus "Pole connected to the cathode" 
+                                      annotation (extent=[-10,50; 10,70]);
+    NegativePin minus "Pole connected to the anode" 
+                                    annotation (extent=[-10,-70; 10,-50]);
   protected 
     FlowTemperature cathodeT "Temperature measurement on the cathode" 
       annotation (extent=[60,20; 80,40]);
@@ -1029,7 +1030,7 @@ based on the <em>exiting</em> flow.</p>
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
     connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -46,30;
+                                        annotation (points=[-100,30; -46,30; 
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -40,
@@ -1037,7 +1038,7 @@ based on the <em>exiting</em> flow.</p>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30;
+    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30; 
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1047,7 +1048,7 @@ based on the <em>exiting</em> flow.</p>
           44; 36,-20; 70,-20], style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30;
+    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));

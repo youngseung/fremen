@@ -31,8 +31,8 @@ package System "DMFC systems"
                         annotation (extent=[54,0; 72,20]);
     Flow.SinkPort airSink "The gas outlet of the condenser" 
                       annotation (extent=[74,28; 82,36]);
-    replaceable Modelica.Electrical.Analog.Sources.ConstantCurrent I_cell(I=5) 
-      "Current passing through the cell" annotation (extent=[-52,34; -32,54]);
+    replaceable Modelica.Electrical.Analog.Interfaces.OnePort load 
+      "Load connected to the cell"       annotation (extent=[-52,34; -32,54]);
     Modelica.Electrical.Analog.Basic.Ground ground 
       annotation (extent=[-32,-30; -18,-16]);
   equation 
@@ -88,7 +88,7 @@ package System "DMFC systems"
     connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[0.66,10; 
           -14,10; -14,10.1],                  style(color=62, rgbcolor={0,127,
             127}));
-    connect(I_cell.n, fuelCell.plus) annotation (points=[-32,44; -32,15.2],
+    connect(load.n, fuelCell.plus)   annotation (points=[-32,44; -32,15.2],
         style(
         color=3,
         rgbcolor={0,0,255},
@@ -96,7 +96,7 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(I_cell.p, fuelCell.minus) annotation (points=[-52,44; -58,44; -58,
+    connect(load.p, fuelCell.minus)   annotation (points=[-52,44; -58,44; -58,
           -16; -32,-16; -32,-5.2], style(
         color=3,
         rgbcolor={0,0,255},
@@ -115,7 +115,8 @@ package System "DMFC systems"
   end Reference;
   
   model Reference_NoControl "The reference DMFC system, no control applied" 
-    extends Reference(redeclare Flow.OvervoltageFuelCell fuelCell);
+    extends Reference(redeclare Flow.OvervoltageFuelCell fuelCell, redeclare 
+        Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5));
     
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
@@ -132,14 +133,15 @@ package System "DMFC systems"
     pump.V = anodeFlow;
     blower.V = cathodeFlow;
     fuelPump.V = fuelFlow;
-    anodeCooler.outletTemperature.T = T_cooler_out;
-    cathodeCooler.outletTemperature.T = T_condenser;
+    anodeCooler.outT.T = T_cooler_out;
+    cathodeCooler.outT.T = T_condenser;
     
   end Reference_NoControl;
   annotation (uses(Modelica(version="2.2.1")));
   model Reference_SimpleControl 
     "The reference DMFC system, some simple control loops" 
-    extends Reference(redeclare Flow.OvervoltageFuelCell fuelCell);
+    extends Reference(redeclare Flow.OvervoltageFuelCell fuelCell, redeclare 
+        Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5));
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Thermo.Oxygen;
@@ -162,18 +164,19 @@ package System "DMFC systems"
     /* Note that this controller is totally bananas, not just because it
    * assumes we can perfectly read the mixer concentration, but also because
    * it case of excess concentration we could pull methanol out of it! */
-    fuelPump.V = k_c * (mixer.c_MeOH_0 - fuelCell.cm_in.c);
+    fuelPump.V = k_c * (mixer.c_0 - fuelCell.cm_in.c);
     
     // Directly specified variables
     pump.V = anodeFlow;
-    anodeCooler.outletTemperature.T = T_cooler_out;
-    cathodeCooler.outletTemperature.T = T_condenser;
+    anodeCooler.outT.T = T_cooler_out;
+    cathodeCooler.outT.T = T_condenser;
     
   end Reference_SimpleControl;
   
   model Reference_ASME "The reference DMFC system to be presented at ASME FC09" 
     extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell(V_cell=0.5), mixer(T(fixed=
-              false), V(fixed=true)));
+              false), V(fixed=true)), 
+      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5));
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Concentration;
@@ -236,7 +239,7 @@ package System "DMFC systems"
       V_0 = mixer.V;
     end when;
     
-    annotation (experiment(StopTime=7200), experimentSetupOutput, 
+    annotation (experiment(StopTime=7200), experimentSetupOutput,
       Diagram);
   end Reference_ASME;
 end System;

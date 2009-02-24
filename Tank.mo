@@ -246,7 +246,6 @@ values from 0 (dry air) to 100 (saturated air).</p>
     import Thermo.Water;
     
     Temperature T "Representative temperature.";
-  //  parameter Real beta = 0.2;
     Real beta = rachfordRice(z[Methanol], z[Water], T);
     
     MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
@@ -262,8 +261,8 @@ values from 0 (dry air) to 100 (saturated air).</p>
     
     /* Notes on mole-fraction consistency:
    * We assume that z is given and sums to 1. Then, it follows that:
-   * 1) sum(x) = 1 is linearly dependent with sum(z) = 1, the Rathford-Rice relation and material balance.
-   * 2) sum(y) = 1 is also linearly dependent, since we are using the Rathford-Rice relation.
+   * 1) sum(x) = 1 is linearly dependent with sum(z) = 1, the Rachford-Rice relation and material balance.
+   * 2) sum(y) = 1 is also linearly dependent, since we are using the Rachford-Rice relation.
    * Therefore, there is no particular need to write the consistency explicitly. */
     
       y[LiquidSpecies] = {K(T, i) * x[i] for i in LiquidSpecies};
@@ -337,7 +336,7 @@ functions.</p>
       "Surface area of contact between tank and environment";
     parameter Volume V = 1E-3 "Total volume of the tank.";
     
-    outer Temperature T_env "Environment temperature";
+    outer parameter Temperature T_env "Environment temperature";
     
     AmountOfSubstance n_tot(min=0) = sum(n) "Total moles.";
     
@@ -506,7 +505,7 @@ exclude presence of water in gas phase;</li>
 </ul>
 <p>Our laboratory's mixer has an internal diameter of 74 millimetres and a volume of
 0.5 litres.</p>
-</html>"),   Icon, 
+</html>"),   Icon,
       Diagram);
     
     CheckPoint flow1 = flows[1] "Connection at the bottom of the tank." 
@@ -685,10 +684,6 @@ temperature differences.</p>
 which is used to transfer heat with other elements.</p>
 </html>"));
   end HeatExchangerPipe;
-  
-  
-  
-  
   
   model HeatExchanger "A heat exchanger with two sides" 
     
@@ -1013,9 +1008,12 @@ in liquid phase; it takes their density from the Thermo library.</p>
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       
+      parameter Modelica.SIunits.MoleFraction z_water_0 = 0.5;
+      
       import Thermo.Methanol;
       import Thermo.Water;
       import Thermo.Oxygen;
+      import Thermo.CarbonDioxide;
       import Thermo.Nitrogen;
       
       model MyStirredTank 
@@ -1037,8 +1035,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       tank.flows[2].H=tank.flows[2].F*tank.h_tot;
       
     initial equation 
-      tank.z[Methanol] = 0.;
-      tank.z[Water] = 0.99;
+      tank.z[Methanol] = 0;
+      tank.z[Water] = z_water_0;
+      tank.z[CarbonDioxide] = 0;
       tank.z[Oxygen] / 0.21 = tank.z[Nitrogen] / 0.79;
     end TestStirredtank;
     
@@ -1091,7 +1090,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       mixer.flow1.F = 1;
       mixer.flow2.F = 0.5;
       
-      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6; 
+      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6;
             -40,-6; -40,4.2; -36,4.2],  style(pattern=0, thickness=2));
       connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-24.04,
             52; -30,52; -30,37.8],
@@ -1114,7 +1113,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           fillColor=46,
           rgbfillColor={127,127,0},
           fillPattern=7));
-      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51; 
+      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51;
             -32,-51; -32,4.2], style(
           pattern=0,
           thickness=2,
@@ -1157,7 +1156,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(BottomSeparatorConnector.port1, separator.liquidOutlet) 
-                                                           annotation (points=[20.8,-34; 
+                                                           annotation (points=[20.8,-34;
             8.2,-34; 8.2,-10],               style(
           pattern=0,
           thickness=2,
@@ -1169,13 +1168,13 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port1, separator.gasOutlet) 
-                                                         annotation (points=[22.8,26; 
+                                                         annotation (points=[22.8,26;
             8,26; 8,2; 8.2,2],              style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(FuelTankToSeparatorConnector.port2, separator.feed) 
-                                                    annotation (points=[-40.8,-4; 
+                                                    annotation (points=[-40.8,-4;
             -41.6,-4; -41.6,-4; -38,-4; -38,-4; -33.4,-4],
                                                style(
           pattern=0,
@@ -1184,7 +1183,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       source.p.F = -1;
       der(separator.level) = 0;
-      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14; 
+      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14;
             -62,-4; -55.2,-4],     style(pattern=0, thickness=2));
     end TestSeparator;
     
