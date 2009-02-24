@@ -180,11 +180,12 @@ protected
     Real t;
   algorithm 
     t := T/1000.0;
-    h := (p.A*t + (p.B*t^2)/2 + (p.C*t^3)/3 + (p.D*t^4)/4 - p.E/t + p.F - p.H)*
-      1000;
+    h := (p.A*t + (p.B*t*t)/2 + (p.C*t*t*t)/3 + (p.D*t*t*t*t)/4 - p.E/t + p.F - p.H)*1000;
     annotation (Documentation(info="<html>
 <p>This abstract function uses the Shomate parameters to calculate the enthalpy.
 Note that the Shomate parameters are still unspecified.</p>
+<p>The exponents are obtained by subsequent multiplications, since this function 
+is called relatively often.</p>
 </html>"));
   end ShomateEnthalpy;
   
@@ -197,7 +198,7 @@ protected
     Real t;
   algorithm 
     t := T/1000.0;
-    cp := p.A + p.B*t + p.C*t^2 + p.D*t^3 + p.E/t^2;
+    cp := p.A + p.B*t + p.C*t*t + p.D*t*t*t + p.E/t/t;
     annotation (Documentation(info="<html>
 <p>This abstract function uses the Shomate parameters to calculate the specific
 heat. Note that the Shomate parameters are still unspecified.</p>
@@ -212,7 +213,7 @@ protected
     constant WaterVapourParameters p;
   algorithm 
     // NOTE conversion from calories.
-    h := (p.A*T + (p.B*T^2)/2 + (p.C*T^3)/3)*4.184 - p.D;
+    h := (p.A*T + (p.B*T*T)/2 + (p.C*T*T*T)/3)*4.184 - p.D;
   end h_h2o_gas;
   
 protected 
@@ -223,7 +224,7 @@ protected
     constant WaterVapourParameters p;
   algorithm 
     // NOTE conversion from calories.
-    cp := (p.A + p.B*T + p.C*T^2)*4.184;
+    cp := (p.A + p.B*T + p.C*T*T)*4.184;
   end cp_h2o_gas;
   
 protected 
@@ -233,7 +234,7 @@ protected
   protected 
     constant LiquidMethanolParameters p;
   algorithm 
-    h := (p.A*T + (p.B*T^2)/2 + (p.C*T^3)/3)/1000 - p.D;
+    h := (p.A*T + (p.B*T*T)/2 + (p.C*T*T*T)/3)/1000 - p.D;
   end h_ch3oh_liq;
   
 protected 
@@ -243,7 +244,7 @@ protected
   protected 
     constant LiquidMethanolParameters p;
   algorithm 
-    cp := (p.A + p.B*T + p.C*T^2)/1000;
+    cp := (p.A + p.B*T + p.C*T*T)/1000;
   end cp_ch3oh_liq;
   
 protected 
@@ -314,7 +315,7 @@ protected
     parameter Real C;
   algorithm 
     // This is Antoine Law's derivative with respect to time. Note the conversion bar->Pa.
-    der_p := k*B*10.0^(A - B/(T + C))/(T+C)^2*1e5 * der_T;
+    der_p := k*B*10.0^(A - B/(T + C))/(T+C)/(T+C)*1e5 * der_T;
     
   end AntoineLawDerivative;
   
@@ -723,7 +724,7 @@ protected
       end if;
     else
       // NOTE Assuming ideal gas.
-      der_rho := -mw(n)*p_env/R/T^2*der_T;
+      der_rho := -mw(n)*p_env/R/T/T*der_T;
     end if;
   end drho_dt;
   
@@ -736,7 +737,6 @@ public
     output MoleFraction beta 
       "The vapour molar fraction, or vaporisation ratio.";
   protected 
-    constant Real z_gas = 1.0 - z_methanol - z_water;
     constant Pressure p_env = 101325 "The environment pressure.";
     constant Real C_methanol = p_vap(T, Methanol)/p_env - 1;
     constant Real C_water = p_vap(T, Water)/p_env - 1;
@@ -747,18 +747,7 @@ public
     constant Real delta = b*b - 4*a*c;
     constant Real beta_sol = (-b-sqrt(delta))/(2*a);
     
-  algorithm 
-    assert( C_methanol > C_water, "Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
-    
-    if C_water >= 0.0 or beta_sol > 1.0 then
-      beta := 1.0;
-    elseif beta_sol < 0.0 then // Should never happen, but rounding errors can give -1e-17.
-      beta := 0.0;
-    else
-      beta := beta_sol;
-    end if;
-    
-    annotation(derivative=drachfordRice_dt, Documentation(info="<html>
+    annotation(derivative=drachfordRice_dt_numeric, Documentation(info="<html>
 <p>This function solves the Rachford-Rice equation for systems with methanol, water and
 gaseous components. In order to solve the system analytically as a second-degree polynomial,
 some assumptions have been made:</p>
@@ -803,121 +792,75 @@ we have to pick a different solution when we pass beyond this temperature.</p>
 <p>Warren, John H., and Adewumi, Michael A.: <em>Polynomial Objective Functions for Flash Calculations: Binary, Ternary, and 
 Quaternary Systems</em>, Industrial and Engineering Chemistry Research 32(7), 1528&ndash;1530, July 1993.</p>
 </html>"));
-    annotation (Documentation(info="<html>
-<p>This function solves the Rachford-Rice equation for systems with methanol, water and
-gaseous components. In order to solve the system analytically as a second-degree polynomial,
-some assumptions have been made:</p>
-<ul>
-<li>No other components than methanol and water may condense;</li>
-<li>All other components are gases whose molar fraction is the complement to one of
-the fractions of methanol and water.</li>
-</ul>
- 
-<h3>Rearranging the Rachford-Rice as a polynomial</h3>
-<p>Assimilating all gases into one is a nice trick to reduce a 5-component problem into a
-3-component one. The latter has only two solutions to the Rachford-Rice, and they are
-easily found with the formula for 2nd-degree polynomials.</p>
- 
-<p>The actual polynomial is:<br/>
-C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub>&beta;<sup>2</sup> + 
-[C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>
-+ (C<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>)z<sub>g</sub>]&beta; + z<sub>g</sub> = 0</p>
- 
- 
-<h3>Choice of the root of h(&beta;)</h3>
- 
-<p>The criterion to obtain an analytical solution to the Rachford-Rice relation can change
-according to which components we actually have, and the temperature range in which we are. In
-particular, when passing the boiling temperature of methanol, one of the asymptote of the
-Rachford-Rice equation h(&beta;) moves from the right-hand to the left-hand plane, meaning
-we have to pick a different solution when we pass beyond this temperature.</p>
- 
-<p>We have to cater for (almost) all cases of missing components: we need to be able to extract 
-sensible results from the case of no methanol, no water, only gas etc. This sums up to seven 
-cases (we reject the case with no components as it is nonsensical), times three temperature
-brackets (less than methanol's boiling temperature, between methanol's and water's, and beyond
-water's), yielding 21 cases; fortunately many of these can be grouped, as per the following
-table:</p>
- 
-<style type=\"text/css\">
-table.z {
-        border: 1px solid;
-        border-collapse: collapse;
-        text-align: center;
-}
-table.z th {
-        border: 1px solid;
-        padding: 3px;
-}
-table.z td {
-        border: 1px solid;
-        padding: 3px;
-}
-table.z td.vap { background-color: red; }
-table.z td.liq { background-color: green; }
-table.z td.eq { background-color: yellow; }
-</style>
- 
-<table class=\"z\">
-<tr><th>Components present</th>
-<th>T &lt; T<sub>boil, CH<sub>3</sub>OH</sub></th>
-<th>T<sub>boil, CH<sub>3</sub>OH</sub> &lt; T &lt; T<sub>boil, H<sub>2</sub>O</sub></th>
-<th>T &gt; T<sub>boil, H<sub>2</sub>O</sub></th></tr>
- 
-<tr>
-<th>All components</th>
-<td class=\"eq\">Lower root</td>
-<td class=\"eq\">Higher root</td>
-<td rowspan=\"7\" class=\"vap\">No condensation<br/>&beta;=1</td>
-</tr>
- 
-<tr>
-<th>No methanol</th>
-<td colspan=\"2\" class=\"eq\">Water-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>H<sub>2</sub>O</sub> > 0</td>
-</tr>
- 
-<tr>
-<th>Only water</th>
-<td colspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
-</tr>
- 
-<tr>
-<th>No gas</th>
-<td rowspan=\"2\" class=\"liq\">No evaporation<br/>&beta;=0</td>
-<td class=\"eq\">Water-methanol equilibrium<br/>&beta;=-(C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>+
-C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub>)/C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub></td>
-</tr>
- 
-<tr>
-<th>Only methanol</th>
-<td rowspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
-</tr>
- 
-<tr>
-<th>No water</th>
-<td class=\"eq\">Methanol-gas equilibrium<br/>&beta;=-z<sub>g</sub>/C<sub>CH<sub>3</sub>OH</sub> > 0</td>
-</tr>
- 
-<tr>
-<th>Only gas</th>
-<td colspan=\"2\" class=\"vap\">No condensation<br/>&beta;=1</td>
-</tr>
- 
-</table>
- 
-<h3>References</h3>
-<p>John H. Warren and Michael A. Adewumi, <em>Polynomial Objective Functions for Flash Calculations: 
-Binary, Ternary, and Quaternary Systems</em>, Industrial and Engineering Chemistry Research,
-1993 (32), 1528&ndash;1530.</p>
- 
- 
-</html>"));
-  equation 
+  algorithm 
+    assert( C_methanol > C_water, "Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
+    
+    if C_water >= 0.0 or beta_sol > 1.0 then
+      beta := 1.0;
+    elseif beta_sol < 0.0 then // Should never happen, but rounding errors can give -1e-17.
+      beta := 0.0;
+    else
+      beta := beta_sol;
+    end if;
     
   end rachfordRice;
   
 protected 
-  function drachfordRice_dt 
+  function drachfordRice_analytic 
+    "The vapour fraction of a methanol-water-gas mixture." 
+    input MoleFraction z_methanol "The methanol fraction.";
+    input MoleFraction z_water "The water fraction.";
+    input Temperature T 
+      "The temperature at which the equilibrium is calculated.";
+    input Real der_z_methanol "The time derivative of the methanol fraction.";
+    input Real der_z_water "The time derivative of the water fraction.";
+    input Real der_T "The time derivative of temperature.";
+    output Real der_beta "The derivative of the vapour molar fraction.";
+    
+  protected 
+    constant Pressure p_env = 101325 "The environment pressure.";
+    constant Real C_methanol = p_vap(T, Methanol)/p_env - 1;
+    constant Real C_water = p_vap(T, Water)/p_env - 1;
+    
+    constant Real a = C_methanol*C_water;
+    constant Real b = C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
+    constant Real c = 1.0-z_methanol-z_water;
+    constant Real delta = b*b - 4*a*c;
+    constant Real beta_sol = (-b-sqrt(delta))/(2*a);
+    
+    constant Real dCm_dt = dK_dt(T, Methanol, der_T);
+    constant Real dCw_dt = dK_dt(T, Water, der_T);
+    constant Real da_dCm = C_water;
+    constant Real da_dCw = C_methanol;
+    constant Real da_dt =  da_dCm*dCm_dt + da_dCw*dCw_dt;
+    
+    constant Real db_dCm = 1-z_water;
+    constant Real db_dCw = 1-z_methanol;
+    constant Real db_dzm = -C_water;
+    constant Real db_dzw = -C_methanol;
+    constant Real db_dt =  db_dCm*dCm_dt + db_dCw*dCw_dt + db_dzm*der_z_methanol + db_dzw*der_z_water;
+    
+    constant Real dc_dzm = -1;
+    constant Real dc_dzw = -1;
+    constant Real dc_dt =  dc_dzm*der_z_methanol + dc_dzw*der_z_water;
+    
+    constant Real dbeta_da = c/a/sqrt(delta) - (-sqrt(delta)-b)/2/a/a;
+    constant Real dbeta_db = (-b/sqrt(delta)-1)/2/a;
+    constant Real dbeta_dc = 1/sqrt(delta);
+    
+    constant Real dbeta_dt_sol = dbeta_da*da_dt + dbeta_db*db_dt + dbeta_dc*dc_dt;
+    
+  algorithm 
+    if C_water >= 0.0 or beta_sol >= 1.0 or beta_sol <= 0.0 then
+      der_beta := 1e-5;
+    else
+      der_beta := dbeta_dt_sol;
+    end if;
+    
+  end drachfordRice_analytic;
+  
+protected 
+  function drachfordRice_dt_numeric 
     "The vapour fraction of a methanol-water-gas mixture." 
     input MoleFraction z_methanol "The methanol fraction.";
     input MoleFraction z_water "The water fraction.";
@@ -959,7 +902,7 @@ protected
     
     annotation (Documentation(info="<html>
 </html>"));
-  end drachfordRice_dt;
+  end drachfordRice_dt_numeric;
   
 public 
   package Test 
@@ -994,5 +937,30 @@ public
       derivative_error_h2o = approximateDerivativePvap(T,Water) - dp_vap_dt(T, Water, der(T));
     end Test_p_vap;
     
+    model TestRachfordRice 
+      import Modelica.SIunits.Temperature;
+      import Modelica.SIunits.MoleFraction;
+      import Modelica.SIunits.Time;
+      
+      parameter Temperature T_0 = 273.15;
+      parameter Temperature T_f = 330;
+      parameter MoleFraction zm_0 = 0;
+      parameter MoleFraction zm_f = 0.5;
+      parameter MoleFraction zw_0 = 0.;
+      parameter MoleFraction zw_f = 0.3;
+      
+      MoleFraction zm = zm_0 + (zm_f - zm_0)*time;
+      MoleFraction zw = zw_0 + (zw_f - zw_0)*time;
+      Temperature T = T_0 + (T_f - T_0)*time;
+      MoleFraction beta = rachfordRice(zm, zw, T);
+      Real der_beta = der(beta);
+      Real der_beta_approx = (beta-old_beta)/blinkOfAnEye;
+      
+    protected 
+      constant Time blinkOfAnEye = 0.0001;
+      MoleFraction old_beta = delay(beta, blinkOfAnEye);
+      
+      annotation (experiment, experimentSetupOutput);
+    end TestRachfordRice;
   end Test;
 end Thermo;
