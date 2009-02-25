@@ -241,12 +241,13 @@ values from 0 (dry air) to 100 (saturated air).</p>
     import Thermo.LiquidSpecies;
     import Thermo.GasSpecies;
     import Thermo.AllSpecies;
-    import Thermo.rachfordRice;
     import Thermo.Methanol;
     import Thermo.Water;
+    import Thermo.rr;
+    import Thermo.speciesName;
     
     Temperature T "Representative temperature.";
-    Real beta = rachfordRice(z[Methanol], z[Water], T);
+    MoleFraction beta;
     
     MoleFraction[size(AllSpecies, 1)] z(each min=0, each max=1) 
       "Overall molar fraction.";
@@ -256,15 +257,21 @@ values from 0 (dry air) to 100 (saturated air).</p>
       "Gaseous molar fraction.";
     
   equation 
+    // Guard: if K_water == 1, Thermo.rr will return a singularity.
+    if K(T,Water) >= 1 or rr(z[Methanol],z[Water],T) > 1 then
+      beta = 1;
+    else
+      beta = Thermo.rr(z[Methanol],z[Water],T);
+    end if;
+    
     // Component material balance.
-    z = y*beta + x*(1-beta);
+    z = beta*y + (1-beta)*x;
     
     /* Notes on mole-fraction consistency:
    * We assume that z is given and sums to 1. Then, it follows that:
    * 1) sum(x) = 1 is linearly dependent with sum(z) = 1, the Rachford-Rice relation and material balance.
    * 2) sum(y) = 1 is also linearly dependent, since we are using the Rachford-Rice relation.
    * Therefore, there is no particular need to write the consistency explicitly. */
-    
       y[LiquidSpecies] = {K(T, i) * x[i] for i in LiquidSpecies};
       x[GasSpecies]    = zeros(size(GasSpecies,1));
     
@@ -276,9 +283,11 @@ compositions sum to one, only n<sub>c</sub>-1 variables are needed to set
 a composition).</p>
 <p>In order to calculate the physically correct values for the compositions,
 one has to solve the Rachford-Rice equation as indicated by Whitson &
-Michelsen (1989), namely finding the root of h(beta) in the interval
-(beta<sub>min</sub>, beta<sub>max</sub>). This is done by a series of C 
-functions.</p>
+Michelsen (1989), namely finding the root of h(&beta;) in the interval
+(beta<sub>min</sub>, beta<sub>max</sub>). If the resulting &beta; is too large
+(>1) it will have to be capped; if the conditions are outside the validity
+range of Rachford-Rice (typically, temperature is above water's boiling point)
+&beta; must be set forcefully.</p>
 </html>"), Icon,
       DymolaStoredErrors);
   end Equilibrium;
@@ -328,6 +337,8 @@ functions.</p>
     import Thermo.LiquidPhase;
     import Thermo.GasPhase;
     
+    outer parameter Temperature T_env = 298.15 "Environment temperature";
+    
     parameter String name = "Unnamed stirred tank" "Tank identifier.";
     parameter HeatCapacity Cp = 100 "Heat capacity of tank (glass, lid, ...).";
     parameter CoefficientOfHeatTransfer k_h = 0.0 
@@ -336,16 +347,13 @@ functions.</p>
       "Surface area of contact between tank and environment";
     parameter Volume V = 1E-3 "Total volume of the tank.";
     
-    outer parameter Temperature T_env "Environment temperature";
-    
     AmountOfSubstance n_tot(min=0) = sum(n) "Total moles.";
     
-    AmountOfSubstance n_g_tot(min=0) = beta * n_tot "Total moles of gas.";
-    AmountOfSubstance n_l_tot(min=0) = (1-beta) * n_tot 
-      "Total moles of liquid.";
+    AmountOfSubstance n_g_tot(min=0) "Total moles of gas.";
+    AmountOfSubstance n_l_tot(min=0) "Total moles of liquid.";
     
-    AmountOfSubstance[size(AllSpecies,1)] n_l = x * n_l_tot;
-    AmountOfSubstance[size(AllSpecies,1)] n_g = y * n_g_tot;
+    AmountOfSubstance[size(AllSpecies,1)] n_l = x*n_l_tot;
+    AmountOfSubstance[size(AllSpecies,1)] n_g = y*n_g_tot;
     
     MolarEnthalpy h_tot = (h_g*n_g_tot + h_l*n_l_tot)/n_tot 
       "Overall molar enthalpy in the tank.";
@@ -356,17 +364,28 @@ functions.</p>
     
     InternalEnergy tankSensibleHeat = Cp*(T-T_env) 
       "The heat accumulated in the tank's solid parts, such as glass, lid, etc.";
-    InternalEnergy gasSpeciesEnergy = sum(h(T,i,GasPhase)*beta*n_tot*y[i] for i in AllSpecies) 
+    InternalEnergy gasSpeciesEnergy = sum(h(T,i,GasPhase)*n_g_tot*y[i] for i in AllSpecies) 
       "The internal energy of the gaseous species.";
-    InternalEnergy liquidSpeciesEnergy = sum(h(T,i,LiquidPhase)*(1-beta)*n_tot*x[i] for i in LiquidSpecies) 
+    InternalEnergy liquidSpeciesEnergy = sum(h(T,i,LiquidPhase)*n_l_tot*x[i] for i in LiquidSpecies) 
       "The internal energy of the liquid species, including latent heat.";
     
-    Volume V_l(min=0) = sum((1-beta)*n_tot*x[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) 
+    Volume V_l(min=0) = sum(n_l[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies) 
       "Amount of liquid volume.";
-    Volume V_g(min=0) = sum(beta*n_tot*y[i]*mw(i)/rho(T,i,GasPhase) for i in AllSpecies) 
+    Volume V_g(min=0) = sum(n_g[i]*mw(i)/rho(T,i,GasPhase) for i in AllSpecies) 
       "Amount of gaseous volume.";
     
   equation 
+    if beta >= 1 or Thermo.K(T, Thermo.Water) > 1 then
+      n_g_tot = n_tot;
+      n_l_tot = 0;
+    elseif beta <= 0 then
+      n_g_tot = 0;
+      n_l_tot = n_tot;
+    else
+      n_g_tot = beta*n_tot;
+      n_l_tot = (1-beta)*n_tot;
+    end if;
+    
     // Exchange of heat with the environment.
     Q = A_sur * k_h * (T_env - T);
     
@@ -471,21 +490,32 @@ deviate significantly from linearity (maximum deviation is about 6%).</p>
     import Modelica.Constants.pi;
     extends VerticalCylindricalTank(name="Fuel tank", final m=2, V = 1E-3, A = (42E-3)^2*pi);
     
+    import Modelica.SIunits.Volume;
+    import Modelica.SIunits.Concentration;
+    import Thermo.Methanol;
+    import Thermo.Water;
+    import Thermo.Oxygen;
+    import Thermo.CarbonDioxide;
+    import Thermo.Nitrogen;
+    
+    parameter Volume V_0 = 5e-4 "Initial solution volume";
+    
     CheckPoint bottomFlow = flows[1] annotation (extent=[-10,-90; 10,-70]);
     CheckPoint topFlow = flows[2] annotation (extent=[-10,70; 10,90]);
   equation 
-  // TODO add if-equation to compensate in case of empty/full tank.
     flows[1].z_local = x;
     flows[1].h_local = h_l;
     flows[2].z_local = y;
     flows[2].h_local = h_g;
     
+    assert( level > 0, name+" ran out of fuel.");
+    assert( V_0 >= 0 and V_0 <= V, "Bad starting solution volume in "+name+": V_0 = "+String(V_0)+".");
+    
   initial equation 
-    //x[1] = 0.2;  // FIXME why does the line below not work? Start bug hunt!
-    n[1] / V_l = 1E3;  // 1 M liquid solution
-    level =  0.5 * V / A;   // Half-full
-    z[4] = 0.0;  // No CO2
-    y[5] / 79 = y[3] / 21;  // N2/O2 in air proportions
+    V_l = V_0;
+    x[Methanol] = 1;
+    n[CarbonDioxide] = 0.0;  // No CO2, anywhere
+    n[Nitrogen] / 79 = n[Oxygen] / 21;  // N2/O2 in air proportions
     annotation (Icon);
   end FuelTank;
   
@@ -985,6 +1015,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
       eq.z={ch3oh, h2o,0,0,0};
       
+      annotation (experiment(StopTime=105), experimentSetupOutput(
+            doublePrecision=true, derivatives=false));
     end TestEquilibrium;
     
     model TestExtensiveBalances 
@@ -1028,7 +1060,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       end for;
       
       tank.flows[1].F=1;
-      tank.flows[1].z={0,0,0,0,1};
+      tank.flows[1].z={0.1,0.2,0,0,0.7};
       tank.flows[1].H=0;
       
       tank.flows[2].z=tank.z;
@@ -1039,35 +1071,40 @@ in liquid phase; it takes their density from the Thermo library.</p>
       tank.z[Water] = z_water_0;
       tank.z[CarbonDioxide] = 0;
       tank.z[Oxygen] / 0.21 = tank.z[Nitrogen] / 0.79;
+      annotation (experiment(Algorithm="Dassl"), experimentSetupOutput(
+            doublePrecision=true, derivatives=false));
     end TestStirredtank;
     
     model TestFuelTank "A simple test for the FuelTank class" 
       
-      FlowConnector flowConnector annotation (extent=[-32,-24; -2,8]);
-      EnvironmentPort environmentPort annotation (extent=[28,-10; 50,16]);
-      annotation (Diagram);
-      FuelTank fuelTank(T(
-                        start = 350),k_h=1000) annotation (extent=[-80,6; -40,44]);
-      FlowConnector flowConnector1 annotation (extent=[-26,36; -2,62]);
+      FlowConnector bottomConnector 
+                                  annotation (extent=[-28,-24; -12,-16]);
+      EnvironmentPort environmentPort annotation (extent=[18,-28; 48,4]);
+      annotation (Diagram, 
+        experiment(Algorithm="Dassl"), 
+        experimentSetupOutput(doublePrecision=true, derivatives=false));
+      FuelTank fuelTank                        annotation (extent=[-80,6; -40,44]);
+      FlowConnector topConnector   annotation (extent=[-26,56; -12,64]);
       
       inner parameter Real RH_env = 50;
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       
-      EnvironmentPort environmentPort1 annotation (extent=[18,48; 48,78]);
+      EnvironmentPort environmentPort1 annotation (extent=[18,52; 48,84]);
     equation 
       
       fuelTank.bottomFlow.F = -1;
       
-      connect(flowConnector1.port1, fuelTank.topFlow) annotation (points=[-22.64,
-            49; -60,49; -60,40.2], style(pattern=0, thickness=2));
-      connect(fuelTank.bottomFlow, flowConnector.port1) annotation (points=[-60,9.8;
-            -60,-8; -27.8,-8],      style(pattern=0, thickness=2));
-      connect(flowConnector.port2, environmentPort.c) annotation (points=[-6.2,-8;
-            18,-8; 18,-3.5; 29.1,-3.5],
-                                      style(pattern=0, thickness=2));
-      connect(environmentPort1.c, flowConnector1.port2) annotation (points=[19.5,
-            55.5; 6,55.5; 6,49; -5.36,49], style(pattern=0, thickness=2));
+      connect(topConnector.port1, fuelTank.topFlow)   annotation (points=[-24.04,
+            60; -60,60; -60,40.2], style(pattern=0, thickness=2));
+      connect(fuelTank.bottomFlow, bottomConnector.port1) 
+                                                        annotation (points=[-60,9.8; 
+            -60,-20; -25.76,-20],   style(pattern=0, thickness=2));
+      connect(bottomConnector.port2, environmentPort.c) 
+                                                      annotation (points=[-14.24,
+            -20; 19.5,-20],           style(pattern=0, thickness=2));
+      connect(environmentPort1.c, topConnector.port2)   annotation (points=[19.5,60; 
+            -13.96,60],                    style(pattern=0, thickness=2));
     end TestFuelTank;
     
     model TestMixer "A Vodka mixer" 
@@ -1090,7 +1127,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       mixer.flow1.F = 1;
       mixer.flow2.F = 0.5;
       
-      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6;
+      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6; 
             -40,-6; -40,4.2; -36,4.2],  style(pattern=0, thickness=2));
       connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-24.04,
             52; -30,52; -30,37.8],
@@ -1113,7 +1150,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           fillColor=46,
           rgbfillColor={127,127,0},
           fillPattern=7));
-      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51;
+      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51; 
             -32,-51; -32,4.2], style(
           pattern=0,
           thickness=2,

@@ -729,7 +729,9 @@ protected
   end drho_dt;
   
 public 
-  function rachfordRice "The vapour fraction of a methanol-water-gas mixture." 
+  function rr "The vapour fraction of a methanol-water-gas mixture." 
+    import Modelica.Constants.inf;
+    
     input MoleFraction z_methanol "The methanol fraction.";
     input MoleFraction z_water "The water fraction.";
     input Temperature T 
@@ -738,16 +740,13 @@ public
       "The vapour molar fraction, or vaporisation ratio.";
   protected 
     constant Pressure p_env = 101325 "The environment pressure.";
-    constant Real C_methanol = p_vap(T, Methanol)/p_env - 1;
-    constant Real C_water = p_vap(T, Water)/p_env - 1;
-    // Coefficients of the 2nd-degree polynomial.
-    constant Real a = C_methanol*C_water;
-    constant Real b = C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
-    constant Real c = 1.0-z_methanol-z_water;
-    constant Real delta = b*b - 4*a*c;
-    constant Real beta_sol = (-b-sqrt(delta))/(2*a);
-    
-    annotation(derivative=drachfordRice_dt_numeric, Documentation(info="<html>
+    Real C_methanol;
+    Real C_water;
+    Real a;
+    Real b;
+    Real c;
+    Real delta;
+    annotation (derivative=drr_dt, Documentation(info="<html>
 <p>This function solves the Rachford-Rice equation for systems with methanol, water and
 gaseous components. In order to solve the system analytically as a second-degree polynomial,
 some assumptions have been made:</p>
@@ -777,15 +776,12 @@ particular, when passing the boiling temperature of methanol, one of the asympto
 Rachford-Rice equation h(&beta;) moves from the right-hand to the left-hand plane, meaning
 we have to pick a different solution when we pass beyond this temperature.</p>
  
-<p>There are three main cases:</p>
+<p>There are two cases:</p>
 <ul>
-<li>If C<sub>H<sub>2</sub>O</sub> is larger than zero, it means that water cannot condense, therefore much less methanol; as no condensation is possible, &beta; is exactly 1. Notice that the Rachford-Rice solution would be negative (i.e. nonsensical) since this case cannot present any vapour-liquid equilibrium, no matter the compositions.</li>
 <li>If C<sub>H<sub>2</sub>O</sub> is smaller than zero, yet C<sub>CH<sub>3</sub>OH</sub> is larger, we need to select the <em>second</em> or larger solution.</li>
 <li>Otherwise, we select the <em>first</em> or smaller solution.</li>
 </ul>
 <p>Notice that the two cases of higher and lower solution have <em>the same mathematical expression</em>, since the coefficient of &beta;<sup>2</sup> changes sign in correspondance of the change in root selection; therefore, we do not need to change the sign in front of the root of &Delta;.</p>
- 
-<p>Finally, since the polynomial can yield solutions larger than 1, &beta; must be limited to the interval between 0 an 1, and any solution larger than 1 will return a value of exactly 1.</p>
  
 <h3>References</h3>
 <p>Whitson, Curtis H., and Michelsen, Michael L.: <em>The negative flash</em>, Fluid Phase Equilibria 53, 51&ndash;71, 1989.</p>
@@ -793,21 +789,26 @@ we have to pick a different solution when we pass beyond this temperature.</p>
 Quaternary Systems</em>, Industrial and Engineering Chemistry Research 32(7), 1528&ndash;1530, July 1993.</p>
 </html>"));
   algorithm 
+    C_methanol := p_vap(T, Methanol)/p_env - 1;
+    C_water    := p_vap(T, Water)/p_env - 1;
+    
     assert( C_methanol > C_water, "Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
     
-    if C_water >= 0.0 or beta_sol > 1.0 then
-      beta := 1.0;
-    elseif beta_sol < 0.0 then // Should never happen, but rounding errors can give -1e-17.
-      beta := 0.0;
+    a := C_methanol*C_water;
+    b := C_methanol*z_methanol + C_water*z_water + (C_methanol + C_water)*(1.0 - z_methanol - z_water);
+    c := 1.0 - z_methanol - z_water;
+    delta := b*b - 4*a*c;
+    
+    if C_methanol == 0 then // A would be zero and would cause a singularity.
+      beta := - c / b;  // Analytic limit for C_methanol -> 0
     else
-      beta := beta_sol;
+      beta := (-b-sqrt(delta))/(2*a);
     end if;
     
-  end rachfordRice;
+  end rr;
   
 protected 
-  function drachfordRice_analytic 
-    "The vapour fraction of a methanol-water-gas mixture." 
+  function drr_dt "The vapour fraction of a methanol-water-gas mixture." 
     input MoleFraction z_methanol "The methanol fraction.";
     input MoleFraction z_water "The water fraction.";
     input Temperature T 
@@ -819,90 +820,69 @@ protected
     
   protected 
     constant Pressure p_env = 101325 "The environment pressure.";
-    constant Real C_methanol = p_vap(T, Methanol)/p_env - 1;
-    constant Real C_water = p_vap(T, Water)/p_env - 1;
+    Real C_methanol;
+    Real C_water;
     
-    constant Real a = C_methanol*C_water;
-    constant Real b = C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
-    constant Real c = 1.0-z_methanol-z_water;
-    constant Real delta = b*b - 4*a*c;
-    constant Real beta_sol = (-b-sqrt(delta))/(2*a);
+    Real a;
+    Real b;
+    Real c;
+    Real delta;
+    Real beta;
     
-    constant Real dCm_dt = dK_dt(T, Methanol, der_T);
-    constant Real dCw_dt = dK_dt(T, Water, der_T);
-    constant Real da_dCm = C_water;
-    constant Real da_dCw = C_methanol;
-    constant Real da_dt =  da_dCm*dCm_dt + da_dCw*dCw_dt;
+    Real dCm_dt;
+    Real dCw_dt;
+    Real da_dCm;
+    Real da_dCw;
+    Real da_dt;
     
-    constant Real db_dCm = 1-z_water;
-    constant Real db_dCw = 1-z_methanol;
-    constant Real db_dzm = -C_water;
-    constant Real db_dzw = -C_methanol;
-    constant Real db_dt =  db_dCm*dCm_dt + db_dCw*dCw_dt + db_dzm*der_z_methanol + db_dzw*der_z_water;
+    Real db_dCm;
+    Real db_dCw;
+    Real db_dzm;
+    Real db_dzw;
+    Real db_dt;
     
-    constant Real dc_dzm = -1;
-    constant Real dc_dzw = -1;
-    constant Real dc_dt =  dc_dzm*der_z_methanol + dc_dzw*der_z_water;
+    Real dc_dzm;
+    Real dc_dzw;
+    Real dc_dt;
     
-    constant Real dbeta_da = c/a/sqrt(delta) - (-sqrt(delta)-b)/2/a/a;
-    constant Real dbeta_db = (-b/sqrt(delta)-1)/2/a;
-    constant Real dbeta_dc = 1/sqrt(delta);
-    
-    constant Real dbeta_dt_sol = dbeta_da*da_dt + dbeta_db*db_dt + dbeta_dc*dc_dt;
+    Real dbeta_da;
+    Real dbeta_db;
+    Real dbeta_dc;
     
   algorithm 
-    if C_water >= 0.0 or beta_sol >= 1.0 or beta_sol <= 0.0 then
-      der_beta := 1e-5;
-    else
-      der_beta := dbeta_dt_sol;
-    end if;
+    C_methanol := p_vap(T, Methanol)/p_env - 1;
+    C_water    := p_vap(T, Water)/p_env - 1;
     
-  end drachfordRice_analytic;
-  
-protected 
-  function drachfordRice_dt_numeric 
-    "The vapour fraction of a methanol-water-gas mixture." 
-    input MoleFraction z_methanol "The methanol fraction.";
-    input MoleFraction z_water "The water fraction.";
-    input Temperature T 
-      "The temperature at which the equilibrium is calculated.";
-    input Real der_z_methanol "The time derivative of the methanol fraction.";
-    input Real der_z_water "The time derivative of the water fraction.";
-    input Real der_T "The time derivative of temperature.";
-    output Real der_beta "The derivative of the vapour molar fraction.";
+    a := C_methanol*C_water;
+    b := C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);
+    c := 1.0-z_methanol-z_water;
+    delta := b*b - 4*a*c;
+    beta := (-b-sqrt(delta))/(2*a);
     
-  protected 
-    constant Real z_eps = 1e-6 
-      "Small number for the magnitude of molar fraction.";
-    constant Real T_eps = 1e-3 "Small number for the magnitude of temperature.";
-    Real pder_z_methanol;
-    Real pder_z_water;
-    Real pder_T;
+    dCm_dt := dK_dt(T, Methanol, der_T);
+    dCw_dt := dK_dt(T, Water, der_T);
     
-  algorithm 
-    if z_methanol <= 0 then
-      pder_z_methanol := (rachfordRice(z_eps, z_water, T)-rachfordRice(0.0, z_water, T))/z_eps;
-    elseif z_methanol < 1 then
-      pder_z_methanol := (rachfordRice(z_methanol+z_eps, z_water, T)-rachfordRice(z_methanol-z_eps, z_water, T))/(2*z_eps);
-    else
-      pder_z_methanol := (rachfordRice(1.0, z_water, T)-rachfordRice(1.0-z_eps, z_water, T))/z_eps;
-    end if;
+    da_dCm := C_water;
+    da_dCw := C_methanol;
+    da_dt  := da_dCm*dCm_dt + da_dCw*dCw_dt;
     
-    if z_water <= 0 then
-      pder_z_water := (rachfordRice(z_methanol, z_eps, T)-rachfordRice(z_methanol, 0.0, T))/z_eps;
-    elseif z_water < 1 then
-      pder_z_water := (rachfordRice(z_methanol, z_water+z_eps, T)-rachfordRice(z_methanol, z_water-z_eps, T))/(2*z_eps);
-    else
-      pder_z_water := (rachfordRice(z_methanol, 1.0, T)-rachfordRice(z_methanol, 1.0-z_eps, T))/z_eps;
-    end if;
+    db_dCm := 1-z_water;
+    db_dCw := 1-z_methanol;
+    db_dzm := -C_water;
+    db_dzw := -C_methanol;
+    db_dt  := db_dCm*dCm_dt + db_dCw*dCw_dt + db_dzm*der_z_methanol + db_dzw*der_z_water;
     
-    pder_T := (rachfordRice(z_methanol, z_water, T+T_eps)-rachfordRice(z_methanol, z_water, T-T_eps))/(2*T_eps);
+    dc_dzm := -1;
+    dc_dzw := -1;
+    dc_dt  := dc_dzm*der_z_methanol + dc_dzw*der_z_water;
     
-    der_beta := pder_z_methanol*der_z_methanol + pder_z_water*der_z_water + pder_T*der_T;
+    dbeta_da := c/a/sqrt(delta) + (b+sqrt(delta))/2/a/a;
+    dbeta_db := -(1+b/sqrt(delta))/2/a;
+    dbeta_dc := 1/sqrt(delta);
     
-    annotation (Documentation(info="<html>
-</html>"));
-  end drachfordRice_dt_numeric;
+    der_beta := dbeta_da*da_dt + dbeta_db*db_dt + dbeta_dc*dc_dt;
+    
+  end drr_dt;
   
 public 
   package Test 

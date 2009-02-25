@@ -416,6 +416,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
       import Thermo.LiquidPhase;
       import Thermo.Water;
       import Thermo.Methanol;
+      import Thermo.rr;
+      import Thermo.K;
     
       annotation (Diagram, Icon(
           Ellipse(extent=[-100,100; 100,-100], style(
@@ -469,7 +471,11 @@ unit.</p>
       MoleFraction z_w = inlet.n[Water]/sum(inlet.n) "Water molar fraction";
     
     equation 
-      beta = Thermo.rachfordRice(z_m, z_w, T);
+      if K(T,Water) >= 1 or rr(z_m, z_w, T) >= 1 then
+        beta = 1;
+      else
+        beta = rr(z_m, z_w, T);
+      end if;
     
       vapour + condensate = inlet.n[LiquidSpecies];
       vapour = { inlet.n[i]*beta*p_vap(T,i)/p_env / (1+beta*(p_vap(T,i)/p_env -1)) for i in LiquidSpecies};
@@ -548,7 +554,7 @@ temperature and concentration of methanol in the liquid phase of the flow.</p>
         cm.c = 0;
       end if;
     
-      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10; 
+      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
           5.55112e-16,100], style(
         pattern=0,
         thickness=2,
@@ -1030,7 +1036,7 @@ based on the <em>exiting</em> flow.</p>
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
     connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -46,30; 
+                                        annotation (points=[-100,30; -46,30;
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -40,
@@ -1038,7 +1044,7 @@ based on the <em>exiting</em> flow.</p>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30; 
+    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30;
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1048,7 +1054,7 @@ based on the <em>exiting</em> flow.</p>
           44; 36,-20; 70,-20], style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
+    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30;
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
