@@ -485,7 +485,7 @@ unit.</p>
                 sum( vapour[i]*h(T, i, GasPhase) + condensate[i]*h(T, i, LiquidPhase) for i in LiquidSpecies);
     
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16; 
+                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
           5,5.55112e-16; 100,5.55112e-16],
                                          style(pattern=0));
     
@@ -1036,7 +1036,7 @@ based on the <em>exiting</em> flow.</p>
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
     connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -46,30;
+                                        annotation (points=[-100,30; -46,30; 
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -40,
@@ -1044,7 +1044,7 @@ based on the <em>exiting</em> flow.</p>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30;
+    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30; 
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1054,7 +1054,7 @@ based on the <em>exiting</em> flow.</p>
           44; 36,-20; 70,-20], style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30;
+    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1077,7 +1077,7 @@ constant voltage for the cell.</p>
 </html>"));
   end ConstantVoltageFuelCell;
   
-  model TheveninFuelCell "A simplified DMFC with constant voltage" 
+  model TheveninFuelCell "A DMFC with Thevenin-like voltage" 
     extends FuelCell;
     
     parameter ArealResistance r = 13.3E-6 "Areal resistance";
