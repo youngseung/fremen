@@ -942,5 +942,98 @@ public
       
       annotation (experiment, experimentSetupOutput);
     end TestRachfordRice;
+    
+    annotation (DymolaStoredErrors(thetext="package Test 
+  model Test_p_vap \"Test case for vapour pressure\" 
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.PartialPressure;
+    
+    parameter Temperature T0 = 273.15 \"Starting temperature\";
+    
+    Temperature T = T0+time \"Varying temperature, linear with time\";
+    PartialPressure p_meoh \"Partial pressure of methanol\";
+    PartialPressure p_h2o \"Partial pressure of water\";
+    Real derivative_error_meoh 
+      \"Error in the analytic vs. calculated derivative for methanol\";
+    Real derivative_error_h2o 
+      \"Error in the analytic vs. calculated derivative for water\";
+    
+    function approximateDerivativePvap 
+      input Temperature T;
+      input Integer i;
+      parameter Real eps = 0.001;
+      output Real der_T;
+    algorithm 
+      der_T := (p_vap(T+eps,i)-p_vap(T-eps,i))/(2*eps);
+    end approximateDerivativePvap;
+    
+  equation 
+    p_meoh = p_vap(T, Methanol);
+    p_h2o = p_vap(T, Water);
+    
+    derivative_error_meoh = approximateDerivativePvap(T,Methanol) - dp_vap_dt(T, Methanol, der(T));
+    derivative_error_h2o = approximateDerivativePvap(T,Water) - dp_vap_dt(T, Water, der(T));
+  end Test_p_vap;
+  
+  model TestRachfordRice 
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.MoleFraction;
+    import Modelica.SIunits.Time;
+    
+    parameter Temperature T_0 = 273.15;
+    parameter Temperature T_f = 330;
+    parameter MoleFraction zm_0 = 0;
+    parameter MoleFraction zm_f = 0.5;
+    parameter MoleFraction zw_0 = 0.;
+    parameter MoleFraction zw_f = 0.3;
+    
+    MoleFraction zm = zm_0 + (zm_f - zm_0)*time;
+    MoleFraction zw = zw_0 + (zw_f - zw_0)*time;
+    Temperature T = T_0 + (T_f - T_0)*time;
+    MoleFraction beta = rachfordRice(zm, zw, T);
+    Real der_beta = der(beta);
+    Real der_beta_approx = (beta-old_beta)/blinkOfAnEye;
+    
+  protected 
+    constant Time blinkOfAnEye = 0.0001;
+    MoleFraction old_beta = delay(beta, blinkOfAnEye);
+    
+    annotation (experiment, experimentSetupOutput);
+  end TestRachfordRice;
+model Test_K \"test case for species equilibrum constant\"
+import Modelica.SIunits.Temperature;
+import Modelica.SIunits.PartialPressure;
+ 
+import Thermo.AllSpecies;
+ 
+parameter Temperature T0 = 273.15;
+Temperature T = T0+time;
+ 
+function Derivative_K
+input Temperature T;
+input Integer n;
+input Real der_K \"Derivative of K\";
+output Real der_T \"Derivative of Temp\";
+constant Pressure P_env = 101325 \"environment pressure\";
+constant Integer [:] AllSpecies = 1:5;
+constant Integer Methanol = 1;
+constant Integer Water = 2;
+algorithm
+if n == Methanol then
+der_K := dp_ch3oh_dt(T,der_T)/P_env;
+else if
+n == water then
+der_K := dp_h2o_dt(T,der_T)/P_env;
+else
+der_K := 0.0;
+ 
+end if
+ 
+end Derivative_K ;
+ 
+end Test_K;
+ 
+  
+end Test;"));
   end Test;
 end Thermo;
