@@ -944,20 +944,20 @@ public
     end TestRachfordRice;
     
   model Test_K "test case for species equilibrum constant" 
-  import Modelica.SIunits.Temperature;
-  import Modelica.SIunits.PartialPressure;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.PartialPressure;
       
-  import Thermo.AllSpecies;
+    import Thermo.AllSpecies;
       
   parameter Temperature T = 273.15;
       
-  function derivativeK 
+  function derivative_K 
     input Temperature T;
     input Integer n;
     input Real der_T "Derivative of Temp";
     output Real der_K "Derivative of K";
     constant Pressure P_env = 101325 "environment pressure";
-    constant Integer[ :] AllSpecies = 1:5;
+    constant Integer[:] AllSpecies = 1:5;
     constant Integer Methanol = 1;
     constant Integer Water = 2;
   algorithm 
@@ -971,9 +971,31 @@ public
           
     end if;
         
-  end derivativeK;
+  end derivative_K;
       
   end Test_K;
+    
+  model Test_h "test case for enthalpy" 
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.HeatCapacity;
+    import Modelica.SIunits.InternalEnergy;
+    import Modelica.SIunits.Entropy;
+      
+    import Thermo.AllSpecies;
+      
+  parameter Temperature T_ref = 298.15;
+      
+  function derivative_h 
+    input Temperature T_ref;
+    input Integer n;
+    input Real der_T "Derivative of Temp";
+    output Real der_h;
+  algorithm 
+    der_h := cp(T, n, p)*der_T;
+        
+  end derivative_h;
+      
+  end Test_h;
     
   end Test;
 end Thermo;
