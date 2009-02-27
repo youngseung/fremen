@@ -408,15 +408,21 @@ isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt
   
   partial model VerticalCylindricalTank 
     "A cylindrical tank in horizontal position." 
-    extends StirredTank(name="Vertical cylindrical tank");
+    extends StirredTank(name="Vertical cylindrical tank",V_l(start=V_l_0,fixed=true));
     import Modelica.SIunits.Area;
     import Modelica.SIunits.Length;
+    import Modelica.SIunits.Volume;
     
     parameter Area A "The cross-section of the tank.";
+    parameter Volume V_l_0 = 5e-4 "Initial solution volume";
     Length level(min=0) "The liquid level, measured from the bottom.";
     
   equation 
-      level = V_l / A;
+    level = V_l / A;
+    assert( V_l_0 >= 0 and V_l_0 <= V, "Bad starting solution volume in "+name+": V_0 = "+String(V_l_0)+".");
+    assert( V_l >= 0, name+" ran out of liquid.");
+    assert( V_l <= V, name+" overflowed.");
+    
     annotation (Documentation(info="<html>
 <p>This class extends the generic stirred tank in specifying a geometry for the
 tank, a vertical cylinder with a given horizontal section <em>A</em>.</p>
@@ -449,6 +455,7 @@ of filling of the tank by a linear expression.</p>
     parameter Area A "The cross-section of the tank";
     parameter Length d = 2.0*sqrt(A/pi) 
       "The inner diameter, or also height of the tank";
+    
     Length level(min=0,max=d) "The liquid level, measured from the bottom.";
     
     /* This function provides the fraction of area of a circle that is
@@ -498,8 +505,6 @@ deviate significantly from linearity (maximum deviation is about 6%).</p>
     import Thermo.CarbonDioxide;
     import Thermo.Nitrogen;
     
-    parameter Volume V_0 = 5e-4 "Initial solution volume";
-    
     CheckPoint bottomFlow = flows[1] annotation (extent=[-10,-90; 10,-70]);
     CheckPoint topFlow = flows[2] annotation (extent=[-10,70; 10,90]);
   equation 
@@ -508,11 +513,7 @@ deviate significantly from linearity (maximum deviation is about 6%).</p>
     flows[2].z_local = y;
     flows[2].h_local = h_g;
     
-    assert( level > 0, name+" ran out of fuel.");
-    assert( V_0 >= 0 and V_0 <= V, "Bad starting solution volume in "+name+": V_0 = "+String(V_0)+".");
-    
   initial equation 
-    V_l = V_0;
     x[Methanol] = 1;
     n[CarbonDioxide] = 0.0;  // No CO2, anywhere
     n[Nitrogen] / 79 = n[Oxygen] / 21;  // N2/O2 in air proportions
@@ -521,7 +522,7 @@ deviate significantly from linearity (maximum deviation is about 6%).</p>
   
   model Mixer "Our laboratory mixer" 
     import Modelica.Constants.pi;
-    extends VerticalCylindricalTank(name="Mixer", final m = 5, V = 5E-4, A = (37E-3)^2*pi);
+    extends VerticalCylindricalTank(name="Mixer", final m=5, V=5E-4, A=(37E-3)^2*pi, V_l_0=2.5E-4);
     annotation (Documentation(info="<html>
 <p>This is the mixer, which has four process streams (plus one connecting to the
 atmosphere).</p>
@@ -537,7 +538,6 @@ exclude presence of water in gas phase;</li>
 0.5 litres.</p>
 </html>"),   Icon,
       Diagram);
-    
     CheckPoint flow1 = flows[1] "Connection at the bottom of the tank." 
                      annotation (extent=[-40,-90; -20,-70]);
     CheckPoint flow2 = flows[2] "Connection at the bottom of the tank." 
@@ -549,6 +549,20 @@ exclude presence of water in gas phase;</li>
     CheckPoint topFlow = flows[5] 
       "Connection with the environment, at the top of the tank." 
       annotation (extent=[-10,70; 10,90]);
+    
+    import Modelica.SIunits.Concentration;
+    import Modelica.SIunits.Length;
+    import Thermo.Methanol;
+    import Thermo.Water;
+    import Thermo.Oxygen;
+    import Thermo.CarbonDioxide;
+    import Thermo.Nitrogen;
+    
+    parameter Concentration c_0 = 1000 "Initial concentration";
+    
+    Concentration c(start=c_0,fixed=true) = n[Methanol]/V_l 
+      "Initial concentration";
+    
   equation 
     // The first four flows are connected with the liquid phase.
     for i in 1:4 loop
@@ -560,12 +574,10 @@ exclude presence of water in gas phase;</li>
     flows[5].z_local = y;
     flows[5].h_local = h_g;
     
-  /*initial equation 
-  z[1] = 0.0; // (Almost) no methanol in initial solution
-  level = 0.5 * V / A; // Half-full
-  z[4] = 0.0; // No CO2 in gas
-  y[5] / 0.79 = y[3] / 0.21; // N2/O2 in air proportions
-*/
+  initial equation 
+    y[CarbonDioxide] = 0.0; // No CO2
+    y[Nitrogen] / 0.79 = y[Oxygen] / 0.21; // N2/O2 in air proportions
+    
   end Mixer;
   
   model Separator "A gas-liquid separator" 
@@ -1040,8 +1052,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       
-      parameter Modelica.SIunits.MoleFraction z_water_0 = 0.5;
-      
       import Thermo.Methanol;
       import Thermo.Water;
       import Thermo.Oxygen;
@@ -1051,6 +1061,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
       model MyStirredTank 
         extends StirredTank(m=2);
       end MyStirredTank;
+      
+      parameter Modelica.SIunits.MoleFraction z_water_0 = 0.5 
+        "Initial water fraction";
       
       MyStirredTank tank;
     equation 
@@ -1072,7 +1085,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       tank.z[CarbonDioxide] = 0;
       tank.z[Oxygen] / 0.21 = tank.z[Nitrogen] / 0.79;
       annotation (experiment(Algorithm="Dassl"), experimentSetupOutput(
-            doublePrecision=true, derivatives=false));
+            doublePrecision=true));
     end TestStirredtank;
     
     model TestFuelTank "A simple test for the FuelTank class" 
@@ -1080,8 +1093,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
       FlowConnector bottomConnector 
                                   annotation (extent=[-28,-24; -12,-16]);
       EnvironmentPort environmentPort annotation (extent=[18,-28; 48,4]);
-      annotation (Diagram, 
-        experiment(Algorithm="Dassl"), 
+      annotation (Diagram,
+        experiment(Algorithm="Dassl"),
         experimentSetupOutput(doublePrecision=true, derivatives=false));
       FuelTank fuelTank                        annotation (extent=[-80,6; -40,44]);
       FlowConnector topConnector   annotation (extent=[-26,56; -12,64]);
@@ -1098,7 +1111,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       connect(topConnector.port1, fuelTank.topFlow)   annotation (points=[-24.04,
             60; -60,60; -60,40.2], style(pattern=0, thickness=2));
       connect(fuelTank.bottomFlow, bottomConnector.port1) 
-                                                        annotation (points=[-60,9.8; 
+                                                        annotation (points=[-60,9.8;
             -60,-20; -25.76,-20],   style(pattern=0, thickness=2));
       connect(bottomConnector.port2, environmentPort.c) 
                                                       annotation (points=[-14.24,
@@ -1110,7 +1123,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
     model TestMixer "A Vodka mixer" 
       
       Mixer mixer annotation (extent=[-50,0; -10,42]);
-      annotation (Diagram);
+      annotation (Diagram, 
+        experiment, 
+        experimentSetupOutput(doublePrecision=true));
       EnvironmentPort environmentPort1 annotation (extent=[-2,48; 16,64]);
       FlowConnector flowConnector annotation (extent=[-60,-12; -46,0]);
       FlowConnector flowConnector1 annotation (extent=[-26,46; -12,58]);
@@ -1177,51 +1192,51 @@ in liquid phase; it takes their density from the Thermo library.</p>
       EnvironmentPort environmentPort annotation (extent=[48,20; 72,44]);
       EnvironmentPort environmentPort1 annotation (extent=[46,-40; 68,-16]);
       FlowConnector BottomSeparatorConnector 
-                                  annotation (extent=[18,-44; 38,-24]);
+                                  annotation (extent=[24,-38; 38,-30]);
       FlowConnector TopSeparatorConnector 
-                                   annotation (extent=[20,16; 40,36]);
+                                   annotation (extent=[24,22; 38,30]);
       FlowConnector FuelTankToSeparatorConnector 
-                                   annotation (extent=[-58,-14; -38,6]);
-      MethanolSolution source(T=350) annotation (extent=[-72,4; -52,24]);
-    equation 
-      
+                                   annotation (extent=[-56,-8; -42,0]);
+      MethanolSolution source(T=350) annotation (extent=[-72,4; -62,14]);
       annotation (Diagram);
+      
+    equation 
+      source.p.F = -1;
+      der(separator.V_l) = 0;
+      
       connect(BottomSeparatorConnector.port2, environmentPort1.c) 
-                                                       annotation (points=[35.2,-34;
-            47.1,-34],                    style(
+                                                       annotation (points=[36.04,
+            -34; 47.1,-34],               style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(BottomSeparatorConnector.port1, separator.liquidOutlet) 
-                                                           annotation (points=[20.8,-34;
-            8.2,-34; 8.2,-10],               style(
+                                                           annotation (points=[25.96,
+            -34; 8.2,-34; 8.2,-10],          style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port2, environmentPort.c) 
-                                                       annotation (points=[37.2,26;
+                                                       annotation (points=[36.04,26; 
             49.2,26],                     style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port1, separator.gasOutlet) 
-                                                         annotation (points=[22.8,26;
+                                                         annotation (points=[25.96,26; 
             8,26; 8,2; 8.2,2],              style(
           pattern=0,
           thickness=2,
           fillPattern=1));
       connect(FuelTankToSeparatorConnector.port2, separator.feed) 
-                                                    annotation (points=[-40.8,-4;
-            -41.6,-4; -41.6,-4; -38,-4; -38,-4; -33.4,-4],
+                                                    annotation (points=[-43.96,
+            -4; -38.68,-4; -38.68,-4; -33.4,-4],
                                                style(
           pattern=0,
           thickness=2,
           fillPattern=1));
-      
-      source.p.F = -1;
-      der(separator.level) = 0;
-      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-62,14;
-            -62,-4; -55.2,-4],     style(pattern=0, thickness=2));
+      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-67,9; 
+            -67,-4; -54.04,-4],    style(pattern=0, thickness=2));
     end TestSeparator;
     
     model TestPipe 
@@ -1511,7 +1526,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       FlowConnector flowConnector12 annotation (extent=[60,10; 70,18]);
       EnvironmentPort environmentPort4 annotation (extent=[72,10; 88,26]);
       Plug plug annotation (extent=[-24,-76; -12,-64]);
-      Cooler cooler annotation (extent=[-4,-8; 16,12]);
+      Cooler cooler annotation (extent=[-4,-4; 16,8]);
       inner parameter Real RH_env = 60;
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
@@ -1549,7 +1564,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
         annotation (points=[5.4,-28; -8.12,-28],style(pattern=0, thickness=2));
       connect(environmentPort3.c, flowConnector9.port2) 
         annotation (points=[24.8,16; 16.6,16], style(pattern=0, thickness=2));
-      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2;
+      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2; 
             30.91,2; 30.91,2; 33.5,2],   style(pattern=0, thickness=2));
       connect(flowConnector11.port2, separator.liquidOutlet) annotation (points=[-13.68,
             -60; 0,-60; 0,-38; 57.5,-38; 57.5,-2.2],        style(pattern=0,
@@ -1559,7 +1574,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=2));
       connect(environmentPort4.c, flowConnector12.port2) 
         annotation (points=[72.8,14; 68.6,14], style(pattern=0, thickness=2));
-      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14;
+      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14; 
             58,14; 58,6.2; 57.5,6.2],          style(pattern=0, thickness=2));
       connect(mixer.flow4, flowConnector11.port1) annotation (points=[-44,-83.6;
             -44,-88; -36,-88; -36,-60; -22.32,-60],
@@ -1569,14 +1584,14 @@ in liquid phase; it takes their density from the Thermo library.</p>
       connect(environmentPort2.c, flowConnector8.port2) annotation (points=[20.8,-28;
             12.6,-28],                                     style(pattern=0,
             thickness=2));
-      connect(flowConnector5.port2, cooler.f11) annotation (points=[-7.12,2;
-            -5.06,2; -5.06,2; -3,2], style(pattern=0, thickness=2));
-      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2;
-            17.34,2; 17.34,2; 19.68,2], style(pattern=0, thickness=2));
+      connect(flowConnector5.port2, cooler.f11) annotation (points=[-7.12,2; -3,
+            2],                      style(pattern=0, thickness=2));
+      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2; 
+            19.68,2],                   style(pattern=0, thickness=2));
       connect(flowConnector7.port2, cooler.f22) annotation (points=[2.6,-10; 6,
-            -10; 6,-3], style(pattern=0, thickness=2));
+            -10; 6,-1], style(pattern=0, thickness=2));
       connect(cooler.f21, flowConnector9.port1) 
-        annotation (points=[6,7; 6,16; 9.4,16], style(pattern=0, thickness=2));
+        annotation (points=[6,5; 6,16; 9.4,16], style(pattern=0, thickness=2));
       gasFlowController.V = airFlow;
       solutionPump.V = solution;
       fuelPump.V = methanol;
