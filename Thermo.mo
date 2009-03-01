@@ -949,29 +949,31 @@ public
       
     import Thermo.AllSpecies;
       
-  parameter Temperature T = 273.15;
+    parameter Temperature T0 = 273.15;
       
-  function derivative_K 
+    Temperature T = T0+time "Varying temperature,linear with time";
+    PartialPressure p_meoh "Partial pressure of methanol";
+    PartialPressure p_h2o "Partial pressure of water";
+    Real derivative_error_meoh;
+    Real derivative_error_h2o;
+    constant Pressure p_env = 101325 "Environment pressure";
+      
+  function approximatederivative_K 
     input Temperature T;
-    input Integer n;
-    input Real der_T "Derivative of Temp";
-    output Real der_K "Derivative of K";
-    constant Pressure P_env = 101325 "environment pressure";
-    constant Integer[:] AllSpecies = 1:5;
-    constant Integer Methanol = 1;
-    constant Integer Water = 2;
-  algorithm 
-    if n == Methanol then
-    der_K := dp_ch3oh_dt(T,der_T)/P_env;
-    elseif 
-    n == water then
-    der_K := dp_h2o_dt(T,der_T)/P_env;
-    else
-    der_K := 0.0;
-          
-    end if;
+    input Integer i;
+    parameter Real eps = 0.001;
+    output Real der_T;
         
-  end derivative_K;
+  algorithm 
+    der_T := (K(T+eps,i)-K(T-eps,i))/(2*eps);
+  end approximatederivative_K;
+      
+  equation 
+    p_meoh/p_env = K(T,Methanol);
+    p_h2o/p_env = K(T,Water);
+      
+    derivative_error_meoh = approximatederivative_K(T,Methanol) - dK_dt(Methanol, der(T));
+    derivative_error_h2o = approximatederivative_K(T,Water) - dK_dt(Water, der(T));
       
   end Test_K;
     
@@ -983,17 +985,34 @@ public
       
     import Thermo.AllSpecies;
       
-  parameter Temperature T_ref = 298.15;
+    parameter Temperature T_ref = 298.15;
+    Temperature T = T_ref+time;
       
   function derivative_h 
     input Temperature T_ref;
     input Integer n;
-    input Real der_T "Derivative of Temp";
-    output Real der_h;
-  algorithm 
-    der_h := cp(T, n, p)*der_T;
+    input Integer p;
+    input Integer dhf;
+    output Real der_T;
         
+  algorithm 
+    der_H := cp(T, n, p)*der_T;
   end derivative_h;
+      
+  equation 
+      H =  h_ch3oh_gas(T) - h_ch3oh_gas(T_ref)  + dhf(Methanol, GasPhase);
+      
+      H =  h_ch3oh_liq(T) - h_ch3oh_liq(T_ref) + dhf(Methanol, LiquidPhase);
+      
+      H =  h_h2o_gas(T) - h_h2o_gas(T_ref) + dhf(Water, GasPhase);
+      
+      H =  ShomateEnthalpy(T, ShomateH2O) - ShomateEnthalpy(T_ref, ShomateH2O) + dhf(Water, LiquidPhase);
+      
+      H =  ShomateEnthalpy(T, ShomateO2) - ShomateEnthalpy(T_ref, ShomateO2);
+      
+      H =  ShomateEnthalpy(T, ShomateCO2) - ShomateEnthalpy(T_ref, ShomateCO2) + dhf(CarbonDioxide, GasPhase);
+      
+      H =  ShomateEnthalpy(T, ShomateN2) - ShomateEnthalpy(T_ref, ShomateN2);
       
   end Test_h;
     
