@@ -368,70 +368,64 @@ protected
   end dp_ch3oh_dt;
   
 protected 
-  function LinearInterpolation 
-    input Real x;
-    input Real[:] dataX;
-    input Real[:] dataY;
-    output Real y;
-  protected 
-    Integer pos;
-    Real f;
-  algorithm 
-    if x < dataX[1] then
-      y := dataY[1];
-    elseif x >= dataX[end] then
-      y := dataY[end];
-    else
-      pos := 1;
-      while x > dataX[pos + 1] loop
-        pos := pos + 1;
-      end while;
-      f := (x - dataX[pos])/(dataX[pos + 1] - dataX[pos]);
-      y := dataY[pos] + f*(dataY[pos + 1] - dataY[pos]);
-    end if;
-    
-    annotation (Documentation(info="<html>
-<p>This function provides a linear interpolation of an indipendent variable <em>x</em>
-to a dependent variable <em>y</em>, provided two data sets <em>X</em> and <em>Y</em>.
-When extrapolating, the extreme value of the <em>Y</em> data set is taken.</p>
-</html>"));
-  end LinearInterpolation;
-  
-protected 
   function rho_h2o 
     input Temperature T;
     output Density rho;
   protected 
-    Real dataT[:]={273.16,278.16,283.16,288.16,293.16,298.16,303.16,308.16,
-        313.16,318.16,323.16,328.16,333.16,338.16,343.16,348.16,353.16,358.16,
-        363.16,368.16,373.12};
-    Real dataD[:]={999.84,999.97,999.70,999.10,998.21,997.05,995.65,994.03,
-        992.21,990.21,988.03,985.69,983.19,980.55,977.76,974.84,971.78,968.60,
-        965.30,961.88,958.37};
+    constant Real a = 252.37;
+    constant Real b = 6.5968;
+    constant Real c = -18.288E-3;
+    constant Real d = 15.222E-6;
   algorithm 
-    rho := LinearInterpolation(T,dataT,dataD);
-    annotation (Documentation(info="<html>
+    rho := a + b*T + c*T*T + d*T*T*T;
+    annotation (derivative=drho_h2o_dt, Documentation(info="<html>
 <p>This function returns the density of water in liquid phase at one 
-standard atmosphere of pressure.</p>
+standard atmosphere of pressure; the data has been interpolated with 
+a cubic function, and deviates from data provided by NIST by at most
+0.25 kg/m³.</p>
 </html>"));
   end rho_h2o;
+  
+protected 
+  function drho_h2o_dt 
+    input Temperature T;
+    input Real der_T;
+    output Real der_rho;
+  protected 
+    constant Real b = 6.5968;
+    constant Real c = -18.288E-3;
+    constant Real d = 15.222E-6;
+  algorithm 
+    der_rho := (b + c*T + d*T*T)*der_T;
+  end drho_h2o_dt;
   
 protected 
   function rho_ch3oh 
     input Temperature T;
     output Density rho;
   protected 
-    Real dataT[:]={273.15,278.15,283.15,288.15,293.15,298.15,303.15,308.15,
-        313.15,318.15,323.15,328.15,333.15,337.63};
-    Real dataD[:]={809.73,805.05,800.37,795.69,791.01,786.33,781.63,776.91,
-        772.17,767.39,762.58,757.72,752.81,748.36};
+    constant Real a = 1069.1;
+    constant Real b = -0.9488;
   algorithm 
-    rho := LinearInterpolation(T,dataT,dataD);
-    annotation (Documentation(info="<html>
+    rho := a + b*T;
+    annotation (derivative=drho_ch3oh_dt, Documentation(info="<html>
 <p>This function returns the density of methanol in liquid phase at 
-one standard atmosphere of pressure.</p>
+one standard atmosphere of pressure; the data has been interpolated 
+with a linear function, and deviates from data provided by NIST by at 
+most 0.5 kg/m³.</p>
 </html>"));
   end rho_ch3oh;
+  
+protected 
+  function drho_ch3oh_dt 
+    input Temperature T;
+    input Real der_T;
+    output Real der_rho;
+  protected 
+    constant Real b = -0.9488;
+  algorithm 
+    der_rho := b*der_T;
+  end drho_ch3oh_dt;
   
 public 
   function mw 
@@ -677,18 +671,19 @@ public
   algorithm 
     if p == LiquidPhase then
       if n == Methanol then
-        RHO := 791; // rho_ch3oh(T);
+        RHO := rho_ch3oh(T);
       elseif n == Water then
-        RHO := 997; // rho_h2o(T);
+        RHO := rho_h2o(T);
       else
-        assert(false, "Density in liquid phase of gaseous component "+String(n)+" requested.");
+        assert(false, "Requested liquid-phase density for non-implemented component "+String(n)+".");
       end if;
-    else
-      // NOTE Assuming ideal gas.
+    elseif p == GasPhase then
+      // Note: Assuming ideal gas.
       RHO := mw(n)*p_env/R/T;
+    else
+      assert(false, "Requested density for unknown phase ("+String(p)+").");
     end if;
-    annotation(derivative=drho_dt);
-    annotation (Documentation(info="<html>
+    annotation (derivative=drho_dt, Documentation(info="<html>
 <p>Returns the density of the given component at the given temperature and in the given phase.
 For gases, the ideal gas lawo is assumed; for liquids, a linear interpolation on data is
 carried out.</p>
@@ -714,17 +709,19 @@ protected
     constant Pressure p_env=101325.0;
     constant Temperature dT = 0.01;
   algorithm 
-    if p == 2 then
-      if n == 1 then
-        der_rho := 0; // (rho_ch3oh(T+dT)-rho_ch3oh(T))/dT; // FIXME use spline?
-      elseif n == 2 then
-        der_rho := 0; // (rho_h2o(T+dT)-rho_h2o(T))/dT;  // FIXME use spline?
+    if p == LiquidPhase then
+      if n == Methanol then
+        der_rho := drho_ch3oh_dt(T, der_T);
+      elseif n == Water then
+        der_rho := drho_h2o_dt(T, der_T);
       else
         assert(false, "Density in liquid phase of gaseous component "+String(n)+" requested.");
       end if;
-    else
+    elseif p == GasPhase then
       // NOTE Assuming ideal gas.
       der_rho := -mw(n)*p_env/R/T/T*der_T;
+    else
+      assert(false, "Requested density for unknown phase ("+String(p)+").");
     end if;
   end drho_dt;
   
@@ -917,7 +914,7 @@ public
       derivative_error_h2o = approximateDerivativePvap(T,Water) - dp_vap_dt(T, Water, der(T));
     end Test_p_vap;
     
-    model TestRachfordRice 
+    model TestRR 
       import Modelica.SIunits.Temperature;
       import Modelica.SIunits.MoleFraction;
       import Modelica.SIunits.Time;
@@ -932,7 +929,7 @@ public
       MoleFraction zm = zm_0 + (zm_f - zm_0)*time;
       MoleFraction zw = zw_0 + (zw_f - zw_0)*time;
       Temperature T = T_0 + (T_f - T_0)*time;
-      MoleFraction beta = rachfordRice(zm, zw, T);
+      MoleFraction beta = rr(zm, zw, T);
       Real der_beta = der(beta);
       Real der_beta_approx = (beta-old_beta)/blinkOfAnEye;
       
@@ -941,13 +938,13 @@ public
       MoleFraction old_beta = delay(beta, blinkOfAnEye);
       
       annotation (experiment, experimentSetupOutput);
-    end TestRachfordRice;
+    end TestRR;
     
   model Test_K "test case for species equilibrum constant" 
-    import Modelica.SIunits.Temperature;
-    import Modelica.SIunits.PartialPressure;
+      import Modelica.SIunits.Temperature;
+      import Modelica.SIunits.PartialPressure;
       
-    import Thermo.AllSpecies;
+      import Thermo.AllSpecies;
       
     parameter Temperature T0 = 273.15;
       
@@ -978,12 +975,12 @@ public
   end Test_K;
     
   model Test_h "test case for enthalpy" 
-    import Modelica.SIunits.Temperature;
-    import Modelica.SIunits.HeatCapacity;
-    import Modelica.SIunits.InternalEnergy;
-    import Modelica.SIunits.Entropy;
+      import Modelica.SIunits.Temperature;
+      import Modelica.SIunits.HeatCapacity;
+      import Modelica.SIunits.InternalEnergy;
+      import Modelica.SIunits.Entropy;
       
-    import Thermo.AllSpecies;
+      import Thermo.AllSpecies;
       
     parameter Temperature T_ref = 298.15;
     Temperature T = T_ref+time;
