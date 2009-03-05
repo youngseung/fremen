@@ -982,10 +982,11 @@ public
       
       import Thermo.AllSpecies;
       
-    parameter Temperature T_ref = 298.15;
-    Temperature T = T_ref+time;
+      parameter Temperature T_ref = 298.15;
+      Temperature T = T_ref+time;
+      Real derivative_error_h;
       
-  function derivative_h 
+  function approximatederivative_h 
     input Temperature T_ref;
     input Integer n;
     input Integer p;
@@ -993,8 +994,8 @@ public
     output Real der_T;
         
   algorithm 
-    der_H := cp(T, n, p)*der_T;
-  end derivative_h;
+    der_T := (der_H /cp(T, n, p));
+  end approximatederivative_h;
       
   equation 
       H =  h_ch3oh_gas(T) - h_ch3oh_gas(T_ref)  + dhf(Methanol, GasPhase);
@@ -1010,6 +1011,8 @@ public
       H =  ShomateEnthalpy(T, ShomateCO2) - ShomateEnthalpy(T_ref, ShomateCO2) + dhf(CarbonDioxide, GasPhase);
       
       H =  ShomateEnthalpy(T, ShomateN2) - ShomateEnthalpy(T_ref, ShomateN2);
+      
+  derivative_error_h = approximatederivative_h - dh_dt;
       
   end Test_h;
     
