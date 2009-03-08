@@ -123,7 +123,7 @@ liquid level).</p>
     outer Temperature T_env "Environment temperature.";
     
     parameter Concentration C = 1000 
-      "Concentration of methanol in water, mol/m³.";
+      "Concentration of methanol in water, mol/m.";
     parameter Temperature T = T_env "Source temperature.";
     
     MoleFraction x_ch3oh "Molar fraction of methanol.";
@@ -133,7 +133,7 @@ liquid level).</p>
       annotation (extent=[-20,-20; 20,20]);
   equation 
     assert( C >= 0, "Negative concentration given in MethanolSolution object.");
-    assert( C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m³).");
+    assert( C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m).");
     
     C = x_ch3oh / ( x_ch3oh*mw(Methanol)/rho(T,Methanol,LiquidPhase) + x_h2o*mw(Water)/rho(T,Water,LiquidPhase));
     x_ch3oh + x_h2o = 1.0;
@@ -150,7 +150,7 @@ liquid level).</p>
             rgbfillColor={255,255,255}))), Documentation(info="<html>
 <p>This item is a source for methanol-water solutions. Parameter <tt>C</tt>
 allows to set the concentration in moler per <em>cubic metre</em>; note that
-this is 1000 times the normal scale (1M = 1000 mol/m³).</p>
+this is 1000 times the normal scale (1M = 1000 mol/m).</p>
 </html>"));
   end MethanolSolution;
   
@@ -956,8 +956,8 @@ classes could specialize).</p>
     extends FlowController;
     annotation (Icon,     Documentation(info="<html>
 <p>This class implements a mass flow controller with field volumetric units. Since
-there are two different standards (the actual \"standard\" at 0° Celsius and the Norm
-at 70° Fahrenheit), it is necessary to adjust the reference temperature; the default
+there are two different standards (the actual \"standard\" at 0 Celsius and the Norm
+at 70 Fahrenheit), it is necessary to adjust the reference temperature; the default
 assumes zero Celsius (\"standard\" value).</p>
 <p>The flow assumes that all components are in gas phase and takes their density from
 the Thermo library, where the ideal gas law is (usually) assumed.</p>
@@ -1142,7 +1142,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       mixer.flow1.F = 1;
       mixer.flow2.F = 0.5;
       
-      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6; 
+      connect(flowConnector.port2, mixer.flow1) annotation (points=[-47.96,-6;
             -40,-6; -40,4.2; -36,4.2],  style(pattern=0, thickness=2));
       connect(flowConnector1.port1, mixer.topFlow) annotation (points=[-24.04,
             52; -30,52; -30,37.8],
@@ -1165,7 +1165,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           fillColor=46,
           rgbfillColor={127,127,0},
           fillPattern=7));
-      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51; 
+      connect(flowConnector3.port1, mixer.flow2) annotation (points=[-20.04,-51;
             -32,-51; -32,4.2], style(
           pattern=0,
           thickness=2,

@@ -1012,7 +1012,7 @@ public
       
       H =  ShomateEnthalpy(T, ShomateN2) - ShomateEnthalpy(T_ref, ShomateN2);
       
-  derivative_error_h = approximatederivative_h - dh_dt;
+      derivative_error_h = approximatederivative_h(T,p) - dh_dt(p,der(T));
       
   end Test_h;
     
