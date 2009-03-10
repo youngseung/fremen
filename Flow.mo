@@ -13,27 +13,6 @@ type ArealResistance = Real (final quantity="Areal resistance", final unit="Ohm.
 multiplying this unit by area. That is because of the rule of sum of resistances in parallel.</p>
 </html>"));
   
-type SurfaceConcentration = Real (final quantity="Surface concentration", final unit
-        =                                                                            "mol/m2") 
-    annotation (Documentation(info="<html>
-<p>A unit commonly used for active concentrations of catalysts.</p>
-</html>"));
-  
-type ArealCapacitance = Real (final quantity="Areal capacitance", final unit="F.m2") 
-    annotation (Documentation(info="<html>
-<p>Unit typically used to indicate the capacitance of charge double layers in electrodes.</p>
-</html>"));
-  
-type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="mol/m2s") 
-    annotation (Documentation(info="<html>
-<p>The rate of a reaction on a mole-per-surface-area basis.</p>
-</html>"));
-  
-type CatalystCoverage = Real(final quantity="Catalyst coverage", final unit="", min=0, max=1) 
-    annotation (Documentation(info="<html>
-<p>Fraction of catalytic sites occupied by a certain species.</p>
-</html>"));
-  
   connector FlowPort "What passes through a control surface" 
     
     flow MolarFlowRate[size(Thermo.AllSpecies,1)] n;
@@ -639,6 +618,7 @@ additional object down- or upstream to measure the temperature.</p>
   end Separator;
   
   model Cooler "A simplified heat exchanger" 
+    
     FlowPort inlet annotation (extent=[-100,-6; -88,6]);
     FlowPort outlet annotation (extent=[88,-6; 100,6]);
     annotation (Diagram, Icon(
@@ -978,9 +958,9 @@ based on the <em>exiting</em> flow.</p>
     ConcentrationPort cm_in annotation (extent=[-100,-70; -80,-50]);
     ConcentrationPort cm_out annotation (extent=[80,-70; 100,-50]);
     PositivePin plus "Pole connected to the cathode" 
-                                      annotation (extent=[-10,50; 10,70]);
+                                      annotation (extent=[50,50; 70,70]);
     NegativePin minus "Pole connected to the anode" 
-                                    annotation (extent=[-10,-70; 10,-50]);
+                                    annotation (extent=[-70,50; -50,70]);
   protected 
     FlowTemperature cathodeT "Temperature measurement on the cathode" 
       annotation (extent=[60,20; 80,40]);
@@ -1351,11 +1331,11 @@ the calculation.</p>
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
@@ -1363,14 +1343,16 @@ the calculation.</p>
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(I_cell.p, fuelCell.minus) annotation (points=[24,-16; 24,6.8],
+      connect(I_cell.p, fuelCell.minus) annotation (points=[24,-16; 24,5.6; 24,
+            27.2; 13.2,27.2],
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.plus) annotation (points=[44,-16; 84,-16; 84,
-            50; 24,50; 24,27.2], style(color=3, rgbcolor={0,0,255}));
+            50; 34.8,50; 34.8,27.2],
+                                 style(color=3, rgbcolor={0,0,255}));
       connect(ground.p, I_cell.p) annotation (points=[12,-16; 24,-16], style(
             color=3, rgbcolor={0,0,255}));
       pump.V = anodeFlow;
-      heater.outletTemperature.T = anodeInletTemperature;
+      heater.outT.T = anodeInletTemperature;
       blower.V = cathodeFlow;
     end CellTest;
     
