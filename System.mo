@@ -32,9 +32,9 @@ package System "DMFC systems"
     Flow.SinkPort airSink "The gas outlet of the condenser" 
                       annotation (extent=[74,28; 82,36]);
     replaceable Modelica.Electrical.Analog.Interfaces.OnePort load 
-      "Load connected to the cell"       annotation (extent=[-52,34; -32,54]);
+      "Load connected to the cell"       annotation (extent=[-38,50; -26,62]);
     Modelica.Electrical.Analog.Basic.Ground ground 
-      annotation (extent=[-32,-30; -18,-16]);
+      annotation (extent=[-40,26; -26,40]);
   equation 
     connect(pump.inlet, mixer.outlet) 
       annotation (points=[-44.12,-32; -8,-32], style(color=62, rgbcolor={0,127,
@@ -88,7 +88,8 @@ package System "DMFC systems"
     connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[0.66,10; 
           -14,10; -14,10.1],                  style(color=62, rgbcolor={0,127,
             127}));
-    connect(load.n, fuelCell.plus)   annotation (points=[-32,44; -32,15.2],
+    connect(load.n, fuelCell.plus)   annotation (points=[-26,56; -20,56; -20,
+          15.2; -21.2,15.2],
         style(
         color=3,
         rgbcolor={0,0,255},
@@ -96,16 +97,18 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(load.p, fuelCell.minus)   annotation (points=[-52,44; -58,44; -58,
-          -16; -32,-16; -32,-5.2], style(
+    connect(load.p, fuelCell.minus)   annotation (points=[-38,56; -44,56; -44,
+          16; -42,16; -42,15.2; -42.8,15.2],
+                                   style(
         color=3,
         rgbcolor={0,0,255},
         pattern=0,
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -32,-16; -32,
-          -5.2], style(
+    connect(ground.p, fuelCell.minus) annotation (points=[-33,40; -44,40; -44,
+          15.2; -42.8,15.2],
+                 style(
         color=3,
         rgbcolor={0,0,255},
         pattern=0,
@@ -185,7 +188,7 @@ package System "DMFC systems"
     annotation (experiment(StopTime=7200), experimentSetupOutput,
       Diagram);
   end Reference_ASME;
-
+  
   partial model CoolingIntegration 
     "The reference DMFC system, no control applied" 
     
@@ -234,7 +237,7 @@ package System "DMFC systems"
     connect(cooler.outlet, degasser.inlet) annotation (points=[21.34,5; 32,5],
                                                      style(color=62, rgbcolor={
             0,127,127}));
-    connect(degasser.gasOutlet, co2sink.flowPort) annotation (points=[49,9.4; 
+    connect(degasser.gasOutlet, co2sink.flowPort) annotation (points=[49,9.4;
           48,9.4; 48,24; 54.4,24],
         style(color=62, rgbcolor={0,127,127}));
     connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
@@ -252,7 +255,8 @@ package System "DMFC systems"
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(load.n, fuelCell.plus)   annotation (points=[-32,44; -32,15.2],
+    connect(load.n, fuelCell.plus)   annotation (points=[-32,44; -32,29.6; -32,
+          15.2; -21.2,15.2],
         style(
         color=3,
         rgbcolor={0,0,255},
@@ -261,15 +265,17 @@ package System "DMFC systems"
         rgbfillColor={255,85,85},
         fillPattern=1));
     connect(load.p, fuelCell.minus)   annotation (points=[-52,44; -58,44; -58,
-          -16; -32,-16; -32,-5.2], style(
+          -16; -42.8,-16; -42.8,15.2],
+                                   style(
         color=3,
         rgbcolor={0,0,255},
         pattern=0,
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -32,-16; -32,
-          -5.2], style(
+    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -42.8,-16; 
+          -42.8,15.2],
+                 style(
         color=3,
         rgbcolor={0,0,255},
         pattern=0,
