@@ -928,7 +928,7 @@ based on the <em>exiting</em> flow.</p>
     
     parameter Length d_M = 142E-6 "Membrane thickness";
     parameter DiffusionCoefficient D_M = 5E-10 "Methanol diffusion coefficient";
-    parameter Velocity k_ad = 20E-6 "Mass transport coefficient";
+    parameter Velocity k_ad = 15.6E-6 "Mass transport coefficient";
     parameter Real k_drag = 4 "Drag factor";
     parameter Area A = 26E-4 "Membrane area";
     
@@ -1331,11 +1331,11 @@ the calculation.</p>
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
