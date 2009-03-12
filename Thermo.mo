@@ -396,7 +396,7 @@ protected
     constant Real c = -18.288E-3;
     constant Real d = 15.222E-6;
   algorithm 
-    der_rho := (b + c*T + d*T*T)*der_T;
+    der_rho := (b + 2*c*T + 3*d*T*T)*der_T;
   end drho_h2o_dt;
   
 protected 
