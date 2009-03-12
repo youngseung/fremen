@@ -573,7 +573,7 @@ temperature and in the given phase.</p>
 </html>"));
   end cp;
   
-public 
+protected
   function p_vap 
     input Temperature T;
     input Integer n "Component";
@@ -617,9 +617,11 @@ public
       "The ratio y/x between liquid and gaseous molar fraction.";
   protected 
     constant Pressure p_env = 101325 "The environment pressure.";
+    constant Real gamma_ch3oh = 2.15 
+      "Methanol activity coefficient (diluted acqueous solution)";
   algorithm 
     if n == Methanol then
-      Kvalue := p_ch3oh(T)/p_env;
+      Kvalue := gamma_ch3oh * p_ch3oh(T)/p_env;
     elseif n == Water then
       Kvalue := p_h2o(T)/p_env;
     else
@@ -786,8 +788,8 @@ we have to pick a different solution when we pass beyond this temperature.</p>
 Quaternary Systems</em>, Industrial and Engineering Chemistry Research 32(7), 1528&ndash;1530, July 1993.</p>
 </html>"));
   algorithm 
-    C_methanol := p_vap(T, Methanol)/p_env - 1;
-    C_water    := p_vap(T, Water)/p_env - 1;
+    C_methanol := K(T, Methanol) - 1;
+    C_water    := K(T, Water) - 1;
     
     assert( C_methanol > C_water, "Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
     
@@ -847,8 +849,8 @@ protected
     Real dbeta_dc;
     
   algorithm 
-    C_methanol := p_vap(T, Methanol)/p_env - 1;
-    C_water    := p_vap(T, Water)/p_env - 1;
+    C_methanol := K(T, Methanol) - 1;
+    C_water    := K(T, Water) - 1;
     
     a := C_methanol*C_water;
     b := C_methanol*z_methanol+C_water*z_water+(C_methanol+C_water)*(1.0-z_methanol-z_water);

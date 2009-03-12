@@ -146,8 +146,8 @@ package System "DMFC systems"
     parameter Temperature T_cell = 333 
       "Artificially maintained cell temperature";
     
-    parameter Real a = 6*F*fuelCell.k_ad*b "Estimated dependence of i_x on c_a";
-    parameter Real b = 1/(fuelCell.k_ad*fuelCell.d_M/fuelCell.D_M +1) 
+    Real a = 6*F*fuelCell.k_ad*b "Estimated dependence of i_x on c_a";
+    Real b = 1/(fuelCell.k_ad*fuelCell.d_M/fuelCell.D_M +1) 
       "Estimated dependence of i_x on i";
     CurrentDensity i_x_est = a*c_a_ref - b*fuelCell.i 
       "Estimate of the cross-over current density";
@@ -179,7 +179,7 @@ package System "DMFC systems"
     Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.Tm.T, 1));
     
     // Constant temperature in the cell assumed to be maintained by misterious stranger.
-    fuelCell.Tm.T = T_cell;
+    fuelCell.T = T_cell;
     
     when initial() then
       V_0 = mixer.V;
@@ -229,7 +229,7 @@ package System "DMFC systems"
             127}));
     connect(environment.c, blower.inlet) annotation (points=[-81,27; -89.5,27;
           -89.5,6; -70.08,6], style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10;
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-46; 0,-46; 0,-40; 6.10623e-16,-40],
@@ -240,14 +240,14 @@ package System "DMFC systems"
     connect(degasser.gasOutlet, co2sink.flowPort) annotation (points=[49,9.4;
           48,9.4; 48,24; 54.4,24],
         style(color=62, rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
           -14,0; -4,0; -4,5; 0.66,5], style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
           -50,0; -76,0; -76,-26; -44,-26],
                               style(
         color=62,
@@ -273,7 +273,7 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -42.8,-16; 
+    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -42.8,-16;
           -42.8,15.2],
                  style(
         color=3,
@@ -282,9 +282,9 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1; 
+    connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1;
           -4,10.1; -4,5; 0.66,5], style(color=62, rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6; 
+    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6;
           48.5,0.6; 48.5,-32; 8,-32], style(color=62, rgbcolor={0,127,127}));
   end CoolingIntegration;
 end System;

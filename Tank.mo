@@ -65,6 +65,7 @@ either tank object (because it lacks the values for the other one).</p>
   end Plug;
   
   model FlowConnector "A class to determine flow direction" 
+    
   public 
     CheckPoint port1 annotation (extent=[-82,-10; -62,10]);
     CheckPoint port2 annotation (extent=[62,-10; 82,10]);
@@ -160,7 +161,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     import Thermo.Nitrogen;
     import Thermo.GasPhase;
     import Thermo.h;
-    import Thermo.p_vap;
+    import Thermo.K;
     import Thermo.MolarEnthalpy;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Pressure;
@@ -183,7 +184,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
   equation 
     z_o2 / 0.21 = z_n2 / 0.79;
     z_h2o + z_o2 + z_n2 = 1.0;
-    z_h2o = RH_env/100 * p_vap(T_env, Water)/p_env;
+    z_h2o = RH_env/100 * K(T_env, Water);
     
     h_h2o = h(T_env, Water, GasPhase);
     h_o2  = h(T_env, Oxygen, GasPhase);
@@ -1123,8 +1124,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
     model TestMixer "A Vodka mixer" 
       
       Mixer mixer annotation (extent=[-50,0; -10,42]);
-      annotation (Diagram, 
-        experiment, 
+      annotation (Diagram,
+        experiment,
         experimentSetupOutput(doublePrecision=true));
       EnvironmentPort environmentPort1 annotation (extent=[-2,48; 16,64]);
       FlowConnector flowConnector annotation (extent=[-60,-12; -46,0]);
@@ -1217,7 +1218,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port2, environmentPort.c) 
-                                                       annotation (points=[36.04,26; 
+                                                       annotation (points=[36.04,26;
             49.2,26],                     style(
           pattern=0,
           thickness=2,
@@ -1235,7 +1236,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           pattern=0,
           thickness=2,
           fillPattern=1));
-      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-67,9; 
+      connect(source.p, FuelTankToSeparatorConnector.port1) annotation (points=[-67,9;
             -67,-4; -54.04,-4],    style(pattern=0, thickness=2));
     end TestSeparator;
     
@@ -1564,7 +1565,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
         annotation (points=[5.4,-28; -8.12,-28],style(pattern=0, thickness=2));
       connect(environmentPort3.c, flowConnector9.port2) 
         annotation (points=[24.8,16; 16.6,16], style(pattern=0, thickness=2));
-      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2; 
+      connect(flowConnector10.port2, separator.feed) annotation (points=[28.32,2;
             30.91,2; 30.91,2; 33.5,2],   style(pattern=0, thickness=2));
       connect(flowConnector11.port2, separator.liquidOutlet) annotation (points=[-13.68,
             -60; 0,-60; 0,-38; 57.5,-38; 57.5,-2.2],        style(pattern=0,
@@ -1574,7 +1575,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=2));
       connect(environmentPort4.c, flowConnector12.port2) 
         annotation (points=[72.8,14; 68.6,14], style(pattern=0, thickness=2));
-      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14; 
+      connect(flowConnector12.port1, separator.gasOutlet) annotation (points=[61.4,14;
             58,14; 58,6.2; 57.5,6.2],          style(pattern=0, thickness=2));
       connect(mixer.flow4, flowConnector11.port1) annotation (points=[-44,-83.6;
             -44,-88; -36,-88; -36,-60; -22.32,-60],
@@ -1586,7 +1587,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
             thickness=2));
       connect(flowConnector5.port2, cooler.f11) annotation (points=[-7.12,2; -3,
             2],                      style(pattern=0, thickness=2));
-      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2; 
+      connect(cooler.f12, flowConnector10.port1) annotation (points=[15,2;
             19.68,2],                   style(pattern=0, thickness=2));
       connect(flowConnector7.port2, cooler.f22) annotation (points=[2.6,-10; 6,
             -10; 6,-1], style(pattern=0, thickness=2));
