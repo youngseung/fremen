@@ -155,7 +155,7 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
       // Toggle to short circuit when eta goes below zero.
       EtaIsFrozen := true;
       reinit(eta,0);
-    elsewhen EtaIsFrozen and i/A > F*(4*r1+r2+r3) then
+    elsewhen EtaIsFrozen and i/A > ir then
       // Toggle back to Tafel when eta starts accumulating again.  
       EtaIsFrozen := false;
     end when;
