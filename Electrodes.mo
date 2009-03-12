@@ -11,7 +11,7 @@ type SurfaceConcentration = Real (final quantity="Surface concentration", final 
 <p>A unit commonly used for active concentrations of catalysts.</p>
 </html>"));
   
-type ArealCapacitance = Real (final quantity="Areal capacitance", final unit="F.m2") 
+type ArealCapacitance = Real (final quantity="Areal capacitance", final unit="F/m2") 
     annotation (Documentation(info="<html>
 <p>Unit typically used to indicate the capacitance of charge double layers in electrodes.</p>
 </html>"));
@@ -59,6 +59,17 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
     import Modelica.SIunits.CurrentDensity;
     import Modelica.SIunits.Current;
     import Modelica.Constants.R;
+    import Flow.MolarFlowRate;
+    import Thermo.AllSpecies;
+    import Thermo.Methanol;
+    import Thermo.Water;
+    import Thermo.Oxygen;
+    import Thermo.CarbonDioxide;
+    import Thermo.Nitrogen;
+    
+    parameter Boolean AllowFrozenEta = false "Allows to handle open circuit";
+    parameter Boolean FreezeCoveragesToo = false 
+      "Block coverages when the overvoltage is";
     
     parameter ArealCapacitance C = 3348 "The electrode's areal capacitance";
     parameter Real alpha = 0.5 
@@ -92,14 +103,18 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
       "Net rate of water adsorption on Ru (1 proton)";
     ArealReactionRate r3 "Rate of carbon-dioxide production (1 proton)";
     
-    CatalystCoverage thetaCO(start=0.5) "Catalyst coverage of CO on Pt";
-    CatalystCoverage thetaOH(start=0.05) "Catalyst coverage of OH on Ru";
+    MolarFlowRate[size(AllSpecies,1)] r "Rate of production of species";
+    
+    CatalystCoverage thetaCO(start=0.9) "Catalyst coverage of CO on Pt";
+    CatalystCoverage thetaOH(start=0.01) "Catalyst coverage of OH on Ru";
     
     Concentration c "Catalyst-layer methanol concentration";
     Temperature T "Electrode temperature";
-    Voltage eta(start=0,fixed=true) = v "Anodic overvoltage";
-    CurrentDensity ir = 4*F*r1 + F*r2 + F*r3 "Proton current density";
-    discrete Boolean TafelIsValid(start=true);
+    Voltage eta(start=0.2) = v "Anodic overvoltage";
+    CurrentDensity ir = 4*F*r1 + F*r2 + F*r3 
+      "Proton current density (if eta not frozen)";
+    Current Ir = ir*A "Reaction current";
+    discrete Boolean EtaIsFrozen(start=false);
     
   equation 
     r1 = r10 * exp(-betaCO * gCO * (thetaCO - 0.5)) * c * (1 - thetaCO);
@@ -110,29 +125,57 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
     
     r3 = r30 * exp((1 - betaCO) * gCO * (thetaCO - 0.5)) * thetaCO * thetaOH;
     
-    cPt * der(thetaCO) = r1 - r3;
-    cRu * der(thetaOH) = r2 - r3;
-    
-    if TafelIsValid then
-      C*der(eta) = i/A - ir;
+    if EtaIsFrozen and FreezeCoveragesToo then
+      der(thetaCO) = 0;
+      der(thetaOH) = 0;
     else
-      der(eta) = 0;
+      cPt * der(thetaCO) = r1  - r3;
+      cRu * der(thetaOH) = r2  - r3;
     end if;
     
+    if EtaIsFrozen then
+      der(eta)         = 0;
+      r[Methanol]      = -i/A/6/F;
+      r[Water]         = -i/A/6/F;
+      r[CarbonDioxide] = i/A/6/F;
+    else
+      C * der(eta)     = i/A - ir;
+      r[Methanol]      = -r1;
+      r[Water]         = -r2;
+      r[CarbonDioxide] = r3;
+    end if;
+    r[Oxygen]   = 0;
+    r[Nitrogen] = 0;
+    
   algorithm 
-    when eta < 0 then
+    when eta <= 0 and not AllowFrozenEta then
+      // Condition not allowed by the user, crash.
+      assert(false, "==> Overvoltage became negative. Set AllowFrozenEta if you want to continue anyway.");
+    elsewhen eta <= 0 then
       // Toggle to short circuit when eta goes below zero.
-      TafelIsValid :=false;
+      EtaIsFrozen := true;
       reinit(eta,0);
-    elsewhen i/A > ir and (not TafelIsValid) then
+    elsewhen EtaIsFrozen and i/A > F*(4*r1+r2+r3) then
       // Toggle back to Tafel when eta starts accumulating again.  
-      TafelIsValid :=true;
+      EtaIsFrozen := false;
     end when;
     
-  initial equation 
-    der(thetaCO) = 0;
-    der(thetaOH) = 0;
-    
+    annotation (Documentation(info="<html>
+<p>This class implements a DMFC anode as described by Krewer et al. [1]. Equations and parameters
+are taken from there.</p>
+ 
+<p>Krewer et al.'s model cannot work at open circuit, because reactions 1 (CO adsorption) and 3 
+(CO<sub>2</sub> desorption) cannot reach a steady state. It was necessary to use hybrid modelling:
+when overvoltage &eta; falls below zero, the model switches to a short circuit, with &eta;=V=0; when
+then the conditions are present for an increase in &eta;, the model switches back to its full model.</p>
+ 
+<p>Note on initialisation: it is not possible to <em>reliably</em> initialise &eta; to its steady state
+at simulation start, so it is set &eta;<sub>0</sub>=0; the reason it is not possible is that, for a 
+small yet not easily calculated range of current just above 0, &eta; cannot converge to a steady state.</p>
+ 
+<p>{1}: Krewer, Ulrike, Yoon, Hae-Kwon, and Kim, Hee-Tak: Basic model for membrane electrode assembly 
+design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.</p>
+</html>"));
   end KrewerAnode;
   annotation (uses(Modelica(version="2.2.1")));
   
@@ -156,8 +199,7 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
       connect(anode.n, ground.p) annotation (points=[40,-9.4369e-16; 31,
             -9.4369e-16; 31,5.55112e-16; 60,5.55112e-16],    style(color=3,
             rgbcolor={0,0,255}));
-      connect(pulseCurrent.n, anode.p) annotation (points=[-32,-9.4369e-16; -29,
-            -9.4369e-16; -29,-9.4369e-16; -26,-9.4369e-16; -26,-9.4369e-16; -20,
+      connect(pulseCurrent.n, anode.p) annotation (points=[-32,-9.4369e-16; -20,
             -9.4369e-16], style(color=3, rgbcolor={0,0,255}));
       connect(anode.n, pulseCurrent.p) annotation (points=[40,-9.4369e-16; 40,
             60; -92,60; -92,-9.4369e-16], style(color=3, rgbcolor={0,0,255}));
