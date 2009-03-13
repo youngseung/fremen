@@ -126,8 +126,8 @@ connectors on other items.</p>
     FlowPort c "Connection point of the source" 
       annotation (extent=[-20,-20; 20,20]);
   equation 
-    assert(C >= 0, "Negative concentration given in MethanolSolution object.");
-    assert(C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m³).");
+    assert(C >= 0, "==> Negative concentration given in MethanolSolution object.");
+    assert(C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "==> Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m³).");
     
     C = x_ch3oh / (x_ch3oh*mw(Methanol)/rho(T,Methanol,LiquidPhase) + x_h2o*mw(Water)/rho(T,Water,LiquidPhase));
     x_ch3oh + x_h2o = 1.0;
@@ -935,6 +935,28 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
 </ul>
  
 </html>"));
+    FlowPort cathode_inlet "The cathode flow's inlet" 
+      annotation (extent=[-110,20; -90,40]);
+    FlowPort cathode_outlet "The cathode flow's outlet" 
+      annotation (extent=[90,20; 110,40]);
+    FlowPort anode_inlet "The anode flow's inlet" 
+      annotation (extent=[-110,-40; -90,-20]);
+    FlowPort anode_outlet "The anode flow's outlet" 
+      annotation (extent=[90,-40; 110,-20]);
+    PositivePin plus "Pole connected to the cathode" 
+                                      annotation (extent=[-70,50; -50,70]);
+    NegativePin minus "Pole connected to the anode" 
+                                    annotation (extent=[50,50; 70,70]);
+  protected 
+    FlowTemperature cathodeT "Temperature measurement on the cathode" 
+      annotation (extent=[60,20; 80,40]);
+    FlowConcentration anodeOutletTC annotation (extent=[60,-40; 80,-20]);
+    FlowConcentration anodeInletTC annotation (extent=[-74,-40; -54,-20]);
+    SinkPort nexus "Connection of all flows" 
+                      annotation (extent=[-32,-10; -12,10]);
+  public 
+    replaceable Modelica.Electrical.Analog.Interfaces.OnePort electrochemistry 
+      "Electrochemical model of the cell" annotation (extent=[-10,50; 10,70]);
     import Modelica.SIunits.Length;
     import Modelica.SIunits.DiffusionCoefficient;
     import Modelica.SIunits.Area;
@@ -985,26 +1007,6 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       "Cathodic water partial pressure, outlet is representative";
     Temperature T = cathodeT.Tm.T "Representative stack temperature";
     
-    FlowPort cathode_inlet "The cathode flow's inlet" 
-      annotation (extent=[-110,20; -90,40]);
-    FlowPort cathode_outlet "The cathode flow's outlet" 
-      annotation (extent=[90,20; 110,40]);
-    FlowPort anode_inlet "The anode flow's inlet" 
-      annotation (extent=[-110,-40; -90,-20]);
-    FlowPort anode_outlet "The anode flow's outlet" 
-      annotation (extent=[90,-40; 110,-20]);
-    PositivePin plus "Pole connected to the cathode" 
-                                      annotation (extent=[50,50; 70,70]);
-    NegativePin minus "Pole connected to the anode" 
-                                    annotation (extent=[-70,50; -50,70]);
-  protected 
-    FlowTemperature cathodeT "Temperature measurement on the cathode" 
-      annotation (extent=[60,20; 80,40]);
-    FlowConcentration anodeOutletTC annotation (extent=[60,-40; 80,-20]);
-    FlowConcentration anodeInletTC annotation (extent=[-74,-40; -54,-20]);
-    SinkPort nexus "Connection of all flows" 
-                      annotation (extent=[-32,-10; -12,10]);
-    
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     /* This group of constant vectors represents the coefficients by which
@@ -1040,14 +1042,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     // Equivalent crossover current density in A/m^2.
     i_x = 6*F*(D_M/d_M * c_ac);
     
-    // Connect the electrical pin currents, and set them equal to the cell current.
-    plus.i + minus.i = 0;
+    // Set the pin current equal to the cell current.
     plus.i = I;
     
     // Sanity check: crash simulation if conditions are unphysical
-    assert( c_ac >= 0, "Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
-    assert( max(cathode_outlet.n) < eps, "Some components are entering from the cathode outlet.");
-    assert( max(anode_outlet.n) < eps, "Some components are entering from the anode outlet.");
+    assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
+    assert( max(cathode_outlet.n) < eps, "==> Some components are entering from the cathode outlet.");
+    assert( max(anode_outlet.n) < eps, "==> Some components are entering from the anode outlet.");
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
@@ -1072,14 +1073,16 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
+    connect(electrochemistry.n, minus)
+      annotation (points=[10,60; 60,60], style(color=3, rgbcolor={0,0,255}));
+    connect(electrochemistry.p, plus)
+      annotation (points=[-10,60; -60,60], style(color=3, rgbcolor={0,0,255}));
   end FuelCell;
   
   model ConstantVoltageFuelCell "A simplified DMFC with constant voltage" 
-    extends FuelCell;
-    
-    parameter Modelica.SIunits.Voltage V_cell = 0.5 "Cell voltage";
-  equation 
-    V = V_cell;
+    extends FuelCell(redeclare 
+        Modelica.Electrical.Analog.Sources.ConstantVoltage electrochemistry(V=
+            0.5));
     
     annotation (Documentation(info="<html>
 <p>This trivial class inherits from the <tt>FuelCell</tt> class and allows to set a 
@@ -1088,15 +1091,7 @@ constant voltage for the cell.</p>
   end ConstantVoltageFuelCell;
   
   model TheveninFuelCell "A DMFC with Thevenin-like voltage" 
-    extends FuelCell;
-    
-    parameter ArealResistance r = 13.3E-6 "Areal resistance";
-    parameter Modelica.SIunits.Resistivity rho = r / d_M "Membrane resistivity";
-    parameter Modelica.SIunits.Resistance R = r / A "Resistance";
-    
-    parameter Modelica.SIunits.Voltage V0 = 0.6 "Open-circuit voltage";
-  equation 
-    V = V0 - R*I;
+    extends FuelCell(redeclare Electrodes.Thevenin electrochemistry);
     
     annotation (Documentation(info="<html>
 <p>This class implements a voltage model that emulates a Thevenin equivalent circuit. It is possible
@@ -1355,9 +1350,9 @@ the calculation.</p>
       GasFlowController blower annotation (extent=[-42,18; -34,26]);
       SinkPort anodeSink annotation (extent=[62,10; 68,16]);
       SinkPort cathodeSink annotation (extent=[62,18; 68,24]);
-      ConstantCurrent I_cell(I=5) annotation (extent=[24,-26; 44,-6]);
+      ConstantCurrent I_cell(I=5) annotation (extent=[12,50; 32,70]);
       Modelica.Electrical.Analog.Basic.Ground ground 
-        "Negative pole to zero voltage" annotation (extent=[2,-36; 22,-16]);
+        "Negative pole to zero voltage" annotation (extent=[38,40; 58,60]);
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=62, rgbcolor={0,127,127}));
@@ -1373,17 +1368,17 @@ the calculation.</p>
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(I_cell.p, fuelCell.minus) annotation (points=[24,-16; 24,5.6; 24,
-            27.2; 13.2,27.2],
+      connect(I_cell.p, fuelCell.minus) annotation (points=[12,60; 12,50; 36,50; 
+            36,27.2; 34.8,27.2],
           style(color=3, rgbcolor={0,0,255}));
-      connect(I_cell.n, fuelCell.plus) annotation (points=[44,-16; 84,-16; 84,
-            50; 34.8,50; 34.8,27.2],
+      connect(I_cell.n, fuelCell.plus) annotation (points=[32,60; 36,60; 36,74; 
+            4,74; 4,42; 14,42; 14,27.2; 13.2,27.2],
                                  style(color=3, rgbcolor={0,0,255}));
-      connect(ground.p, I_cell.p) annotation (points=[12,-16; 24,-16], style(
-            color=3, rgbcolor={0,0,255}));
       pump.V = anodeFlow;
       heater.outT.T = anodeInletTemperature;
       blower.V = cathodeFlow;
+      connect(ground.p, I_cell.n)
+        annotation (points=[48,60; 32,60], style(color=3, rgbcolor={0,0,255}));
     end CellTest;
     
     model ConstantVoltageCellTest "Test for the constant-voltage model" 
