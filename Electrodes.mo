@@ -16,7 +16,7 @@ type ArealCapacitance = Real (final quantity="Areal capacitance", final unit="F/
 <p>Unit typically used to indicate the capacitance of charge double layers in electrodes.</p>
 </html>"));
   
-type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="mol/m2s") 
+type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="mol/(m2.s)") 
     annotation (Documentation(info="<html>
 <p>The rate of a reaction on a mole-per-surface-area basis.</p>
 </html>"));
@@ -32,7 +32,7 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
             fillColor=7,
             rgbfillColor={255,255,255})), Line(points=[-100,0; 14,0; 20,20; 30,
               -20; 40,20; 50,-20; 60,20; 70,-20; 76,0; 100,0], style(color=3,
-              rgbcolor={0,0,255}))), 
+              rgbcolor={0,0,255}))),
       Documentation(info="<html>
 <p>This class implements a simple Th&eacute;venin equivalent circuit, allowing
 to set its open-circuit voltage and its resistance.</p>
@@ -79,7 +79,7 @@ to set its open-circuit voltage and its resistance.</p>
     import Modelica.SIunits.CurrentDensity;
     import Modelica.SIunits.Current;
     import Modelica.Constants.R;
-    import Flow.MolarFlowRate;
+    import Flow.MolarFlow;
     import Thermo.AllSpecies;
     import Thermo.Methanol;
     import Thermo.Water;
@@ -123,17 +123,16 @@ to set its open-circuit voltage and its resistance.</p>
       "Net rate of water adsorption on Ru (1 proton)";
     ArealReactionRate r3 "Rate of carbon-dioxide production (1 proton)";
     
-    MolarFlowRate[size(AllSpecies,1)] r "Rate of production of species";
+    MolarFlow[size(AllSpecies,1)] r "Rate of production of species";
     
     CatalystCoverage thetaCO(start=0.9) "Catalyst coverage of CO on Pt";
     CatalystCoverage thetaOH(start=0.01) "Catalyst coverage of OH on Ru";
     
     Concentration c "Catalyst-layer methanol concentration";
     Temperature T "Electrode temperature";
-    Voltage eta(start=0.2) = v "Anodic overvoltage";
+    Voltage eta(start=0.2) = v "Overvoltage";
     CurrentDensity ir = 4*F*r1 + F*r2 + F*r3 
       "Proton current density (if eta not frozen)";
-    Current Ir = ir*A "Reaction current";
     discrete Boolean EtaIsFrozen(start=false);
     
   equation 
@@ -193,11 +192,55 @@ then the conditions are present for an increase in &eta;, the model switches bac
 at simulation start, so it is set to some &eta;<sub>0</sub>; the reason it is not possible is that, for a 
 small yet not easily calculated range of current just above 0, &eta; cannot converge to a steady state.</p>
  
-<p>{1}: Krewer, Ulrike, Yoon, Hae-Kwon, and Kim, Hee-Tak: Basic model for membrane electrode assembly 
+<h3>References</h3>
+<p>Krewer, Ulrike, Yoon, Hae-Kwon, and Kim, Hee-Tak: Basic model for membrane electrode assembly 
 design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.</p>
 </html>"));
   end KrewerAnode;
   annotation (uses(Modelica(version="2.2.1")));
+  
+  model JeongCathode "Sundmacher-Jeong model of a DMFC cathode" 
+    extends Electrode;
+    annotation (Documentation(info="<html>
+<p>This class implements a DMFC cathode as described by Jeong et al.</p>
+ 
+<h3>References</h3> 
+<p>Ilyong Jeong, Jiyong Kim, Sejin Pak, Suk Woo Nam, and Il Moon: Optimum operating strategies for 
+liquid-fed direct methanol fuel cells, Journal of Power Sources 185(2), 828-837, December 2008</p>
+</html>"));
+    import Modelica.SIunits.Velocity;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.Voltage;
+    import Modelica.SIunits.Concentration;
+    import Modelica.SIunits.CurrentDensity;
+    import Modelica.SIunits.Current;
+    import Modelica.SIunits.MoleFraction;
+    import Modelica.Constants.R;
+    import Flow.MolarFlow;
+    import Flow.MolarFlux;
+    import Thermo.AllSpecies;
+    import Thermo.Methanol;
+    import Thermo.Water;
+    import Thermo.Oxygen;
+    import Thermo.CarbonDioxide;
+    import Thermo.Nitrogen;
+    
+    parameter ArealCapacitance C = 8E5 "The electrode's areal capacitance";
+    parameter Real alpha = 0.3756 "Charge transfer coefficient";
+    parameter ArealReactionRate r0 = 2.285E-3 "Reaction rate constant";
+    
+    ArealReactionRate r "Rate of reaction";
+    MoleFraction x_O2 "Catalyst-layer oxygen molar fraction";
+    MolarFlux x "The methanol cross-over flux";
+    Temperature T "Electrode temperature";
+    Voltage eta(start=0.2) = v "Overvoltage";
+    
+  equation 
+    r = r0 * (x_O2^1.5 * exp(-alpha*F*eta/R/T) - exp((1-alpha)*F*eta/R/T));
+    
+    C * der(eta) = -i + 6*F*r + 4*F*x;
+    
+  end JeongCathode;
   
   package Test 
     model KrewerAnodeTest 

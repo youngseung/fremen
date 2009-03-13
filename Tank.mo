@@ -2,7 +2,7 @@
 
 package Tank 
   
-type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s") 
+type MolarFlow = Real(final quantity="MolarFlow", final unit="mol/s") 
     annotation (Documentation(info="<html>
 <p>Just a definition lacking from the standard library.</p>
 </html>"));
@@ -13,7 +13,7 @@ type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s")
     import Thermo.MolarEnthalpy;
     import Thermo.AllSpecies;
     
-    MolarFlowRate F;
+    MolarFlow F;
     MoleFraction[size(AllSpecies,1)] z(each min=0, each max=1);
     EnthalpyFlowRate H;
     MoleFraction[size(AllSpecies,1)] z_local(each min=0, each max=1);
@@ -921,7 +921,7 @@ phase, see class <tt>Cooler</tt>.</p>
     import Thermo.mw;
     import Thermo.AllSpecies;
     
-    MolarFlowRate F;
+    MolarFlow F;
     Modelica.SIunits.MassFlowRate m;
     CheckPoint inlet "Unit inlet" annotation (extent=[-12,-10; 8,10]);
     CheckPoint outlet "Unit outlet" annotation (extent=[-10,90; 10,110]);

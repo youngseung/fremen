@@ -130,7 +130,7 @@ package System "DMFC systems"
     import Modelica.SIunits.Current;
     import Modelica.SIunits.Volume;
     import Modelica.SIunits.Time;
-    import Flow.MolarFlowRate;
+    import Flow.MolarFlow;
     import Thermo.Oxygen;
     import Thermo.Water;
     import Thermo.Methanol;

@@ -2,7 +2,12 @@
 
 package Flow 
   
-type MolarFlowRate = Real(final quantity="MolarFlowRate", final unit="mol/s") 
+type MolarFlow = Real(final quantity="Molar flow rate", final unit="mol/s") 
+    annotation (Documentation(info="<html>
+<p>Just a definition lacking from the standard library.</p>
+</html>"));
+  
+type MolarFlux = Real(final quantity="Molar flux", final unit="mol/(m2.s)") 
     annotation (Documentation(info="<html>
 <p>Just a definition lacking from the standard library.</p>
 </html>"));
@@ -22,7 +27,7 @@ molar flux.</p>
   
   connector FlowPort "What passes through a control surface" 
     
-    flow MolarFlowRate[size(Thermo.AllSpecies,1)] n;
+    flow MolarFlow[size(Thermo.AllSpecies,1)] n;
     flow Modelica.SIunits.EnthalpyFlowRate H;
     
     annotation (Documentation(info="<html>
@@ -301,7 +306,7 @@ about which we do not care much.</p>
     import Thermo.mw;
     import Thermo.AllSpecies;
     
-    MolarFlowRate F "Molar flow rate";
+    MolarFlow F "Molar flow rate";
     Modelica.SIunits.MassFlowRate m "Mass flow rate";
     FlowPort inlet "Unit inlet"   annotation (extent=[-12,-10; 8,10]);
     FlowPort outlet "Unit outlet"   annotation (extent=[-10,90; 10,110]);
@@ -447,9 +452,8 @@ unit.</p>
       Modelica.SIunits.Temperature T(start=T_env) = Tm.T "Flow temperature";
       MoleFraction beta "Vapour fraction";
     
-      MolarFlowRate[size(LiquidSpecies,1)] vapour(each min=0) "Vapour flows";
-      MolarFlowRate[size(LiquidSpecies,1)] condensate(each min=0) 
-      "Liquid flows";
+      MolarFlow[size(LiquidSpecies,1)] vapour(each min=0) "Vapour flows";
+      MolarFlow[size(LiquidSpecies,1)] condensate(each min=0) "Liquid flows";
     
       MoleFraction z_m = inlet.n[Methanol]/sum(inlet.n) 
       "Methanol molar fraction";
@@ -901,7 +905,7 @@ to the crossover current.</li>
 <p>The drag factor is taken from Schaffer et al., the temperature dependence is inferred to be
 0.025 K<sup>-1</sup> from Ren and Gottesfeld. Although we have a N115 membrane, Ren and Gottesfeld
 did not investigate these, so this is a bit of a leap of faith.</p>
-
+ 
 <p>The methanol diffusion through the membrane is assumed to be constant, as Kallio et al. did not
 report a particularly strong dependence; though they did not have many points, they did indeed
 cover most of our range of interest.</p>
@@ -910,14 +914,14 @@ cover most of our range of interest.</p>
 methanol on the anode, the methanol diffusion coefficient in the membrane and the inverse of the 
 membrane's thickness. In turn, the difference between bulk and catalyst-layer concentration of 
 methanol is proportional to the sum of crossover and reaction current densities.</p>
-
+ 
 <p>The class calculates some quantities of interest, such as the anodic methanol 
 concentration, and the cathodic partial pressures of oxygen and water. Note that all these are
 based on the <em>exiting</em> flow.</p>
-
+ 
 <p>In order to calculate the catalyst-layer methanol anodic concentration, the methanol diffusion 
 coefficient in water is required. It is assumed to vary linearly with temperature.</p>
-
+ 
 <p>Parameters have been taken from Krewer et al., unless differently stated.</p>
  
 <h3>References</h3>
@@ -947,14 +951,6 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                       annotation (extent=[-70,50; -50,70]);
     NegativePin minus "Pole connected to the anode" 
                                     annotation (extent=[50,50; 70,70]);
-  protected 
-    FlowTemperature cathodeT "Temperature measurement on the cathode" 
-      annotation (extent=[60,20; 80,40]);
-    FlowConcentration anodeOutletTC annotation (extent=[60,-40; 80,-20]);
-    FlowConcentration anodeInletTC annotation (extent=[-74,-40; -54,-20]);
-    SinkPort nexus "Connection of all flows" 
-                      annotation (extent=[-32,-10; -12,10]);
-  public 
     replaceable Modelica.Electrical.Analog.Interfaces.OnePort electrochemistry 
       "Electrochemical model of the cell" annotation (extent=[-10,50; 10,70]);
     import Modelica.SIunits.Length;
@@ -965,10 +961,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Voltage;
-    import Modelica.SIunits.Pressure;
     import Modelica.SIunits.PartialPressure;
-    import Modelica.SIunits.Resistance;
-    import Modelica.SIunits.Resistivity;
+    import Modelica.SIunits.Pressure;
     import Modelica.Constants.eps;
     import Modelica.Electrical.Analog.Interfaces.PositivePin;
     import Modelica.Electrical.Analog.Interfaces.NegativePin;
@@ -986,18 +980,21 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     parameter Length d_M = 142E-6 "Membrane thickness";
     parameter Area A = 26E-4 "Membrane active area";
+    parameter DiffusionCoefficient D_M = 6E-10 
+      "Methanol diffusion coefficient in the membrane";
     
     // Parameters for N115 membrane.  
     Real k_drag = 4 + 0.025*(T-303.15) "Drag factor for N115";
     MassTransportCoefficient k_ad = 15.6E-6*T/333 "Mass transport coefficient";
-    constant DiffusionCoefficient D_M = 6E-10 
-      "Methanol diffusion coefficient in the membrane";
     
     CurrentDensity i(min=0) "Current density";
     Current I = i * A "Current";
-    CurrentDensity i_x(min=0) "Crossover current density";
-    Current I_x = i_x * A "Crossover current";
     Voltage V = plus.v - minus.v "Cell voltage";
+    
+    MolarFlux N_H = i/F "Proton flux through the membrane";
+    MolarFlow n_H = I/F "Proton flow through the membrane";
+    MolarFlux N_x "Crossover methanol flux";
+    MolarFlow n_x = N_x * A "Crossover methanol flow";
     
     Concentration c_a = anodeOutletTC.cm.c 
       "Methanol concentration, outlet is representative";
@@ -1009,23 +1006,26 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
-    /* This group of constant vectors represents the coefficients by which
-   * current and crossover current must be multiplied to find the flows
-   * associated to reaction, crossover and drag. */
-    constant Real[:] cathode_reaction = {0, 1/2/F, -1/4/F, 0, 0};
-    constant Real[:] anode_reaction = {-1/6/F, -1/6/F, 0, 1/6/F, 0};
-    constant Real[:] cathode_crossover = {0, 1/3/F, -1/4/F, 1/6/F, 0};
-    constant Real[:] anode_crossover = {-1/6/F, 0, 0, 0, 0};
-    /* Note: the *_drag terms are parameters, not constants, since k_drag
-   * can be modified. */
-    Real[:] cathode_drag = {0, k_drag/F, 0, 0, 0};
-    Real[:] anode_drag = {0, -k_drag/F, 0, 0, 0};
+    /* This group of vectors represents the coefficients by which
+   * proton and crossover-methanol flows must be multiplied to 
+   * find the flows associated to reaction, crossover and drag. */
+    Real[:] cathode_H = {0, 1/2+k_drag, -1/4, 0, 0};
+    Real[:] anode_H = {-1/6, -1/6-k_drag, 0, 1/6, 0};
+    constant Real[:] cathode_M = {0, 2, -3/2, 1, 0};
+    constant Real[:] anode_M = {-1, 0, 0, 0, 0};
+    FlowTemperature cathodeT "Temperature measurement on the cathode" 
+      annotation (extent=[60,20; 80,40]);
+    FlowConcentration anodeOutletTC annotation (extent=[60,-40; 80,-20]);
+    FlowConcentration anodeInletTC annotation (extent=[-74,-40; -54,-20]);
+    SinkPort nexus "Connection of all flows" 
+                      annotation (extent=[-32,-10; -12,10]);
+    
   equation 
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + (anode_reaction + anode_drag)*I + anode_crossover*I_x = zeros(size(AllSpecies,1));
+    anode_inlet.n + anode_outlet.n + anode_H*n_H + anode_M*n_x = zeros(size(AllSpecies,1));
     
     // Cathode-side mass balance, accounting for reaction, drag and crossover
-    cathode_inlet.n + cathode_outlet.n + (cathode_reaction + cathode_drag)*I + cathode_crossover*I_x = zeros(size(AllSpecies,1));
+    cathode_inlet.n + cathode_outlet.n + cathode_H*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
     nexus.flowPort.H = I*V;
@@ -1036,11 +1036,11 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     // Definition of water partial pressure (on the cathode side). On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
     
-    // Methanol transport: binds c_a, c_ac and i (i_x is a function of c_ac).
-    k_ad * (c_a-c_ac) = (i_x+i)/6/F;
+    // Methanol transport: binds c_a, c_ac and i (N_x is a function of c_ac).
+    k_ad * (c_a-c_ac) = N_x + i/6/F;
     
-    // Equivalent crossover current density in A/m^2.
-    i_x = 6*F*(D_M/d_M * c_ac);
+    // Crossover methanol flux.
+    N_x = D_M/d_M * c_ac;
     
     // Set the pin current equal to the cell current.
     plus.i = I;
@@ -1065,17 +1065,17 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
-    connect(cathodeT.Tm, anodeOutletTC.Tm) annotation (points=[70,40; 70,44; 36,
-          44; 36,-20; 70,-20], style(color=1, rgbcolor={255,0,0}));
+    connect(cathodeT.Tm, anodeOutletTC.Tm) annotation (points=[70,40; 54,40; 54,
+          -20; 70,-20],        style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
     connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
-    connect(electrochemistry.n, minus)
+    connect(electrochemistry.n, minus) 
       annotation (points=[10,60; 60,60], style(color=3, rgbcolor={0,0,255}));
-    connect(electrochemistry.p, plus)
+    connect(electrochemistry.p, plus) 
       annotation (points=[-10,60; -60,60], style(color=3, rgbcolor={0,0,255}));
   end FuelCell;
   
@@ -1191,8 +1191,8 @@ the calculation.</p>
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
       
-      parameter MolarFlowRate solutionFlow = 1;
-      parameter MolarFlowRate airFlow = 1;
+      parameter MolarFlow solutionFlow = 1;
+      parameter MolarFlow airFlow = 1;
       
     equation 
       connect(flowConcentration.inlet, methanolSolution.c) annotation (points=[
@@ -1368,7 +1368,7 @@ the calculation.</p>
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(I_cell.p, fuelCell.minus) annotation (points=[12,60; 12,50; 36,50; 
+      connect(I_cell.p, fuelCell.minus) annotation (points=[12,60; 12,50; 36,50;
             36,27.2; 34.8,27.2],
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.plus) annotation (points=[32,60; 36,60; 36,74; 
@@ -1377,7 +1377,7 @@ the calculation.</p>
       pump.V = anodeFlow;
       heater.outT.T = anodeInletTemperature;
       blower.V = cathodeFlow;
-      connect(ground.p, I_cell.n)
+      connect(ground.p, I_cell.n) 
         annotation (points=[48,60; 32,60], style(color=3, rgbcolor={0,0,255}));
     end CellTest;
     
