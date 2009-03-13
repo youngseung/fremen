@@ -21,6 +21,26 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
 <p>The rate of a reaction on a mole-per-surface-area basis.</p>
 </html>"));
   
+  model Thevenin "A Thevenin-equivalent circuit" 
+    extends Modelica.Electrical.Analog.Interfaces.OnePort;
+    
+    parameter Modelica.SIunits.Voltage V0 = 0.7 "The open-circuit voltage";
+    parameter Modelica.SIunits.Resistance R = 0.1 "The equivalent resistance";
+    annotation (Diagram, Icon(Ellipse(extent=[-60,20; -20,-20], style(
+            color=3,
+            rgbcolor={0,0,255},
+            fillColor=7,
+            rgbfillColor={255,255,255})), Line(points=[-100,0; 14,0; 20,20; 30,
+              -20; 40,20; 50,-20; 60,20; 70,-20; 76,0; 100,0], style(color=3,
+              rgbcolor={0,0,255}))), 
+      Documentation(info="<html>
+<p>This class implements a simple Th&eacute;venin equivalent circuit, allowing
+to set its open-circuit voltage and its resistance.</p>
+</html>"));
+  equation 
+    v = V0-R*i;
+  end Thevenin;
+  
   partial model Electrode "Generic electrode" 
     extends Modelica.Electrical.Analog.Interfaces.OnePort;
     
@@ -68,7 +88,7 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
     import Thermo.Nitrogen;
     
     parameter Boolean AllowFrozenEta = false "Allows to handle open circuit";
-    parameter Boolean FreezeCoveragesToo = false 
+    parameter Boolean FreezeCoveragesToo = true 
       "Block coverages when the overvoltage is";
     
     parameter ArealCapacitance C = 3348 "The electrode's areal capacitance";
@@ -99,7 +119,7 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
     ArealReactionRate r1 "Rate of methanol adsorption on Pt (4 protons)";
     ArealReactionRate r2f "Rate of water adsorption on Ru";
     ArealReactionRate r2b "Rate of water desorption from Ru";
-    ArealReactionRate r2( stateSelect=StateSelect.always) 
+    ArealReactionRate r2(stateSelect=StateSelect.always) 
       "Net rate of water adsorption on Ru (1 proton)";
     ArealReactionRate r3 "Rate of carbon-dioxide production (1 proton)";
     
@@ -170,7 +190,7 @@ when overvoltage &eta; falls below zero, the model switches to a short circuit, 
 then the conditions are present for an increase in &eta;, the model switches back to its full model.</p>
  
 <p>Note on initialisation: it is not possible to <em>reliably</em> initialise &eta; to its steady state
-at simulation start, so it is set &eta;<sub>0</sub>=0; the reason it is not possible is that, for a 
+at simulation start, so it is set to some &eta;<sub>0</sub>; the reason it is not possible is that, for a 
 small yet not easily calculated range of current just above 0, &eta; cannot converge to a steady state.</p>
  
 <p>{1}: Krewer, Ulrike, Yoon, Hae-Kwon, and Kim, Hee-Tak: Basic model for membrane electrode assembly 
@@ -199,7 +219,8 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       connect(anode.n, ground.p) annotation (points=[40,-9.4369e-16; 31,
             -9.4369e-16; 31,5.55112e-16; 60,5.55112e-16],    style(color=3,
             rgbcolor={0,0,255}));
-      connect(pulseCurrent.n, anode.p) annotation (points=[-32,-9.4369e-16; -20,
+      connect(pulseCurrent.n, anode.p) annotation (points=[-32,-9.4369e-16; -29,
+            -9.4369e-16; -29,-9.4369e-16; -26,-9.4369e-16; -26,-9.4369e-16; -20,
             -9.4369e-16], style(color=3, rgbcolor={0,0,255}));
       connect(anode.n, pulseCurrent.p) annotation (points=[40,-9.4369e-16; 40,
             60; -92,60; -92,-9.4369e-16], style(color=3, rgbcolor={0,0,255}));
