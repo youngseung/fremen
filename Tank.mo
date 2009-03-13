@@ -133,8 +133,8 @@ liquid level).</p>
     CheckPoint p "Connection point of the source" 
       annotation (extent=[-20,-20; 20,20]);
   equation 
-    assert( C >= 0, "Negative concentration given in MethanolSolution object.");
-    assert( C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m).");
+    assert( C >= 0, "==> Negative concentration given in MethanolSolution object.");
+    assert( C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "==> Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m).");
     
     C = x_ch3oh / ( x_ch3oh*mw(Methanol)/rho(T,Methanol,LiquidPhase) + x_h2o*mw(Water)/rho(T,Water,LiquidPhase));
     x_ch3oh + x_h2o = 1.0;
@@ -420,9 +420,9 @@ isolated tank, set it to 1 and set <tt>flow[1].H = 0</tt>, <tt>flow[1].F = 0</tt
     
   equation 
     level = V_l / A;
-    assert( V_l_0 >= 0 and V_l_0 <= V, "Bad starting solution volume in "+name+": V_0 = "+String(V_l_0)+".");
-    assert( V_l >= 0, name+" ran out of liquid.");
-    assert( V_l <= V, name+" overflowed.");
+    assert( V_l_0 >= 0 and V_l_0 <= V, "==> Bad starting solution volume in "+name+": V_0 = "+String(V_l_0)+".");
+    assert( V_l >= 0, "==> "+name+" ran out of liquid.");
+    assert( V_l <= V, "==> "+name+" overflowed.");
     
     annotation (Documentation(info="<html>
 <p>This class extends the generic stirred tank in specifying a geometry for the
@@ -1117,7 +1117,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       connect(bottomConnector.port2, environmentPort.c) 
                                                       annotation (points=[-14.24,
             -20; 19.5,-20],           style(pattern=0, thickness=2));
-      connect(environmentPort1.c, topConnector.port2)   annotation (points=[19.5,60; 
+      connect(environmentPort1.c, topConnector.port2)   annotation (points=[19.5,60;
             -13.96,60],                    style(pattern=0, thickness=2));
     end TestFuelTank;
     
@@ -1224,7 +1224,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
           thickness=2,
           fillPattern=1));
       connect(TopSeparatorConnector.port1, separator.gasOutlet) 
-                                                         annotation (points=[25.96,26; 
+                                                         annotation (points=[25.96,26;
             8,26; 8,2; 8.2,2],              style(
           pattern=0,
           thickness=2,

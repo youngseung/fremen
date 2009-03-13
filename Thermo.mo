@@ -443,7 +443,7 @@ public
     elseif n == Nitrogen then
       m := 28.01348e-3;
     else
-      assert(false, "Bad input data: requested species "+String(n)+" is not implemented.");
+      assert(false, "==> Bad input data: requested species "+String(n)+" is not implemented.");
     end if;
     annotation (Documentation(info="<html>
 <p>This function returns the molecular weight of the chemical species. Data is from NIST, for:
@@ -478,7 +478,7 @@ public
     elseif n == Nitrogen and p == GasPhase then
       f := 0.0;
     else
-      assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
+      assert(false, "==> Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
     annotation (Documentation(info="<html>
 <p>This function returns the standard enthalpy of formation of the chemical species. Data is from NIST, for:
@@ -518,7 +518,7 @@ public
     elseif n == Nitrogen and p == GasPhase then
       H := ShomateEnthalpy(T, ShomateN2) - ShomateEnthalpy(T_ref, ShomateN2);
     else
-      assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
+      assert(false, "==> Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
     annotation(derivative=dh_dt, Documentation(info="<html>
 <p>Returns the specific enthalpy of the given component at the given temperature and 
@@ -565,7 +565,7 @@ public
     elseif n == Nitrogen and p == GasPhase then
       CP := ShomateHeatCapacity(T, ShomateN2);
     else
-      assert(false, "Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
+      assert(false, "==> Bad input data: "+speciesName(n)+" in "+phaseName(p)+" phase.");
     end if;
     annotation (Documentation(info="<html>
 <p>Returns the molar heat capacity of the given component at the given 
@@ -573,7 +573,7 @@ temperature and in the given phase.</p>
 </html>"));
   end cp;
   
-protected
+protected 
   function p_vap 
     input Temperature T;
     input Integer n "Component";
@@ -584,7 +584,7 @@ protected
     elseif n == Water then
       p := p_h2o(T);
     else
-      assert(false, "Vapour pressure of species "+speciesName(n)+" requested.");
+      assert(false, "==> Vapour pressure of species "+speciesName(n)+" requested.");
     end if;
     annotation(derivative=dp_vap_dt);
     annotation (Documentation(info="<html>
@@ -604,7 +604,7 @@ protected
     elseif n == 2 then
       der_p := dp_h2o_dt(T,der_T);
     else
-      assert(false, "Error: vapour Pressure of component "+String(n)+" requested.");
+      assert(false, "==> Error: vapour Pressure of component "+String(n)+" requested.");
     end if;
     
   end dp_vap_dt;
@@ -625,7 +625,7 @@ public
     elseif n == Water then
       Kvalue := p_h2o(T)/p_env;
     else
-      assert(false, "Equilibrium constant of species "+speciesName(n)+" requested.");
+      assert(false, "==> Equilibrium constant of species "+speciesName(n)+" requested.");
     end if;
     
     annotation(derivative=dK_dt, Documentation(info="<html>
@@ -677,13 +677,13 @@ public
       elseif n == Water then
         RHO := rho_h2o(T);
       else
-        assert(false, "Requested liquid-phase density for non-implemented component "+String(n)+".");
+        assert(false, "==> Requested liquid-phase density for non-implemented component "+String(n)+".");
       end if;
     elseif p == GasPhase then
       // Note: Assuming ideal gas.
       RHO := mw(n)*p_env/R/T;
     else
-      assert(false, "Requested density for unknown phase ("+String(p)+").");
+      assert(false, "==> Requested density for unknown phase ("+String(p)+").");
     end if;
     annotation (derivative=drho_dt, Documentation(info="<html>
 <p>Returns the density of the given component at the given temperature and in the given phase.
@@ -717,13 +717,13 @@ protected
       elseif n == Water then
         der_rho := drho_h2o_dt(T, der_T);
       else
-        assert(false, "Density in liquid phase of gaseous component "+String(n)+" requested.");
+        assert(false, "==> Density in liquid phase of gaseous component "+String(n)+" requested.");
       end if;
     elseif p == GasPhase then
       // NOTE Assuming ideal gas.
       der_rho := -mw(n)*p_env/R/T/T*der_T;
     else
-      assert(false, "Requested density for unknown phase ("+String(p)+").");
+      assert(false, "==> Requested density for unknown phase ("+String(p)+").");
     end if;
   end drho_dt;
   
@@ -791,7 +791,7 @@ Quaternary Systems</em>, Industrial and Engineering Chemistry Research 32(7), 15
     C_methanol := K(T, Methanol) - 1;
     C_water    := K(T, Water) - 1;
     
-    assert( C_methanol > C_water, "Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
+    assert( C_methanol > C_water, "==> Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
     
     a := C_methanol*C_water;
     b := C_methanol*z_methanol + C_water*z_water + (C_methanol + C_water)*(1.0 - z_methanol - z_water);
