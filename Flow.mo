@@ -951,7 +951,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                       annotation (extent=[-70,50; -50,70]);
     NegativePin minus "Pole connected to the anode" 
                                     annotation (extent=[50,50; 70,70]);
-    replaceable Modelica.Electrical.Analog.Interfaces.OnePort electrochemistry 
+    replaceable Electrodes.ReactionModelling reaction 
       "Electrochemical model of the cell" annotation (extent=[-10,50; 10,70]);
     import Modelica.SIunits.Length;
     import Modelica.SIunits.DiffusionCoefficient;
@@ -987,11 +987,10 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     Real k_drag = 4 + 0.025*(T-303.15) "Drag factor for N115";
     MassTransportCoefficient k_ad = 15.6E-6*T/333 "Mass transport coefficient";
     
-    CurrentDensity i(min=0) "Current density";
-    Current I = i * A "Current";
+    Current I = plus.i "Cell current";
     Voltage V = plus.v - minus.v "Cell voltage";
+    CurrentDensity i = I/A "Cell current density";
     
-    MolarFlux N_H = i/F "Proton flux through the membrane";
     MolarFlow n_H = I/F "Proton flow through the membrane";
     MolarFlux N_x "Crossover methanol flux";
     MolarFlow n_x = N_x * A "Crossover methanol flow";
@@ -1008,11 +1007,12 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     /* This group of vectors represents the coefficients by which
    * proton and crossover-methanol flows must be multiplied to 
-   * find the flows associated to reaction, crossover and drag. */
-    Real[:] cathode_H = {0, 1/2+k_drag, -1/4, 0, 0};
-    Real[:] anode_H = {-1/6, -1/6-k_drag, 0, 1/6, 0};
+   * find the flows associated to drag and crossover respectively. */
+    Real[:] cathode_D = {0, +k_drag, 0, 0, 0};
+    Real[:] anode_D = {0, -k_drag, 0, 0, 0};
     constant Real[:] cathode_M = {0, 2, -3/2, 1, 0};
     constant Real[:] anode_M = {-1, 0, 0, 0, 0};
+  protected 
     FlowTemperature cathodeT "Temperature measurement on the cathode" 
       annotation (extent=[60,20; 80,40]);
     FlowConcentration anodeOutletTC annotation (extent=[60,-40; 80,-20]);
@@ -1022,10 +1022,10 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
   equation 
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + anode_H*n_H + anode_M*n_x = zeros(size(AllSpecies,1));
+    anode_inlet.n + anode_outlet.n + reaction.anode_r + anode_D*n_H + anode_M*n_x = zeros(size(AllSpecies,1));
     
     // Cathode-side mass balance, accounting for reaction, drag and crossover
-    cathode_inlet.n + cathode_outlet.n + cathode_H*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
+    cathode_inlet.n + cathode_outlet.n + reaction.cathode_r + cathode_D*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
     nexus.flowPort.H = I*V;
@@ -1041,9 +1041,6 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     // Crossover methanol flux.
     N_x = D_M/d_M * c_ac;
-    
-    // Set the pin current equal to the cell current.
-    plus.i = I;
     
     // Sanity check: crash simulation if conditions are unphysical
     assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
@@ -1073,16 +1070,14 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
-    connect(electrochemistry.n, minus) 
+    connect(reaction.n, minus) 
       annotation (points=[10,60; 60,60], style(color=3, rgbcolor={0,0,255}));
-    connect(electrochemistry.p, plus) 
+    connect(reaction.p, plus) 
       annotation (points=[-10,60; -60,60], style(color=3, rgbcolor={0,0,255}));
   end FuelCell;
   
   model ConstantVoltageFuelCell "A simplified DMFC with constant voltage" 
-    extends FuelCell(redeclare 
-        Modelica.Electrical.Analog.Sources.ConstantVoltage electrochemistry(V=
-            0.5));
+    extends FuelCell(redeclare Electrodes.ConstantVoltage reaction);
     
     annotation (Documentation(info="<html>
 <p>This trivial class inherits from the <tt>FuelCell</tt> class and allows to set a 
@@ -1091,7 +1086,7 @@ constant voltage for the cell.</p>
   end ConstantVoltageFuelCell;
   
   model TheveninFuelCell "A DMFC with Thevenin-like voltage" 
-    extends FuelCell(redeclare Electrodes.Thevenin electrochemistry);
+    extends FuelCell(redeclare Electrodes.Thevenin reaction);
     
     annotation (Documentation(info="<html>
 <p>This class implements a voltage model that emulates a Thevenin equivalent circuit. It is possible
