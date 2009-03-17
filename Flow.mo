@@ -126,7 +126,7 @@ connectors on other items.</p>
     parameter Temperature T = T_env "Temperature";
     
     MoleFraction x_ch3oh "Methanol molar fraction";
-    MoleFraction x_h2o "Water molar fraction";
+    MoleFraction x_h2o(start=1) "Water molar fraction";
     
     FlowPort c "Connection point of the source" 
       annotation (extent=[-20,-20; 20,20]);
@@ -987,7 +987,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     Real k_drag = 4 + 0.025*(T-303.15) "Drag factor for N115";
     MassTransportCoefficient k_ad = 15.6E-6*T/333 "Mass transport coefficient";
     
-    Current I = plus.i "Cell current";
+    Current I = -plus.i "Cell current";
     Voltage V = plus.v - minus.v "Cell voltage";
     CurrentDensity i = I/A "Cell current density";
     
@@ -997,7 +997,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     Concentration c_a = anodeOutletTC.cm.c 
       "Methanol concentration, outlet is representative";
-    Concentration c_ac "Catalyst-layer methanol concentration";
+    Concentration c_ac(start=500) "Catalyst-layer methanol concentration";
     PartialPressure p_o2 "Oxygen partial pressure, outlet is representative";
     PartialPressure p_h2o 
       "Cathodic water partial pressure, outlet is representative";
@@ -1101,39 +1101,8 @@ current.</p>
 </html>"));
   end TheveninFuelCell;
   
-  model OvervoltageFuelCell 
-    "Fuel cell with effect of crossover current on overvoltage" 
-    extends FuelCell;
-    
-    import Modelica.Math.log;
-    import Modelica.Constants.R;
-    import Modelica.SIunits.Voltage;
-    import Modelica.SIunits.CurrentDensity;
-    import Modelica.SIunits.Resistivity;
-    import Modelica.SIunits.Resistance;
-    
-    constant Integer n = 6 "Number of electrons exchanged in ORR";
-    
-    parameter Real alpha = 0.5 "Cathodic symmmetry factor";
-    parameter CurrentDensity i_0 = 5E-2 "Exchange current density";
-    
-    parameter ArealResistance r = 13.3E-6 "Areal resistance";
-    parameter Resistivity rho = r / d_M "Membrane resistivity";
-    parameter Resistance R_el = r / A "Resistance";
-    
-    parameter Voltage V0 = 0.9 "Open-circuit voltage without crossover";
-    Voltage delta_eta "Overvoltage caused by crossover";
-    
-  equation 
-    if i + i_x < i_0 then // This will never happen in practical cases.
-      delta_eta = 0;
-    elseif i < i_0 then // This is used almost only for open circuit.
-      delta_eta = R * T / alpha / n / F * log((i + i_x)/i_0);
-    else // This is the most common case.
-      delta_eta = R * T / alpha / n / F * log(1 + i_x/i);
-    end if;
-    
-    V = V0 - R_el*I - delta_eta;
+  model KrewerFuelCell "Fuel cell with Ulrike's electrochemical model" 
+    extends FuelCell(redeclare Electrochemistry.KrewerModel reaction);
     
     annotation (Documentation(info="<html>
 <p>This model is a simple Thevenin model with an additional term accounting for
@@ -1148,7 +1117,14 @@ for the additional voltage loss due to crossover is very simple and does not req
 any additional parameters; otherwise, the exchange current density must be used in
 the calculation.</p>
 </html>"));
-  end OvervoltageFuelCell;
+    
+  equation 
+    reaction.cathode.p_O2 = 10000; // FIXME should use the catalyst-layer value
+    reaction.anode.c = c_ac;
+    reaction.cathode.T = T;
+    reaction.cathode.N_x = N_x;
+    
+  end KrewerFuelCell;
   
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
@@ -1345,7 +1321,7 @@ the calculation.</p>
       GasFlowController blower annotation (extent=[-42,18; -34,26]);
       SinkPort anodeSink annotation (extent=[62,10; 68,16]);
       SinkPort cathodeSink annotation (extent=[62,18; 68,24]);
-      ConstantCurrent I_cell(I=5) annotation (extent=[12,50; 32,70]);
+      ConstantCurrent I_cell(I=5) annotation (extent=[12,48; 34,72]);
       Modelica.Electrical.Analog.Basic.Ground ground 
         "Negative pole to zero voltage" annotation (extent=[38,40; 58,60]);
     equation 
@@ -1363,30 +1339,30 @@ the calculation.</p>
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(I_cell.p, fuelCell.minus) annotation (points=[12,60; 12,50; 36,50;
-            36,27.2; 34.8,27.2],
-          style(color=3, rgbcolor={0,0,255}));
-      connect(I_cell.n, fuelCell.plus) annotation (points=[32,60; 36,60; 36,74; 
-            4,74; 4,42; 14,42; 14,27.2; 13.2,27.2],
-                                 style(color=3, rgbcolor={0,0,255}));
       pump.V = anodeFlow;
       heater.outT.T = anodeInletTemperature;
       blower.V = cathodeFlow;
       connect(ground.p, I_cell.n) 
-        annotation (points=[48,60; 32,60], style(color=3, rgbcolor={0,0,255}));
+        annotation (points=[48,60; 34,60], style(color=3, rgbcolor={0,0,255}));
+      connect(I_cell.p, fuelCell.plus) annotation (points=[12,60; 12,27.2; 13.2,
+            27.2],
+          style(color=3, rgbcolor={0,0,255}));
+      connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
+            34.8,27.2], style(color=3, rgbcolor={0,0,255}));
     end CellTest;
     
     model ConstantVoltageCellTest "Test for the constant-voltage model" 
-      extends CellTest(redeclare ConstantVoltageFuelCell fuelCell);
+      extends CellTest(redeclare ConstantVoltageFuelCell fuelCell, I_cell(I=5));
     end ConstantVoltageCellTest;
     
     model TheveninCellTest "Test for the Thevenin-circuit model" 
       extends CellTest(redeclare TheveninFuelCell fuelCell);
     end TheveninCellTest;
     
-    model OvervoltageCellTest "Test for the Thevenin-circuit model" 
-      extends CellTest(redeclare OvervoltageFuelCell fuelCell);
-    end OvervoltageCellTest;
+    model KrewerCellTest "Test for the cell with full electrochemistry" 
+      extends CellTest(redeclare KrewerFuelCell fuelCell(reaction(cathode(eta(
+                  start=-0.2, fixed=true)))));
+    end KrewerCellTest;
   end Test;
   
 end Flow;
