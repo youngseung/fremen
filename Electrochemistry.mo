@@ -1,4 +1,4 @@
-package Electrodes "Package containing electrode models" 
+package Electrochemistry "Package containing electrochemical models" 
   
 type CatalystCoverage = Real(final quantity="Catalyst coverage", final unit="", min=0, max=1) 
     annotation (Documentation(info="<html>
@@ -543,4 +543,4 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
           fillPattern=1));
     end KrewerModelTest;
   end Test;
-end Electrodes;
+end Electrochemistry;

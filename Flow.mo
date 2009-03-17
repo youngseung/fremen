@@ -951,7 +951,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                       annotation (extent=[-70,50; -50,70]);
     NegativePin minus "Pole connected to the anode" 
                                     annotation (extent=[50,50; 70,70]);
-    replaceable Electrodes.ReactionModelling reaction 
+    replaceable Electrochemistry.ReactionModelling reaction 
       "Electrochemical model of the cell" annotation (extent=[-10,50; 10,70]);
     import Modelica.SIunits.Length;
     import Modelica.SIunits.DiffusionCoefficient;
@@ -1077,7 +1077,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
   end FuelCell;
   
   model ConstantVoltageFuelCell "A simplified DMFC with constant voltage" 
-    extends FuelCell(redeclare Electrodes.ConstantVoltage reaction);
+    extends FuelCell(redeclare Electrochemistry.ConstantVoltage reaction);
     
     annotation (Documentation(info="<html>
 <p>This trivial class inherits from the <tt>FuelCell</tt> class and allows to set a 
@@ -1086,7 +1086,7 @@ constant voltage for the cell.</p>
   end ConstantVoltageFuelCell;
   
   model TheveninFuelCell "A DMFC with Thevenin-like voltage" 
-    extends FuelCell(redeclare Electrodes.Thevenin reaction);
+    extends FuelCell(redeclare Electrochemistry.Thevenin reaction);
     
     annotation (Documentation(info="<html>
 <p>This class implements a voltage model that emulates a Thevenin equivalent circuit. It is possible
