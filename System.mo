@@ -34,7 +34,7 @@ package System "DMFC systems"
     replaceable Modelica.Electrical.Analog.Interfaces.OnePort load 
       "Load connected to the cell"       annotation (extent=[-38,50; -26,62]);
     Modelica.Electrical.Analog.Basic.Ground ground 
-      annotation (extent=[-40,26; -26,40]);
+      annotation (extent=[-12,26; 2,40]);
   equation 
     connect(pump.inlet, mixer.outlet) 
       annotation (points=[-44.12,-32; -8,-32], style(color=62, rgbcolor={0,127,
@@ -88,39 +88,18 @@ package System "DMFC systems"
     connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[0.66,10; 
           -14,10; -14,10.1],                  style(color=62, rgbcolor={0,127,
             127}));
-    connect(load.n, fuelCell.plus)   annotation (points=[-26,56; -20,56; -20,
-          15.2; -21.2,15.2],
-        style(
-        color=3,
-        rgbcolor={0,0,255},
-        pattern=0,
-        fillColor=43,
-        rgbfillColor={255,85,85},
-        fillPattern=1));
-    connect(load.p, fuelCell.minus)   annotation (points=[-38,56; -44,56; -44,
-          16; -42,16; -42,15.2; -42.8,15.2],
-                                   style(
-        color=3,
-        rgbcolor={0,0,255},
-        pattern=0,
-        fillColor=43,
-        rgbfillColor={255,85,85},
-        fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-33,40; -44,40; -44,
-          15.2; -42.8,15.2],
-                 style(
-        color=3,
-        rgbcolor={0,0,255},
-        pattern=0,
-        fillColor=43,
-        rgbfillColor={255,85,85},
-        fillPattern=1));
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -20,16; 
+          -20,40; -5,40], style(color=3, rgbcolor={0,0,255}));
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -44,16; -44,
+          56; -38,56], style(color=3, rgbcolor={0,0,255}));
+    connect(fuelCell.minus, load.n) annotation (points=[-21.2,15.2; -20,16; -20,
+          56; -26,56], style(color=3, rgbcolor={0,0,255}));
   end Reference;
   
   annotation (uses(Modelica(version="2.2.1")));
   
   model Reference_ASME "The reference DMFC system to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell(V_cell=0.5), mixer(T(fixed=
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell, mixer(T(fixed=
               false), V(fixed=true)),
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5));
     import Modelica.SIunits.VolumeFlowRate;
