@@ -1101,30 +1101,6 @@ current.</p>
 </html>"));
   end TheveninFuelCell;
   
-  model KrewerFuelCell "Fuel cell with Ulrike's electrochemical model" 
-    extends FuelCell(redeclare Electrochemistry.KrewerModel reaction);
-    
-    annotation (Documentation(info="<html>
-<p>This model is a simple Thevenin model with an additional term accounting for
-the effect of methanol crossover on the overvoltage.</p>
-<p>Crossover will keep the oxygen reduction reaction going even when there is no
-current passing through the cell (in fact this is when crossover is at its maximum),
-meaning that the cathodic overvoltage will never be close to zero as long as there 
-is methanol in the anode side: this means that Tafel equation is an acceptable 
-approximation in all conditions.</p>
-<p>For the case when i is greater than the exchange current density, the formula
-for the additional voltage loss due to crossover is very simple and does not require 
-any additional parameters; otherwise, the exchange current density must be used in
-the calculation.</p>
-</html>"));
-    
-  equation 
-    reaction.cathode.p_O2 = 10000; // FIXME should use the catalyst-layer value
-    reaction.anode.c = c_ac;
-    reaction.cathode.T = T;
-    reaction.cathode.N_x = N_x;
-    
-  end KrewerFuelCell;
   
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
@@ -1359,10 +1335,6 @@ the calculation.</p>
       extends CellTest(redeclare TheveninFuelCell fuelCell);
     end TheveninCellTest;
     
-    model KrewerCellTest "Test for the cell with full electrochemistry" 
-      extends CellTest(redeclare KrewerFuelCell fuelCell(reaction(cathode(eta(
-                  start=-0.2, fixed=true)))));
-    end KrewerCellTest;
   end Test;
   
 end Flow;
