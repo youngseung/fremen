@@ -951,8 +951,6 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                       annotation (extent=[-70,50; -50,70]);
     NegativePin minus "Pole connected to the anode" 
                                     annotation (extent=[50,50; 70,70]);
-    replaceable Electrochemistry.ReactionModelling reaction 
-      "Electrochemical model of the cell" annotation (extent=[-10,50; 10,70]);
     import Modelica.SIunits.Length;
     import Modelica.SIunits.DiffusionCoefficient;
     import Modelica.SIunits.Area;
@@ -975,6 +973,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     import Thermo.Methanol;
     import Thermo.Water;
     import Thermo.Oxygen;
+    import Thermo.speciesName;
     
     outer Pressure p_env "Environment pressure";
     
@@ -987,7 +986,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     Real k_drag = 4 + 0.025*(T-303.15) "Drag factor for N115";
     MassTransportCoefficient k_ad = 15.6E-6*T/333 "Mass transport coefficient";
     
-    Current I = -plus.i "Cell current";
+    Current I = -plus.i "Cell current (generator convention)";
     Voltage V = plus.v - minus.v "Cell voltage";
     CurrentDensity i = I/A "Cell current density";
     
@@ -1006,10 +1005,11 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     /* This group of vectors represents the coefficients by which
-   * proton and crossover-methanol flows must be multiplied to 
-   * find the flows associated to drag and crossover respectively. */
-    Real[:] cathode_D = {0, +k_drag, 0, 0, 0};
-    Real[:] anode_D = {0, -k_drag, 0, 0, 0};
+   * proton (*H) and crossover-methanol (*M) flows must be 
+   * multiplied to  find the associated production terms for all
+   * species on cathode and anode. */
+    Real[:] cathode_H = {0, 1/2+k_drag, -1/4, 0, 0};
+    Real[:] anode_H = {-1/6, -1/6-k_drag, 0, 1/6, 0};
     constant Real[:] cathode_M = {0, 2, -3/2, 1, 0};
     constant Real[:] anode_M = {-1, 0, 0, 0, 0};
   protected 
@@ -1022,10 +1022,10 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
   equation 
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + reaction.anode_r + anode_D*n_H + anode_M*n_x = zeros(size(AllSpecies,1));
+    anode_inlet.n + anode_outlet.n + anode_H*n_H + anode_M*n_x = zeros(size(AllSpecies,1));
     
     // Cathode-side mass balance, accounting for reaction, drag and crossover
-    cathode_inlet.n + cathode_outlet.n + reaction.cathode_r + cathode_D*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
+    cathode_inlet.n + cathode_outlet.n + cathode_H*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
     nexus.flowPort.H = I*V;
@@ -1042,10 +1042,18 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     // Crossover methanol flux.
     N_x = D_M/d_M * c_ac;
     
+    // Charge balance
+    plus.i + minus.i = 0;
+    
     // Sanity check: crash simulation if conditions are unphysical
     assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
-    assert( max(cathode_outlet.n) < eps, "==> Some components are entering from the cathode outlet.");
-    assert( max(anode_outlet.n) < eps, "==> Some components are entering from the anode outlet.");
+    
+    for i in AllSpecies loop
+      assert( cathode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the cathode outlet.");
+      assert( anode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the anode outlet.");
+      assert( cathode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the cathode inlet.");
+      assert( anode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the anode inlet.");
+    end for;
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
@@ -1070,23 +1078,25 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
-    connect(reaction.n, minus) 
-      annotation (points=[10,60; 60,60], style(color=3, rgbcolor={0,0,255}));
-    connect(reaction.p, plus) 
-      annotation (points=[-10,60; -60,60], style(color=3, rgbcolor={0,0,255}));
   end FuelCell;
   
   model ConstantVoltageFuelCell "A simplified DMFC with constant voltage" 
-    extends FuelCell(redeclare Electrochemistry.ConstantVoltage reaction);
+    extends FuelCell;
+    parameter Modelica.SIunits.Voltage V0 = 0.5 "Cell voltage";
     
     annotation (Documentation(info="<html>
 <p>This trivial class inherits from the <tt>FuelCell</tt> class and allows to set a 
 constant voltage for the cell.</p>
 </html>"));
+  equation 
+    V = V0;
   end ConstantVoltageFuelCell;
   
   model TheveninFuelCell "A DMFC with Thevenin-like voltage" 
-    extends FuelCell(redeclare Electrochemistry.Thevenin reaction);
+    extends FuelCell;
+    
+    parameter Modelica.SIunits.Voltage V0 = 0.7 "Open-circuit voltage";
+    parameter Modelica.SIunits.Resistance R = 0.005 "Internal resistance";
     
     annotation (Documentation(info="<html>
 <p>This class implements a voltage model that emulates a Thevenin equivalent circuit. It is possible
@@ -1099,8 +1109,9 @@ N155 membrane.</p>
 that would result by extrapolating the characteristic of the ohmic region to the value of no 
 current.</p>
 </html>"));
+  equation 
+    V = V0 - R*I;
   end TheveninFuelCell;
-  
   
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
@@ -1303,11 +1314,11 @@ current.</p>
     equation 
       connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
             -36.12,-24], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
             22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
@@ -1328,7 +1339,7 @@ current.</p>
     end CellTest;
     
     model ConstantVoltageCellTest "Test for the constant-voltage model" 
-      extends CellTest(redeclare ConstantVoltageFuelCell fuelCell, I_cell(I=5));
+      extends CellTest(redeclare ConstantVoltageFuelCell fuelCell);
     end ConstantVoltageCellTest;
     
     model TheveninCellTest "Test for the Thevenin-circuit model" 
