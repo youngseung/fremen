@@ -47,62 +47,8 @@ easy to model chemical reactions.</p>
           style(color=62, rgbcolor={0,127,127}))));
   end FlowPort;
   
-  connector TemperaturePort "A connector providing temperature values." 
-    
-    Modelica.SIunits.Temperature T "Temperature";
-    
-    annotation (Diagram, Icon(
-                        Ellipse(extent=[-100,100; 100,-100],style(
-            pattern=0,
-            gradient=3,
-            fillColor=1,
-            rgbfillColor={255,0,0})), Text(
-          extent=[-100,158; 100,100],
-          string="%name",
-          style(color=1, rgbcolor={255,0,0}))),
-      Documentation(info="<html>
-<p>This is a simple port to make the temperature of an object available for graphic
-connections.</p>
-</html>"));
-  end TemperaturePort;
   
-  connector ConcentrationPort "A connector providing concentration values." 
-    
-    Modelica.SIunits.Concentration c "Methanol concentration";
-    
-    annotation (Diagram, Icon(
-                        Ellipse(extent=[-100,100; 100,-100], style(
-            pattern=0,
-            gradient=3,
-            fillColor=71,
-            rgbfillColor={85,170,255})), Text(
-          extent=[-100,160; 100,100],
-          string="%name",
-          style(color=69, rgbcolor={0,128,255}))),
-      Documentation(info="<html>
-<p>This is a simple port to make the methanol concentration of a flow available
-for graphic connections.</p>
-</html>"));
-  end ConcentrationPort;
   
-  model Plug "A class that blocks a flow connection" 
-    import Thermo.AllSpecies;
-    annotation (Icon(Polygon(points=[-80,60; -80,-60; 100,60; 100,-60; -80,60],
-                                                                              style(
-            color=0,
-            rgbcolor={0,0,0},
-            thickness=4,
-            fillColor=7,
-            rgbfillColor={255,255,255}))), Documentation(info="<html>
-<p>This simple item sets the connected flows to zero, effectively \"plugging\"
-connectors on other items.</p>
-</html>"));
-    FlowPort c   annotation (extent=[-90,-10; -70,10]);
-  equation 
-    c.n = zeros(size(AllSpecies, 1));
-    c.H = 0;
-    
-  end Plug;
   
   annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
 <p>This package contains various models related to fluid flow in stirred tanks.</p>
@@ -128,7 +74,7 @@ connectors on other items.</p>
     MoleFraction x_ch3oh "Methanol molar fraction";
     MoleFraction x_h2o(start=1) "Water molar fraction";
     
-    FlowPort c "Connection point of the source" 
+    FlowPort outlet "Connection point of the source" 
       annotation (extent=[-20,-20; 20,20]);
   equation 
     assert(C >= 0, "==> Negative concentration given in MethanolSolution object.");
@@ -137,9 +83,9 @@ connectors on other items.</p>
     C = x_ch3oh / (x_ch3oh*mw(Methanol)/rho(T,Methanol,LiquidPhase) + x_h2o*mw(Water)/rho(T,Water,LiquidPhase));
     x_ch3oh + x_h2o = 1.0;
     
-    c.n[GasSpecies] = zeros(size(GasSpecies, 1));
-    c.n[Methanol] / x_ch3oh = c.n[Water] / x_h2o;
-    c.H = c.n[Methanol]*h(T,Methanol,LiquidPhase) + c.n[Water]*h(T,Water,LiquidPhase);
+    outlet.n[GasSpecies] = zeros(size(GasSpecies, 1));
+    outlet.n[Methanol] * x_h2o = outlet.n[Water] * x_ch3oh;
+    outlet.H = outlet.n[Methanol]*h(T,Methanol,LiquidPhase) + outlet.n[Water]*h(T,Water,LiquidPhase);
     
     annotation (Icon(Ellipse(extent=[-100,100; 100,-100],
                                                       style(
@@ -151,7 +97,8 @@ connectors on other items.</p>
 <p>This item is a source for methanol-water solutions. Parameter <tt>C</tt>
 allows to set the concentration in moler per <em>cubic metre</em>; note that
 this is 1000 times the normal scale (1M = 1000 mol/m).</p>
-</html>"));
+</html>"), 
+      Diagram);
   end MethanolSolution;
   
   model PureMethanolSource "A model to use as a generic source" 
@@ -163,12 +110,12 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     
     outer Modelica.SIunits.Temperature T_env;
     
-    FlowPort c "Connection point of the source" 
+    FlowPort outlet 
       annotation (extent=[-20,-20; 20,20]);
   equation 
-    c.n[GasSpecies] = zeros(size(GasSpecies, 1));
-    c.n[Water] = 0;
-    c.H = c.n[Methanol]*h(T_env,Methanol,LiquidPhase);
+    outlet.n[GasSpecies] = zeros(size(GasSpecies, 1));
+    outlet.n[Water] = 0;
+    outlet.H = outlet.n[Methanol]*h(T_env,Methanol,LiquidPhase);
     
     annotation (Icon(Ellipse(extent=[-100,100; 100,-100], style(
             pattern=0,
@@ -205,7 +152,8 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     
     MolarEnthalpy h_air "Air molar enthalpy";
     
-    FlowPort c   annotation (extent=[-100,-60; -80,-40]);
+    FlowPort outlet 
+                 annotation (extent=[80,-60; 100,-40]);
   protected 
     MolarEnthalpy h_n2 "Nitrogen molar enthalpy";
     MolarEnthalpy h_o2 "Oxygen molar enthalpy";
@@ -221,11 +169,12 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     h_n2  = h(T_env, Nitrogen, GasPhase);
     h_air = h_h2o*y_h2o + h_o2*y_o2 + h_n2*y_n2;
     
-    c.n[Water] / y_h2o = c.n[Oxygen] / y_o2;
-    c.n[Nitrogen] / y_n2 = c.n[Oxygen] / y_o2;
-    c.n[Methanol] = 0;
-    c.n[CarbonDioxide] = 0;
-    c.H = h_air*sum(c.n);
+    // Write with * instead of / to avoid division by zero.
+    outlet.n[Water] * y_o2 = outlet.n[Oxygen] * y_h2o;
+    outlet.n[Nitrogen] / y_n2 = outlet.n[Oxygen] / y_o2;
+    outlet.n[Methanol] = 0;
+    outlet.n[CarbonDioxide] = 0;
+    outlet.H = h_air*sum(outlet.n);
     
     annotation (Documentation(info="<html>
 <p>This object generates a gas flow corresponding to ambient air, including the
@@ -298,23 +247,11 @@ effect of humidity.</p>
 <p>This very simple object is a terminal for flows leaving the system and
 about which we do not care much.</p>
 </html>"));
-    FlowPort flowPort annotation (extent=[-120,-30; -60,30]);
+    FlowPort inlet    annotation (extent=[-120,-30; -60,30]);
   end SinkPort;
   
   model FlowController "A unit modelling a pump or a MFC" 
     
-    import Thermo.mw;
-    import Thermo.AllSpecies;
-    
-    MolarFlow F "Molar flow rate";
-    Modelica.SIunits.MassFlowRate m "Mass flow rate";
-    FlowPort inlet "Unit inlet"   annotation (extent=[-12,-10; 8,10]);
-    FlowPort outlet "Unit outlet"   annotation (extent=[-10,90; 10,110]);
-  equation 
-    m = sum({inlet.n[i] * mw(i) for i in AllSpecies});
-    F = sum(inlet.n);
-    
-    connect(inlet, outlet) 
     annotation (Icon(
         Ellipse(extent=[-100,100; 100,-100],
                                          style(
@@ -337,16 +274,30 @@ calculating the phase equilibrium, which we are not doing here (though child
 classes could specialize).</p>
 </html>"),
       Diagram);
+    FlowPort inlet "Unit inlet"   annotation (extent=[-10,-10; 10,10]);
+    FlowPort outlet "Unit outlet"   annotation (extent=[-10,90; 10,110]);
+    import Thermo.mw;
+    import Thermo.AllSpecies;
     
+    MolarFlow F "Molar flow rate";
+    Modelica.SIunits.MassFlowRate m "Mass flow rate";
+    
+  equation 
+    m = sum({inlet.n[i] * mw(i) for i in AllSpecies});
+    F = sum(inlet.n);
+    
+    connect(inlet, outlet) annotation (points=[5.55112e-16,5.55112e-16; 
+          5.55112e-16,25; 5.55112e-16,25; 5.55112e-16,50; 5.55112e-16,50; 
+          5.55112e-16,100], style(color=62, rgbcolor={0,127,127}));
   end FlowController;
   
   model GasFlowController "A flow controller with only gas phase" 
     extends FlowController;
     annotation (Icon,     Documentation(info="<html>
 <p>This class implements a mass flow controller with volumetric units (\"field units\").
-Since there are two different standards (the actual \"standard\" at 0 Celsius and the \"norm\"
-at 70 Fahrenheit), it is necessary to adjust the reference temperature; the default
-assumes zero Celsius (so-called \"standard\" value).</p>
+Since there are <em>two</em> different standards (the actual \"standard\" at 0 Celsius and 
+the \"norm\" at 70 Fahrenheit or 21.111... Celsius), it is necessary to provide the 
+reference temperature; the default assumes zero Celsius (so-called \"standard\" value).</p>
 <p>The flow assumes that all components are in gas phase and takes their density from
 the Thermo library, where the ideal gas law is (usually) assumed.</p>
 </html>"));
@@ -358,19 +309,16 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
     import Modelica.SIunits.Temperature;
     
     VolumeFlowRate V "Volumetric flow rate";
-    parameter Temperature T = 273.15 "Reference temperature";
+    parameter Temperature T_ref = 273.15 "Reference temperature";
   equation 
-    V = sum({inlet.n[i] * mw(i) / rho(T, i, GasPhase) for i in AllSpecies});
+    V = sum({inlet.n[i] * mw(i) / rho(T_ref, i, GasPhase) for i in AllSpecies});
     
   end GasFlowController;
   
   model Pump "A pump, with only liquid phase." 
     extends FlowController;
     annotation (Icon,        Documentation(info="<html>
-<p>This class implements a liquid pump with field volumetric units. It will be
-necessary to somehow specify its operating temperature to make it work, since
-volume changes with temperature: for example, depending on flow direction, it 
-might be the temperature of the element upstream or the one downstream.</p>
+<p>This class implements a liquid pump with field volumetric units.</p>
 <p>The flow assumes that only water and methanol are present and are completely
 in liquid phase; it takes their density from the Thermo library.</p>
 </html>"));
@@ -382,10 +330,8 @@ in liquid phase; it takes their density from the Thermo library.</p>
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     
-    outer Temperature T_env "Environment temperature";
-    
-    Temperature T(start=T_env) "Temperature of the passing flow.";
-    VolumeFlowRate V "Standard volume flow rate.";
+    Temperature T(start=298.15) "Temperature of the flow";
+    VolumeFlowRate V "Volumetric flow rate";
     
   equation 
     V = sum({inlet.n[i] * mw(i) / rho(T, i, LiquidPhase) for i in LiquidSpecies});
@@ -394,11 +340,34 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
   end Pump;
   
-    model FlowTemperature "A unit that calculates the temperature of a flow." 
+    model FlowTemperature "Calculates a flow's temperature" 
     
+      annotation (Diagram, Icon(
+          Ellipse(extent=[-100,100; 100,-100], style(
+              color=0,
+              rgbcolor={0,0,0},
+              thickness=4,
+              fillColor=7,
+              rgbfillColor={255,255,255},
+              fillPattern=1)),
+          Text(extent=[-100,-20; 100,20], string="T",
+            style(color=0, rgbcolor={0,0,0})),
+          Text(extent=[-100,100; 100,140],string="%name",
+            style(color=0, rgbcolor={0,0,0}))),
+      Documentation(info="<html>
+<p>This basic unit takes a flow and returns it unchanged, while actually
+performing an equilibrium calculation and figuring out the temperature of
+the flow given its associated enthalpic flow.</p>
+<p>This unit can be used in different situations, both to set or to measure
+the temperature of a flow. The unit can also work with reverse flows, but
+reading results will be less comfortable.</p>
+</html>"));
+      FlowPort inlet "Entering flow" 
+                     annotation (extent=[-110,-10; -90,10]);
+      FlowPort outlet "Exiting flow" 
+                     annotation (extent=[90,-10; 110,10]);
       import Modelica.SIunits.MoleFraction;
-    
-      import Thermo.h;
+      import Modelica.SIunits.Temperature;
       import Thermo.AllSpecies;
       import Thermo.GasSpecies;
       import Thermo.LiquidSpecies;
@@ -406,163 +375,81 @@ in liquid phase; it takes their density from the Thermo library.</p>
       import Thermo.LiquidPhase;
       import Thermo.Water;
       import Thermo.Methanol;
+      import Thermo.h;
       import Thermo.rr;
       import Thermo.K;
     
-      annotation (Diagram, Icon(
-          Ellipse(extent=[-100,100; 100,-100], style(
-              color=0,
-              rgbcolor={0,0,0},
-              thickness=4,
-              fillColor=7,
-              rgbfillColor={255,255,255},
-              fillPattern=1)),
-          Rectangle(extent=[-38,46; 42,36], style(
-              color=0,
-              rgbcolor={0,0,0},
-              thickness=4,
-              fillColor=7,
-              rgbfillColor={0,0,0},
-              fillPattern=1)),
-          Rectangle(extent=[-4,36; 6,-48], style(
-              color=0,
-              rgbcolor={0,0,0},
-              thickness=4,
-              fillColor=7,
-              rgbfillColor={0,0,0},
-              fillPattern=1))),
-      Documentation(info="<html>
-<p>This basic unit takes a flow and returns it unchanged, while actually
-performing an equilibrium calculation and figuring out the temperature of
-the flow given its associated enthalpic flow.</p>
-<p>This unit can be used in different situations to extract the temperature
-of a flow, which is also presented with a temperature port in order to
-be used in the graphical editor. It can also be used to <em>set</em> the
-temperature, provided that the enthalpic flow can be modified in some other
-unit.</p>
-</html>"));
-      FlowPort inlet annotation (extent=[-110,-10; -90,10]);
-      FlowPort outlet 
-                     annotation (extent=[90,-10; 110,10]);
-      TemperaturePort Tm                annotation (extent=[-10,90; 10,110]);
-    
-      outer parameter Modelica.SIunits.Pressure p_env;
-      outer parameter Modelica.SIunits.Temperature T_env;
-    
-      Modelica.SIunits.Temperature T(start=T_env) = Tm.T "Flow temperature";
+      Temperature T(start=298.15) "Flow temperature";
       MoleFraction beta "Vapour fraction";
+      MoleFraction z_m "Overall methanol molar fraction";
+      MoleFraction z_w "Overall water molar fraction";
     
-      MolarFlow[size(LiquidSpecies,1)] vapour(each min=0) "Vapour flows";
-      MolarFlow[size(LiquidSpecies,1)] condensate(each min=0) "Liquid flows";
-    
-      MoleFraction z_m = inlet.n[Methanol]/sum(inlet.n) 
-      "Methanol molar fraction";
-      MoleFraction z_w = inlet.n[Water]/sum(inlet.n) "Water molar fraction";
+      MolarFlow[size(AllSpecies,1)] vapour "Gas-phase flows";
+      MolarFlow[size(AllSpecies,1)] liquid "Liquid-phase flows";
     
     equation 
+      // Liquid and vapour sum to overall flow
+      liquid + vapour       = inlet.n;
+      // Condensable species are present in both phases
+      vapour[LiquidSpecies] = {inlet.n[i]*beta*K(T,i) / (1 + beta*(K(T,i) -1)) for i in LiquidSpecies};
+      // Incondensable species are only in gas phase
+      liquid[GasSpecies]    = zeros(size(GasSpecies,1));
+    
+      /* Enforce definition of molar fractions.Avoid using divisions
+   * in order to avoid division-by-zero errors. */
+      inlet.n[Methanol] = sum(inlet.n) * z_m;
+      inlet.n[Water] = sum(inlet.n) * z_w;
+    
+      // Combine enthalpic flow with temperature, thermodynamic data and material flows.
+      inlet.H = sum( vapour[i] * h(T, i, GasPhase)    for i in AllSpecies)
+              + sum( liquid[i] * h(T, i, LiquidPhase) for i in LiquidSpecies);
+    
+      /* Use the beta returned by Thermo.rr only if:
+   * 1) there can be a phase equilibrium at all at this temperature;
+   * 2) the returned beta is less than 1. */
       if K(T,Water) >= 1 or rr(z_m, z_w, T) >= 1 then
         beta = 1;
       else
         beta = rr(z_m, z_w, T);
       end if;
     
-      vapour + condensate = inlet.n[LiquidSpecies];
-      vapour = { inlet.n[i]*beta*K(T,i) / (1+beta*(K(T,i) -1)) for i in LiquidSpecies};
-    
-      // Note that this works only because LiquidSpecies is a vector starting with 1, otherwise the second term would not work.
-      inlet.H = sum( inlet.n[i]*h(T, i, GasPhase) for i in GasSpecies) +
-                sum( vapour[i]*h(T, i, GasPhase) + condensate[i]*h(T, i, LiquidPhase) for i in LiquidSpecies);
-    
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 5,5.55112e-16;
-          5,5.55112e-16; 100,5.55112e-16],
-                                         style(pattern=0));
-    
+                          annotation (points=[-100,5.55112e-16; 0,-4.87687e-22; 
+          0,5.55112e-16; 100,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
     end FlowTemperature;
   
-    model FlowConcentration 
-    "A unit that calculates the methanol concentration of a (liquid) flow." 
+    model FlowConcentration "Calculates a liquid flow's methanol concentration" 
+      extends FlowTemperature;
+      annotation (Diagram, Icon(
+          Text(extent=[-100,-60; 100,-20],
+            style(color=0, rgbcolor={0,0,0}),
+            string="& C")),
+      Documentation(info="<html>
+<p>This basic unit takes a flow and returns it unchanged, while measuring
+temperature and concentration of methanol in the liquid phase of the flow.</p>
+<p>If there is no liquid flow, then the reported value is zero.</p>
+</html>"));
     
       import Modelica.SIunits.Concentration;
-      import Thermo.AllSpecies;
       import Thermo.LiquidSpecies;
       import Thermo.LiquidPhase;
       import Thermo.Methanol;
       import Thermo.rho;
       import Thermo.mw;
     
-      annotation (Diagram, Icon(
-          Ellipse(extent=[-100,100; 100,-100], style(
-              color=0,
-              rgbcolor={0,0,0},
-              thickness=4,
-              fillColor=7,
-              rgbfillColor={255,255,255},
-              fillPattern=1)),
-        Ellipse(extent=[-36,38; 60,-28], style(
-            color=0,
-            rgbcolor={0,0,0},
-            thickness=4)),
-        Rectangle(extent=[-2,56; 82,-40], style(
-            pattern=0,
-            thickness=2,
-            fillColor=7,
-            rgbfillColor={255,255,255},
-            fillPattern=1))),
-      Documentation(info="<html>
-<p>This basic unit takes a flow and returns it unchanged, while measuring
-temperature and concentration of methanol in the liquid phase of the flow.</p>
-<p>If there is no liquid flow, then the reported value is zero.</p>
-</html>"));
-      FlowPort inlet annotation (extent=[-110,-10; -90,10]);
-      FlowPort outlet 
-                     annotation (extent=[90,-10; 110,10]);
-      FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
-      ConcentrationPort cm "Measurement on the methanol concentration" 
-      annotation (extent=[-10,-110; 10,-90]);
-      TemperaturePort Tm "Measurement on the flow temperature" 
-      annotation (extent=[-10,90; 10,110]);
-    equation 
-      connect(ft.outlet, outlet) annotation (points=[10,6.10623e-16; 68,
-          6.10623e-16; 68,5.55112e-16; 100,5.55112e-16], style(
-        pattern=0,
-        thickness=2,
-        fillColor=7,
-        rgbfillColor={255,255,255},
-        fillPattern=1));
-      connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -42,
-          6.10623e-16; -42,5.55112e-16; -100,5.55112e-16], style(
-        pattern=0,
-        thickness=2,
-        fillColor=7,
-        rgbfillColor={255,255,255},
-        fillPattern=1));
-      if sum(ft.condensate) > 0.0 or sum(ft.condensate) < 0.0 then
-        cm.c = ft.condensate[Methanol] / sum(ft.condensate[i]*mw(i)/rho(ft.Tm.T,i,LiquidPhase) for i in LiquidSpecies);
-      else
-        cm.c = 0;
-      end if;
+      Concentration c "Methanol concentration in liquid phase";
     
-      connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
-          5.55112e-16,100], style(
-        pattern=0,
-        thickness=2,
-        fillColor=7,
-        rgbfillColor={255,255,255},
-        fillPattern=1));
+    equation 
+      // Methanol flow is concentration times volumetric flow
+      liquid[Methanol] = c * sum(liquid[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies);
+    
     end FlowConcentration;
   
   model Separator 
-    import Thermo.AllSpecies;
-    import Thermo.GasSpecies;
-    import Thermo.LiquidSpecies;
-    import Thermo.LiquidPhase;
-    import Thermo.h;
     
     FlowPort inlet annotation (extent=[-110,-10; -90,10]);
     FlowPort gasOutlet annotation (extent=[60,30; 80,50]);
     FlowPort liquidOutlet annotation (extent=[60,-50; 80,-30]);
-    TemperaturePort Tm annotation (extent=[-10,30; 10,50]);
     annotation (Icon(
         Ellipse(extent=[-100,40; -60,-40], style(
             color=0,
@@ -609,10 +496,19 @@ and has an additional temperature port connected to the one on the
 <tt>FlowTemperature</tt> object so that it is not necessary to place an
 additional object down- or upstream to measure the temperature.</p>
 </html>"));
+    import Modelica.SIunits.Temperature;
+    import Thermo.AllSpecies;
+    import Thermo.GasSpecies;
+    import Thermo.LiquidSpecies;
+    import Thermo.LiquidPhase;
+    import Thermo.h;
+    
+    Temperature T = ft.T "Separator temperature";
+    
+  protected 
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
+    
   equation 
-    connect(ft.Tm, Tm) annotation (points=[6.10623e-16,10; 5.55112e-16,10;
-          5.55112e-16,40], style(color=1, rgbcolor={255,0,0}));
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
           rgbcolor={0,127,127}));
@@ -620,10 +516,9 @@ additional object down- or upstream to measure the temperature.</p>
           6.10623e-16; 40,40; 70,40], style(color=62, rgbcolor={0,127,127}));
     connect(ft.outlet, liquidOutlet) annotation (points=[10,6.10623e-16; 40,
           6.10623e-16; 40,-40; 70,-40], style(color=62, rgbcolor={0,127,127}));
-    liquidOutlet.n[GasSpecies] = zeros(size(GasSpecies,1));
     
-    liquidOutlet.n[LiquidSpecies] = -ft.condensate;
-    liquidOutlet.H = sum(h(ft.T, i, LiquidPhase) * liquidOutlet.n[i] for i in LiquidSpecies);
+    liquidOutlet.n = -ft.liquid;
+    liquidOutlet.H = sum(h(T, i, LiquidPhase) * liquidOutlet.n[i] for i in LiquidSpecies);
     
   end Separator;
   
@@ -690,18 +585,23 @@ additional object down- or upstream to measure the temperature.</p>
 flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed to a protected
 (i.e. invisible to the user) sink object.</p>
 </html>"));
-    TemperaturePort inT "Temperature of the entering flow" 
-      annotation (extent=[-92,20; -80,32]);
-    TemperaturePort outT "Temperature of the exiting flow" 
-      annotation (extent=[80,20; 92,32]);
-    Modelica.SIunits.Heat coolingDuty "Removed heat";
-    outer Modelica.SIunits.Temperature T_env "Environment temperature";
+    import Modelica.SIunits.HeatFlowRate;
+    import Modelica.SIunits.Temperature;
+    import Thermo.AllSpecies;
+    
+    Temperature T_in = ft_in.T "Inlet temperature";
+    Temperature T_out =  ft_out.T "Outlet temperature";
+    HeatFlowRate Q "Heat removed from the flow";
+    
   protected 
-    FlowTemperature flowTemperature_inlet annotation (extent=[-68,-10; -48,10]);
-    FlowTemperature flowTemperature_outlet annotation (extent=[50,-10; 70,10]);
-    SinkPort sinkPort annotation (extent=[8,-50; 28,-30]);
+    FlowTemperature ft_in                 annotation (extent=[-68,-10; -48,10]);
+    FlowTemperature ft_out                 annotation (extent=[50,-10; 70,10]);
+    SinkPort sink     annotation (extent=[8,-50; 28,-30]);
   equation 
-    connect(flowTemperature_inlet.inlet, inlet) annotation (points=[-68,
+    sink.inlet.n = zeros(size(AllSpecies,1));
+    inlet.H + outlet.H = Q;
+    
+    connect(ft_in.inlet, inlet)                 annotation (points=[-68,
           6.10623e-16; -76,6.10623e-16; -76,-2.22045e-16; -94,-2.22045e-16],
         style(
         color=62,
@@ -709,30 +609,14 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(inT, flowTemperature_inlet.Tm)              annotation (points=[-86,26;
-          -58,26; -58,10], style(
-        color=1,
-        rgbcolor={255,0,0},
-        thickness=2,
-        fillColor=7,
-        rgbfillColor={255,255,255},
-        fillPattern=1));
-    connect(flowTemperature_outlet.Tm, outT)              annotation (points=[60,10;
-          60,26; 86,26], style(
-        color=1,
-        rgbcolor={255,0,0},
-        thickness=2,
-        fillColor=7,
-        rgbfillColor={255,255,255},
-        fillPattern=1));
-    connect(flowTemperature_outlet.outlet, outlet) annotation (points=[70,
+    connect(ft_out.outlet, outlet)                 annotation (points=[70,
           6.10623e-16; 80,6.10623e-16; 80,-2.22045e-16; 94,-2.22045e-16], style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(flowTemperature_inlet.outlet, flowTemperature_outlet.inlet) 
+    connect(ft_in.outlet, ft_out.inlet) 
       annotation (points=[-48,6.10623e-16; 2,-3.36456e-22; 2,6.10623e-16; 50,
           6.10623e-16],                                     style(
         color=62,
@@ -740,16 +624,13 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    connect(sinkPort.flowPort, flowTemperature_inlet.outlet) annotation (points=[9,-40; 0,
+    connect(sink.inlet, ft_in.outlet)                        annotation (points=[9,-40; 0,
           -40; 0,6.10623e-16; -48,6.10623e-16], style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-    inlet.n + outlet.n = 0*inlet.n;
-    
-    inlet.H = outlet.H + coolingDuty;
     
   end Cooler;
   
@@ -975,7 +856,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     import Thermo.Oxygen;
     import Thermo.speciesName;
     
-    outer Pressure p_env "Environment pressure";
+    outer parameter Pressure p_env = 101325 "Environment pressure";
+    outer parameter Temperature T_env = 298.15 "Enviroment temperature";
     
     parameter Length d_M = 142E-6 "Membrane thickness";
     parameter Area A = 26E-4 "Membrane active area";
@@ -994,13 +876,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     MolarFlux N_x "Crossover methanol flux";
     MolarFlow n_x = N_x * A "Crossover methanol flow";
     
-    Concentration c_a = anodeOutletTC.cm.c 
+    Concentration c_a = anodeOutletTC.c 
       "Methanol concentration, outlet is representative";
-    Concentration c_ac(start=500) "Catalyst-layer methanol concentration";
+    Concentration c_ac "Catalyst-layer methanol concentration";
     PartialPressure p_o2 "Oxygen partial pressure, outlet is representative";
     PartialPressure p_h2o 
       "Cathodic water partial pressure, outlet is representative";
-    Temperature T = cathodeT.Tm.T "Representative stack temperature";
+    Temperature T(start=T_env) = cathodeT.T "Representative stack temperature";
     
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
@@ -1028,7 +910,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     cathode_inlet.n + cathode_outlet.n + cathode_H*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
-    nexus.flowPort.H = I*V;
+    nexus.inlet.H = I*V;
     
     // Definition of oxygen partial pressure. On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
@@ -1045,36 +927,37 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     // Charge balance
     plus.i + minus.i = 0;
     
-    // Sanity check: crash simulation if conditions are unphysical
-    assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
+    // Outlet temperatures are equal
+    cathodeT.T = anodeOutletTC.T;
     
-    for i in AllSpecies loop
-      assert( cathode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the cathode outlet.");
-      assert( anode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the anode outlet.");
-      assert( cathode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the cathode inlet.");
-      assert( anode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the anode inlet.");
-    end for;
+  /*  // Sanity check: crash simulation if conditions are unphysical
+  assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
+  
+  for i in AllSpecies loop
+    assert( cathode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the cathode outlet.");
+    assert( anode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the anode outlet.");
+    assert( cathode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the cathode inlet.");
+    assert( anode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the anode inlet.");
+  end for;
+*/
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cathode_inlet, nexus.flowPort) 
-                                        annotation (points=[-100,30; -46,30; 
+    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
-    connect(cathodeT.inlet, nexus.flowPort)    annotation (points=[60,30; -40,
+    connect(cathodeT.inlet, nexus.inlet)       annotation (points=[60,30; -40,
           30; -40,4.44089e-16; -31,4.44089e-16],
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.flowPort) annotation (points=[60,-30; 
+    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[60,-30; 
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
-    connect(cathodeT.Tm, anodeOutletTC.Tm) annotation (points=[70,40; 54,40; 54,
-          -20; 70,-20],        style(color=1, rgbcolor={255,0,0}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.flowPort) annotation (points=[-54,-30; 
+    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-54,-30; 
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1116,96 +999,66 @@ current.</p>
   package Test "Package of test cases" 
     model FlowTemperatureTest "A test case for the temperature sensor" 
       
-      FlowTemperature flowTemp        annotation (extent=[-20,0; 0,20]);
-      
+      replaceable FlowTemperature measurement 
+                                      annotation (extent=[-20,0; 0,20]);
       annotation (Diagram);
+      EnvironmentPort env "Atmospheric air" 
+                                      annotation (extent=[-92,20; -72,40]);
+      SinkPort sink "Dumpster" 
+                        annotation (extent=[40,6; 48,14]);
+      MethanolSolution solution "Source of methanol solution" 
+                                        annotation (extent=[-80,-10; -68,2]);
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner Real RH_env = time;
       
-      EnvironmentPort environmentPort annotation (extent=[-50,26; -30,46]);
-      SinkPort sinkPort annotation (extent=[40,6; 48,14]);
     equation 
-      // Running from time 0 to 1 will test negative flows too, i.e..
-      sum(flowTemp.inlet.n) = time-0.5;
+      /* Running from time 0 to 1 will test negative flows and
+   * crossing of zero-flow condition. */
+      sum(env.outlet.n) = -10*(time-0.5);
+      sum(solution.outlet.n) = -(time-0.5);
       
-      connect(sinkPort.flowPort, flowTemp.outlet) 
+      connect(sink.inlet, measurement.outlet) 
         annotation (points=[40.4,10; 5.55112e-16,10], style(color=62, rgbcolor=
               {0,127,127}));
-      connect(environmentPort.c, flowTemp.inlet) 
-                                           annotation (points=[-49,31; -63.5,31;
-            -63.5,10; -20,10], style(color=62, rgbcolor={0,127,127}));
+      connect(env.outlet, measurement.inlet) 
+                                           annotation (points=[-73,25; -60,25; 
+            -60,10; -20,10],   style(color=62, rgbcolor={0,127,127}));
+      connect(solution.outlet, measurement.inlet) annotation (points=[-74,-4; 
+            -60,-4; -60,10; -20,10], style(color=62, rgbcolor={0,127,127}));
     end FlowTemperatureTest;
     
-    model FlowConcentrationTest 
-      annotation (Diagram);
-      
-      SinkPort gasSink   annotation (extent=[46,16; 54,24]);
-      EnvironmentPort environmentPort annotation (extent=[-52,46; -32,66]);
-      MethanolSolution methanolSolution annotation (extent=[-78,8; -68,18]);
-      FlowConcentration flowConcentration annotation (extent=[-6,10; 14,30]);
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
-      
-      parameter MolarFlow solutionFlow = 1;
-      parameter MolarFlow airFlow = 1;
-      
-    equation 
-      connect(flowConcentration.inlet, methanolSolution.c) annotation (points=[
-            -6,20; -40,20; -40,13; -73,13], style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=7,
-          rgbfillColor={255,255,255},
-          fillPattern=1));
-      connect(flowConcentration.inlet, environmentPort.c) annotation (points=[
-            -6,20; -56,20; -56,51; -51,51], style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=7,
-          rgbfillColor={255,255,255},
-          fillPattern=1));
-      connect(flowConcentration.outlet, gasSink.flowPort) annotation (points=[14,20;
-            46.4,20], style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=7,
-          rgbfillColor={255,255,255},
-          fillPattern=1));
-      
-      sum(environmentPort.c.n) = -airFlow;
-      sum(methanolSolution.c.n) = -solutionFlow;
-      
-    end FlowConcentrationTest;
     
+    model FlowConcentrationTest 
+      extends FlowTemperatureTest(redeclare FlowConcentration measurement);
+    end FlowConcentrationTest;
+
     model SeparatorTest 
+      
       Separator separator annotation (extent=[-22,-12; 26,38]);
       SinkPort liquidSink 
                         annotation (extent=[46,-16; 54,-8]);
       annotation (Diagram);
       SinkPort gasSink   annotation (extent=[46,30; 54,38]);
-      EnvironmentPort environmentPort annotation (extent=[-52,46; -32,66]);
-      
+      EnvironmentPort env             annotation (extent=[-52,46; -32,66]);
+      MethanolSolution solution         annotation (extent=[-78,8; -68,18]);
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
-      MethanolSolution methanolSolution annotation (extent=[-78,8; -68,18]);
+      
     equation 
+      sum(env.outlet.n) = -1;
+      sum(solution.outlet.n) = -2;
       
-      sum(environmentPort.c.n) = -1;
-      sum(methanolSolution.c.n) = -2;
-      
-      connect(environmentPort.c, separator.inlet) annotation (points=[-51,51;
-            -51,32.5; -22,32.5; -22,13], style(color=62, rgbcolor={0,127,127}));
-      connect(methanolSolution.c, separator.inlet) 
+      connect(env.outlet, separator.inlet)        annotation (points=[-33,51; 
+            -33,32.5; -22,32.5; -22,13], style(color=62, rgbcolor={0,127,127}));
+      connect(solution.outlet, separator.inlet) 
         annotation (points=[-73,13; -22,13], style(color=62, rgbcolor={0,127,
               127}));
-      connect(separator.liquidOutlet, liquidSink.flowPort) 
+      connect(separator.liquidOutlet, liquidSink.inlet) 
         annotation (points=[18.8,3; 18,3; 18,-12; 46.4,-12], style(color=62,
             rgbcolor={0,127,127}));
-      connect(separator.gasOutlet, gasSink.flowPort) annotation (points=[18.8,23;
+      connect(separator.gasOutlet, gasSink.inlet)    annotation (points=[18.8,23; 
             18.4,23; 18.4,34; 46.4,34], style(color=62, rgbcolor={0,127,127}));
     end SeparatorTest;
     
@@ -1215,14 +1068,14 @@ current.</p>
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
       
-      parameter Modelica.SIunits.Temperature T_set = 320;
-      
-      EnvironmentPort environmentPort annotation (extent=[-60,20; -40,40]);
-      SinkPort sinkPort annotation (extent=[60,-4; 68,4]);
+      EnvironmentPort env             annotation (extent=[-60,20; -40,40]);
+      SinkPort sink     annotation (extent=[60,-4; 68,4]);
       Cooler cooler annotation (extent=[-24,-20; 20,20]);
-      annotation (Diagram);
+      annotation (Diagram, 
+        experiment(StopTime=80), 
+        experimentSetupOutput);
     equation 
-      connect(sinkPort.flowPort, cooler.outlet) annotation (points=[60.4,
+      connect(sink.inlet, cooler.outlet)        annotation (points=[60.4,
             3.88578e-17; 38,3.88578e-17; 38,1.06581e-15; 18.68,1.06581e-15],
           style(
           color=62,
@@ -1230,16 +1083,16 @@ current.</p>
           fillColor=7,
           rgbfillColor={255,255,255},
           fillPattern=1));
-      connect(cooler.inlet, environmentPort.c) annotation (points=[-22.68,
-            1.06581e-15; -76.05,1.06581e-15; -76.05,25; -59,25], style(
+      connect(cooler.inlet, env.outlet)        annotation (points=[-22.68,
+            1.06581e-15; -76.05,1.06581e-15; -76.05,25; -41,25], style(
           color=62,
           rgbcolor={0,127,127},
           fillColor=7,
           rgbfillColor={255,255,255},
           fillPattern=1));
       
-      sum(environmentPort.c.n) = -1;
-      cooler.outT.T = cooler.inT.T - time;
+      sum(env.outlet.n) = -1;
+      cooler.T_out = cooler.T_in + time;
       
     end CoolerTest;
     
@@ -1261,22 +1114,22 @@ current.</p>
     equation 
       
       annotation (Diagram);
-      sum(fuelTank.c.n) = -0.1;
-      sum(anodicLoop.c.n) = -1;
-      sum(condenser.c.n) = -0.4;
+      sum(fuelTank.outlet.n) = -0.1;
+      sum(anodicLoop.outlet.n) = -1;
+      sum(condenser.outlet.n) = -0.4;
       sum(mixer.outlet.n) = -1.5;
       
-      connect(flowTemperature.outlet, sinkPort.flowPort) 
+      connect(flowTemperature.outlet, sinkPort.inlet) 
         annotation (points=[-44,-16; -27.6,-16], style(color=62, rgbcolor={0,
               127,127}));
       connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
             -72,10; -72,-16; -64,-16], style(color=62, rgbcolor={0,127,127}));
-      connect(condenser.c, mixer.waterInlet) 
+      connect(condenser.outlet, mixer.waterInlet) 
         annotation (points=[30,10; -2,10], style(color=62, rgbcolor={0,127,127}));
-      connect(anodicLoop.c, mixer.loopInlet) 
+      connect(anodicLoop.outlet, mixer.loopInlet) 
         annotation (points=[-10,50; -10,18], style(color=62, rgbcolor={0,127,
               127}));
-      connect(mixer.fuelInlet, fuelTank.c) 
+      connect(mixer.fuelInlet, fuelTank.outlet) 
         annotation (points=[-10,2; -10,-30; 10,-30], style(color=62, rgbcolor={
               0,127,127}));
     end MixerTest;
@@ -1312,23 +1165,26 @@ current.</p>
       Modelica.Electrical.Analog.Basic.Ground ground 
         "Negative pole to zero voltage" annotation (extent=[38,40; 58,60]);
     equation 
-      connect(methanolSolution.c, pump.inlet) annotation (points=[-60,-24;
-            -36.12,-24], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
-            -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
-            -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
-            -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
-      connect(air.c, blower.inlet) annotation (points=[-65,31; -70.5,31; -70.5,
-            22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
-      connect(cathodeSink.flowPort, fuelCell.cathode_outlet) annotation (points=[62.3,21;
-            52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
-      connect(anodeSink.flowPort, fuelCell.anode_outlet) annotation (points=[62.3,13;
-            52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
       pump.V = anodeFlow;
-      heater.outT.T = anodeInletTemperature;
+      heater.T_out = anodeInletTemperature;
       blower.V = cathodeFlow;
+      
+      connect(methanolSolution.outlet, pump.inlet) 
+                                              annotation (points=[-60,-24;
+            -36.12,-24], style(color=62, rgbcolor={0,127,127}));
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+            -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+            -36,-18], style(color=62, rgbcolor={0,127,127}));
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+            -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
+      connect(air.outlet, blower.inlet) 
+                                   annotation (points=[-47,31; -70.5,31; -70.5,
+            22; -38.08,22], style(color=62, rgbcolor={0,127,127}));
+      connect(cathodeSink.inlet, fuelCell.cathode_outlet)    annotation (points=[62.3,21;
+            52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
+      connect(anodeSink.inlet, fuelCell.anode_outlet)    annotation (points=[62.3,13;
+            52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
       connect(ground.p, I_cell.n) 
         annotation (points=[48,60; 34,60], style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.p, fuelCell.plus) annotation (points=[12,60; 12,27.2; 13.2,
@@ -1340,6 +1196,7 @@ current.</p>
     
     model ConstantVoltageCellTest "Test for the constant-voltage model" 
       extends CellTest(redeclare ConstantVoltageFuelCell fuelCell);
+      annotation (Diagram);
     end ConstantVoltageCellTest;
     
     model TheveninCellTest "Test for the Thevenin-circuit model" 

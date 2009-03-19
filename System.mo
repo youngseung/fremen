@@ -37,13 +37,14 @@ package System "DMFC systems"
       annotation (extent=[-12,26; 2,40]);
   equation 
     connect(pump.inlet, mixer.outlet) 
-      annotation (points=[-44.12,-32; -8,-32], style(color=62, rgbcolor={0,127,
+      annotation (points=[-44,-32; -8,-32],    style(color=62, rgbcolor={0,127,
             127}));
-    connect(pureMethanolSource.c, fuelPump.inlet) 
-      annotation (points=[36,-52; 13.88,-52], style(color=62, rgbcolor={0,127,
+    connect(pureMethanolSource.outlet, fuelPump.inlet) 
+      annotation (points=[36,-52; 14,-52],    style(color=62, rgbcolor={0,127,
             127}));
-    connect(environment.c, blower.inlet) annotation (points=[-81,27; -89.5,27;
-          -89.5,6; -70.08,6], style(color=62, rgbcolor={0,127,127}));
+    connect(environment.outlet, blower.inlet) 
+                                         annotation (points=[-63,27; -89.5,27; 
+          -89.5,6; -70,6],    style(color=62, rgbcolor={0,127,127}));
     connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(cathodeCooler.outlet, condenser.inlet) 
@@ -56,10 +57,10 @@ package System "DMFC systems"
           5.32907e-16; 27.005,5.32907e-16; 27.005,6.10623e-16; 32,6.10623e-16],
                                                      style(color=62, rgbcolor={
             0,127,127}));
-    connect(degasser.gasOutlet, co2sink.flowPort) annotation (points=[49,4; 48,
+    connect(degasser.gasOutlet, co2sink.inlet)    annotation (points=[49,4; 48,
           4; 48,24; 54.4,24],
         style(color=62, rgbcolor={0,127,127}));
-    connect(condenser.gasOutlet, airSink.flowPort) 
+    connect(condenser.gasOutlet, airSink.inlet) 
       annotation (points=[69.3,14; 70,14; 70,32; 74.4,32],
                                            style(color=62, rgbcolor={0,127,127}));
     connect(condenser.liquidOutlet, mixer.waterInlet) 
@@ -151,11 +152,11 @@ package System "DMFC systems"
     
     // Fuel flow feedforward control
     fuelPump.F = (1-b)/6/F*fuelCell.I + a*fuelCell.A/6/F * c_a_ref + f_M * c_a_ref * fuelCell.I;
-    f_M = K(degasser.Tm.T,Methanol)/(rho(degasser.Tm.T,Water,LiquidPhase)/mw(Water)) * fuelCell.I/(6*F*(1-K(degasser.Tm.T,Water)-K(degasser.Tm.T,Methanol)));
+    f_M = K(degasser.T,Methanol)/(rho(degasser.T,Water,LiquidPhase)/mw(Water)) * fuelCell.I/(6*F*(1-K(degasser.T,Water)-K(degasser.T,Methanol)));
     
     // Water content feedback control
-    condenser.Tm.T = 330 + Kp * rho(mixer.T, Water, LiquidPhase) / mw(Water) * delta_V;
-    Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.Tm.T, 1));
+    condenser.T = 330 + Kp * rho(mixer.T, Water, LiquidPhase) / mw(Water) * delta_V;
+    Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.T, 1));
     
     // Constant temperature in the cell assumed to be maintained by misterious stranger.
     fuelCell.T = T_cell;
