@@ -31,9 +31,6 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
 <p>The rate of a reaction on a mole-per-surface-area basis.</p>
 </html>"));
   
-  
-  
-  
   partial model DynamicModelling 
     
     import Modelica.Electrical.Analog.Basic.Resistor;
@@ -67,7 +64,7 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
       annotation (extent=[-30,-10; -10,10]);
     replaceable Electrode cathode "Cathodic model" 
       annotation (extent=[50,-10; 70,10]);
-    ConstantVoltage E(V=1.213) "Reversible voltage"
+    ConstantVoltage E(V=1.213) "Reversible voltage" 
       annotation (extent=[10,10; 30,30]);
     PositivePin p "Positive pin" annotation (extent=[-110,-10; -90,10]);
     NegativePin n "Negative pin" annotation (extent=[90,-10; 110,10]);
@@ -79,11 +76,12 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
     connect(R.p, anode.n) 
       annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16; 
           -50,6.10623e-16],                style(color=3, rgbcolor={0,0,255}));
-    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16; -96,
-          0; -90,0; -90,-20; 80,-20; 80,6.10623e-16; 70,6.10623e-16], style(
+    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16; 
+          -96,0; -90,0; -90,-20; 80,-20; 80,6.10623e-16; 70,6.10623e-16],
+                                                                      style(
           color=3, rgbcolor={0,0,255}));
     connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16; 
-          35,6.10623e-16; 20,6.10623e-16; 20,6.10623e-16; -10,6.10623e-16], 
+          35,6.10623e-16; 20,6.10623e-16; 20,6.10623e-16; -10,6.10623e-16],
         style(color=3, rgbcolor={0,0,255}));
     connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16; 
           -80,20; 10,20], style(color=3, rgbcolor={0,0,255}));
@@ -242,7 +240,6 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
   end KrewerAnode;
   annotation (uses(Modelica(version="2.2.1")));
   
-  
   model KrewerCathode "Ulrike's model of a DMFC cathode" 
     extends Electrode;
     annotation (Documentation(info="<html>
@@ -301,8 +298,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
   end KrewerCathode;
   
   model KrewerModel "Ulrike's electrochemical model" 
-    extends DynamicModelling(redeclare KrewerAnode anode(AllowFrozenEta=true),
-                                                          redeclare 
+    extends DynamicModelling(redeclare KrewerAnode anode(AllowFrozenEta=true),redeclare 
         KrewerCathode cathode);
     annotation (Diagram, Documentation(info="<html>
 <p>This class implements the model by Krewer et al., with a voltage generator, a resistance,
@@ -317,8 +313,6 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
   end KrewerModel;
   
   package Test 
-    
-    
     
     model KrewerAnodeTest 
       
@@ -346,7 +340,6 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       connect(pulseCurrent.p, anode.n) annotation (points=[-92,-9.4369e-16; -92,
             60; 40,60; 40,-9.4369e-16], style(color=3, rgbcolor={0,0,255}));
     end KrewerAnodeTest;
-    
     
     model KrewerCathodeTest 
       
