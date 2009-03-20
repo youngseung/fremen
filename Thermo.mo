@@ -17,20 +17,22 @@ public
   
   // Species
 public 
-  constant Integer[:] AllSpecies =    1:5;
-  constant Integer[:] GasSpecies =    3:5;
-  constant Integer[:] LiquidSpecies = 1:2;
-  constant Integer Methanol =      1;
-  constant Integer Water =         2;
-  constant Integer Oxygen =        3;
-  constant Integer CarbonDioxide = 4;
-  constant Integer Nitrogen =      5;
+  type Species = Integer (final quantity="Species identifier", final min=1, final max=5);
+  constant Species[:] AllSpecies =    1:5;
+  constant Species[:] GasSpecies =    3:5;
+  constant Species[:] LiquidSpecies = 1:2;
+  constant Species Methanol =      1;
+  constant Species Water =         2;
+  constant Species Oxygen =        3;
+  constant Species CarbonDioxide = 4;
+  constant Species Nitrogen =      5;
   
   // Phases
 public 
-  constant Integer[:] AllPhases = 1001:1002;
-  constant Integer GasPhase =     1001;
-  constant Integer LiquidPhase =  1002;
+  type Phase = Integer (final quantity="Phase identifier", final min=1001, final max=1002);
+  constant Phase[:] AllPhases = 1001:1002;
+  constant Phase GasPhase =     1001;
+  constant Phase LiquidPhase =  1002;
   
 protected 
   record WaterVapourParameters "Parameters for water vapour" 
@@ -82,16 +84,16 @@ Source: Perry's Chemical Engineers' Handbook, 7th edition, page 2-171.</p>
   
 protected 
   record ShomateParameters "Set of parameters for Shomate equations" 
-    Real A;
-    Real B;
-    Real C;
-    Real D;
-    Real E;
-    Real F;
-    Real G;
-    Real H;
-    Real T_min "Minimum temperature for data validity";
-    Real T_max "Maximum temperature for data validity";
+    constant Real A = 0;
+    constant Real B = 0;
+    constant Real C = 0;
+    constant Real D = 0;
+    constant Real E = 0;
+    constant Real F = 0;
+    constant Real G = 0;
+    constant Real H = 0;
+    constant Real T_min = 0 "Minimum temperature for data validity";
+    constant Real T_max = 0 "Maximum temperature for data validity";
     annotation (Documentation(info="<html>
 <p>This structure houses the parameters necessary for Shomate equations, used to
 calculate the molar enthalpy, the molar heat capacity and the molar entropy of many
@@ -129,7 +131,7 @@ protected
                                          T_min=298.0, T_max=500.0);
 public 
   function speciesName 
-    input Integer n "The species code.";
+    input Species n "The species code.";
     output String st "The species name.";
   algorithm 
     if n == Methanol then
@@ -154,7 +156,7 @@ code was set into the input.</p>
   
 public 
   function phaseName 
-    input Integer n "The phase code.";
+    input Phase n "The phase code.";
     output String st "The phase name.";
   algorithm 
     if n == GasPhase then
@@ -429,7 +431,7 @@ protected
   
 public 
   function mw 
-    input Integer n "Component";
+    input Species n "Component";
     output MolarMass m;
   algorithm 
     if n == Methanol then
@@ -457,10 +459,10 @@ public
 </html>"));
   end mw;
   
-public 
+protected 
   function dhf 
-    input Integer n "Component";
-    input Integer p "Phase";
+    input Species n "Component";
+    input Phase p "Phase";
     output MolarEnthalpy f;
   algorithm 
     if n == Methanol and p == GasPhase then
@@ -497,8 +499,8 @@ Nitrogen and oxygen are obviously zero, and are defined only in gas phase.</p>
 public 
   function h 
     input Temperature T;
-    input Integer n "Component";
-    input Integer p "Phase";
+    input Species n "Component";
+    input Phase p "Phase";
     output MolarEnthalpy H;
   protected 
     constant Temperature T_ref = 298.15;
@@ -535,8 +537,8 @@ the given phase; the reference state is always 298.15 K.</p>
 protected 
   function dh_dt "Derivative of the molar enthalpy function" 
     input Temperature T;
-    input Integer n "Component";
-    input Integer p "Phase";
+    input Species n "Component";
+    input Phase p "Phase";
     input Real der_T "The rate of variation of temperature.";
     output Real der_h;
   algorithm 
@@ -546,8 +548,8 @@ protected
 public 
   function cp 
     input Temperature T;
-    input Integer n "Component";
-    input Integer p "Phase";
+    input Species n "Component";
+    input Phase p "Phase";
     output MolarHeatCapacity CP;
   algorithm 
     if n == Methanol and p == GasPhase then
@@ -576,7 +578,7 @@ temperature and in the given phase.</p>
 protected 
   function p_vap 
     input Temperature T;
-    input Integer n "Component";
+    input Species n "Component";
     output PartialPressure p;
   algorithm 
     if n == Methanol then
@@ -595,7 +597,7 @@ protected
 protected 
   function dp_vap_dt 
     input Temperature T;
-    input Integer n "Component";
+    input Species n "Component";
     input Real der_T;
     output Real der_p;
   algorithm 
@@ -612,7 +614,7 @@ protected
 public 
   function K 
     input Temperature T "Temperature";
-    input Integer n "Component";
+    input Species n "Component";
     output Real Kvalue 
       "The ratio y/x between liquid and gaseous molar fraction.";
   protected 
@@ -646,7 +648,7 @@ liquid phase, by setting their K-value to be zero.</p>
 protected 
   function dK_dt 
     input Temperature T "Temperature.";
-    input Integer n "Component.";
+    input Species n "Component.";
     input Real der_T "The derivative of temperature.";
     output Real der_K "The derivative of K-values with respect to temperature.";
   protected 
@@ -664,8 +666,8 @@ protected
 public 
   function rho 
     input Temperature T;
-    input Integer n "Component";
-    input Integer p "Phase";
+    input Species n "Component";
+    input Phase p "Phase";
     output Density RHO;
     import Modelica.Constants.R;
   protected 
@@ -702,8 +704,8 @@ protected
     import Modelica.Constants.R;
     
     input Temperature T;
-    input Integer n "The component code";
-    input Integer p "Phase";
+    input Species n "The component code";
+    input Phase p "Phase";
     input Real der_T "The rate of variation of temperature";
     output Real der_rho "The derivative drho/dt";
     
@@ -901,7 +903,7 @@ public
       
       function approximateDerivativePvap 
         input Temperature T;
-        input Integer i;
+        input Species i;
         parameter Real eps = 0.001;
         output Real der_T;
       algorithm 
@@ -943,10 +945,10 @@ public
     end TestRR;
     
   model Test_K "test case for species equilibrum constant" 
-      import Modelica.SIunits.Temperature;
-      import Modelica.SIunits.PartialPressure;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.PartialPressure;
       
-      import Thermo.AllSpecies;
+    import Thermo.AllSpecies;
       
     parameter Temperature T0 = 273.15;
       
@@ -957,22 +959,22 @@ public
     Real derivative_error_h2o;
     constant Pressure p_env = 101325 "Environment pressure";
       
-  function approximatederivative_K 
-    input Temperature T;
-    input Integer i;
-    parameter Real eps = 0.001;
-    output Real der_T;
+    function approximatederivative_K 
+      input Temperature T;
+      input Species i;
+      parameter Real eps = 0.001;
+      output Real der_T;
         
-  algorithm 
-    der_T := (K(T+eps,i)-K(T-eps,i))/(2*eps);
-  end approximatederivative_K;
+    algorithm 
+      der_T := (K(T+eps,i)-K(T-eps,i))/(2*eps);
+    end approximatederivative_K;
       
   equation 
     p_meoh/p_env = K(T,Methanol);
     p_h2o/p_env = K(T,Water);
       
-    derivative_error_meoh = approximatederivative_K(T,Methanol) - dK_dt(Methanol, der(T));
-    derivative_error_h2o = approximatederivative_K(T,Water) - dK_dt(Water, der(T));
+    derivative_error_meoh = approximatederivative_K(T,Methanol) - dK_dt(T, Methanol, der(T));
+    derivative_error_h2o = approximatederivative_K(T,Water) - dK_dt(T, Water, der(T));
       
   end Test_K;
     
@@ -990,8 +992,8 @@ public
       
   function approximatederivative_h 
     input Temperature T_ref;
-    input Integer n;
-    input Integer p;
+    input Species n;
+    input Phase p;
     input Integer dhf;
     output Real der_T;
         
