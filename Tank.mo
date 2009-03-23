@@ -1,17 +1,14 @@
+import " Units.mo";
 
 
 package Tank 
   
-type MolarFlow = Real(final quantity="MolarFlow", final unit="mol/s") 
-    annotation (Documentation(info="<html>
-<p>Just a definition lacking from the standard library.</p>
-</html>"));
-  
   connector CheckPoint "What passes through a control surface" 
     import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.EnthalpyFlowRate;
-    import Thermo.MolarEnthalpy;
     import Thermo.AllSpecies;
+    import Units.MolarEnthalpy;
+    import Units.MolarFlow;
     
     MolarFlow F;
     MoleFraction[size(AllSpecies,1)] z(each min=0, each max=1);
@@ -162,7 +159,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     import Thermo.GasPhase;
     import Thermo.h;
     import Thermo.K;
-    import Thermo.MolarEnthalpy;
+    import Units.MolarEnthalpy;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.MoleFraction;
@@ -328,7 +325,6 @@ range of Rachford-Rice (typically, temperature is above water's boiling point)
     import Modelica.SIunits.Area;
     import Modelica.SIunits.Volume;
     
-    import Thermo.MolarEnthalpy;
     import Thermo.rho;
     import Thermo.h;
     import Thermo.mw;
@@ -337,6 +333,8 @@ range of Rachford-Rice (typically, temperature is above water's boiling point)
     import Thermo.GasSpecies;
     import Thermo.LiquidPhase;
     import Thermo.GasPhase;
+    
+    import Units.MolarEnthalpy;
     
     outer parameter Temperature T_env = 298.15 "Environment temperature";
     
@@ -920,6 +918,7 @@ phase, see class <tt>Cooler</tt>.</p>
     
     import Thermo.mw;
     import Thermo.AllSpecies;
+    import Units.MolarFlow;
     
     MolarFlow F;
     Modelica.SIunits.MassFlowRate m;
@@ -1117,7 +1116,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       connect(bottomConnector.port2, environmentPort.c) 
                                                       annotation (points=[-14.24,
             -20; 19.5,-20],           style(pattern=0, thickness=2));
-      connect(environmentPort1.c, topConnector.port2)   annotation (points=[19.5,60;
+      connect(environmentPort1.c, topConnector.port2)   annotation (points=[19.5,60; 
             -13.96,60],                    style(pattern=0, thickness=2));
     end TestFuelTank;
     
@@ -1266,31 +1265,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
     end TestPipe;
     
-    model TestGasPipe 
-      inner parameter Real RH_env = 30;
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      GasPipe pipe(n=10, segments(T(each start = 340)));
-      EnvironmentPort nature_in;
-      FlowConnector inlet;
-      EnvironmentPort nature_out;
-      FlowConnector outlet;
-    equation 
-      connect(nature_in.c, inlet.port1);
-      connect(inlet.port2, pipe.segments[1].flows[1]);
-      connect(pipe.segments[end].flows[end], outlet.port1);
-      connect(outlet.port2, nature_out.c);
-      
-      nature_in.c.F = -1;
-    initial equation 
-      for i in 1:pipe.n loop
-        pipe.segments[i].z[1]=0;
-        pipe.segments[i].z[2]=0;
-        pipe.segments[i].z[4]=0;
-        pipe.segments[i].z[3]/21 = pipe.segments[i].z[5]/79;
-      end for;
-      
-    end TestGasPipe;
     
     model TestHeatExchangerPipe 
       inner parameter Real RH_env = 30;
@@ -1322,36 +1296,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
       
     end TestHeatExchangerPipe;
     
-    model TestHeatExchangerPipe_Gas 
-      
-      inner parameter Real RH_env = 30;
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      HeatExchangerPipe pipe(n=10,segments(T(each start = 290)));
-      EnvironmentPort source;
-      FlowConnector inlet;
-      EnvironmentPort nature;
-      FlowConnector outlet;
-    equation 
-      connect(source.c, inlet.port1);
-      connect(inlet.port2, pipe.segments[1].flows[1]);
-      connect(pipe.segments[end].flows[2], outlet.port1);
-      connect(outlet.port2, nature.c);
-      
-      source.c.F = -0.1;
-      for i in 1:pipe.n loop
-        pipe.segments[i].flows[3].H = 20;
-      end for;
-      
-    initial equation 
-      for i in 1:pipe.n loop
-        pipe.segments[i].z[1]=0;
-        pipe.segments[i].z[2]=0.99;
-        pipe.segments[i].n[4]=0.0;
-        pipe.segments[i].z[3]/21 = pipe.segments[i].z[5]/79;
-      end for;
-      
-    end TestHeatExchangerPipe_Gas;
     
     model TestHeatExchanger 
       
@@ -1408,58 +1352,6 @@ in liquid phase; it takes their density from the Thermo library.</p>
           style(pattern=0, thickness=2));
     end TestHeatExchanger;
     
-    model TestCooler 
-      
-      inner parameter Real RH_env = 30;
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      
-      MethanolSolution methanolSolution(T=340) 
-                                        annotation (extent=[-64,0; -44,20]);
-      annotation (Diagram);
-      EnvironmentPort solutionOutlet  annotation (extent=[36,6; 52,22]);
-      FlowConnector to_f11        annotation (extent=[-42,0; -22,20]);
-      FlowConnector to_f12         annotation (extent=[12,0; 32,20]);
-      FlowConnector to_f21    annotation (extent=[0,36; 20,56]);
-      EnvironmentPort coolingInlet     annotation (extent=[26,-26; 44,-10]);
-      FlowConnector to_f22   annotation (extent=[2,-32; 22,-12]);
-      EnvironmentPort coolingOutlet   annotation (extent=[30,42; 46,58]);
-      Cooler hx annotation (extent=[-20,-6; 10,26]);
-    equation 
-      connect(to_f12.port2, solutionOutlet.c) 
-        annotation (points=[29.2,10; 36.8,10], style(pattern=0, thickness=2));
-      connect(to_f22.port2, coolingInlet.c)     annotation (points=[19.2,-22;
-            26.9,-22], style(pattern=0, thickness=2));
-      connect(methanolSolution.p, to_f11.port1) 
-        annotation (points=[-54,10; -39.2,10], style(pattern=0, thickness=2));
-      connect(to_f21.port2, coolingOutlet.c) 
-        annotation (points=[17.2,46; 30.8,46], style(pattern=0, thickness=2));
-      connect(hx.f11, to_f11.port2) annotation (points=[-18.5,10; -24.8,10],
-          style(pattern=0, thickness=2));
-      connect(hx.f12, to_f12.port1) 
-        annotation (points=[8.5,10; 14.8,10], style(pattern=0, thickness=2));
-      connect(hx.f22, to_f22.port1) annotation (points=[-5,2; -5,-22; 4.8,-22],
-          style(pattern=0, thickness=2));
-      connect(to_f21.port1, hx.f21) annotation (points=[2.8,46; -5,46; -5,18],
-          style(pattern=0, thickness=2));
-      
-      methanolSolution.p.F = -1;
-      coolingInlet.c.F = -10;
-      
-    initial equation 
-      for i in 1:hx.steps loop
-        hx.side1.segments[i].z[1]=0.001;
-        hx.side1.segments[i].z[3]=0.001;
-        hx.side1.segments[i].z[4]=0.001;
-        hx.side1.segments[i].z[5]=0.001;
-        
-        hx.side2.segments[i].z[1]=0.001;
-        hx.side2.segments[i].z[2]=0.001;
-        hx.side2.segments[i].z[3]/21 = hx.side2.segments[i].z[5]/79;
-        hx.side2.segments[i].z[4]=0.001;
-      end for;
-      
-    end TestCooler;
     
     model TestEnvironment 
       

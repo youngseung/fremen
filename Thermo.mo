@@ -1,3 +1,5 @@
+import " Units.mo";
+
 encapsulated package Thermo "Thermodynamic library" 
   
   import Modelica.SIunits.Temperature;
@@ -9,11 +11,7 @@ encapsulated package Thermo "Thermodynamic library"
   import Modelica.SIunits.Density;
   import Modelica.SIunits.MolarMass;
   import Modelica.SIunits.MoleFraction;
-  
-public 
-  type MolarEnthalpy = MolarInternalEnergy annotation (Documentation(info="<html>
-<p>Definition lacking from Modelica library.</p>
-</html>"));
+  import Units.MolarEnthalpy;
   
   // Species
 public 
@@ -945,10 +943,10 @@ public
     end TestRR;
     
   model Test_K "test case for species equilibrum constant" 
-    import Modelica.SIunits.Temperature;
-    import Modelica.SIunits.PartialPressure;
+      import Modelica.SIunits.Temperature;
+      import Modelica.SIunits.PartialPressure;
       
-    import Thermo.AllSpecies;
+      import Thermo.AllSpecies;
       
     parameter Temperature T0 = 273.15;
       

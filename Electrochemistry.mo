@@ -1,35 +1,6 @@
+import " Units.mo";
+
 package Electrochemistry "Package containing electrochemical models" 
-  
-type MolarFlow = Real(final quantity="Molar flow rate", final unit="mol/s") 
-    annotation (Documentation(info="<html>
-<p>Just a definition lacking from the standard library.</p>
-</html>"));
-  
-type MolarFlux = Real(final quantity="Molar flux", final unit="mol/(m2.s)") 
-    annotation (Documentation(info="<html>
-<p>Just a definition lacking from the standard library.</p>
-</html>"));
-  
-type CatalystCoverage = Real(final quantity="Catalyst coverage", final unit="", min=0, max=1) 
-    annotation (Documentation(info="<html>
-<p>Fraction of catalytic sites occupied by a certain species.</p>
-</html>"));
-  
-type SurfaceConcentration = Real (final quantity="Surface concentration", final unit
-        =                                                                            "mol/m2") 
-    annotation (Documentation(info="<html>
-<p>A unit commonly used for active concentrations of catalysts.</p>
-</html>"));
-  
-type ArealCapacitance = Real (final quantity="Areal capacitance", final unit="F/m2") 
-    annotation (Documentation(info="<html>
-<p>Unit typically used to indicate the capacitance of charge double layers in electrodes.</p>
-</html>"));
-  
-type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="mol/(m2.s)") 
-    annotation (Documentation(info="<html>
-<p>The rate of a reaction on a mole-per-surface-area basis.</p>
-</html>"));
   
   partial model DynamicModelling 
     
@@ -91,6 +62,10 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
   
   partial model Electrode "Generic electrode" 
     extends Modelica.Electrical.Analog.Interfaces.OnePort;
+    
+    import Thermo.AllSpecies;
+    import Units.MolarFlow;
+    
     annotation (Icon(
         Rectangle(extent=[-60,20; 60,-20], style(
             color=3,
@@ -103,7 +78,6 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
         Documentation(info="<html>
 <p>The generic interface of an electrode (be it anode or cathode).
 </html>"));
-    import Thermo.AllSpecies;
     
     parameter Modelica.SIunits.Area A = 26E-4 "Active electrode area";
     
@@ -130,6 +104,10 @@ type ArealReactionRate = Real(final quantity="Areal reaction rate", final unit="
     import Thermo.Oxygen;
     import Thermo.CarbonDioxide;
     import Thermo.Nitrogen;
+    import Units.ArealCapacitance;
+    import Units.SurfaceConcentration;
+    import Units.ArealReactionRate;
+    import Units.CatalystCoverage;
     
     parameter Boolean AllowFrozenEta = false 
       "Allows to handle open-circuit and low-current conditions";
@@ -272,6 +250,9 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Thermo.Oxygen;
     import Thermo.CarbonDioxide;
     import Thermo.Nitrogen;
+    import Units.ArealCapacitance;
+    import Units.ArealReactionRate;
+    import Units.MolarFlux;
     
     parameter ArealCapacitance C = 907 "The electrode's areal capacitance";
     parameter Real alpha = 0.18 "Charge transfer coefficient";
@@ -343,19 +324,21 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     
     model KrewerCathodeTest 
       
+      import Modelica.SIunits.Temperature;
+      import Modelica.SIunits.MoleFraction;
+      import Units.MolarFlux;
       KrewerCathode cathode 
                         annotation (extent=[-20,-30; 40,30]);
       Modelica.Electrical.Analog.Basic.Ground ground 
         annotation (extent=[50,-20; 70,0]);
       annotation (Diagram);
-      parameter Modelica.SIunits.Temperature T = 343 "Electrode temperature";
-      parameter Modelica.SIunits.MoleFraction xO2 = 0.1 
-        "Oxygen catalyst-layer concentration";
-      parameter MolarFlux Nx = 0.0025 "Crossover methanol flux";
-      
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
           startTime=10) 
                     annotation (extent=[-92,-30; -32,30]);
+      parameter Temperature T = 343 "Electrode temperature";
+      parameter MoleFraction xO2 = 0.1 "Oxygen catalyst-layer concentration";
+      parameter MolarFlux Nx = 0.0025 "Crossover methanol flux";
+      
     equation 
       cathode.N_x = Nx;
       cathode.p_O2/101325 = xO2;
@@ -376,22 +359,25 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     
     model KrewerModelTest 
       
+      import Modelica.SIunits.Temperature;
+      import Modelica.SIunits.MoleFraction;
+      import Modelica.SIunits.Concentration;
+      import Units.MolarFlux;
       Modelica.Electrical.Analog.Basic.Ground ground 
         annotation (extent=[30,-40; 50,-20]);
       annotation (Diagram);
-      parameter Modelica.SIunits.Temperature T = 343 "Cell temperature";
-      parameter Modelica.SIunits.MoleFraction xO2 = 0.1 
-        "Cathodic oxygen catalyst-layer concentration";
-      parameter MolarFlux Nx = 0.0025 "Crossover methanol flux";
-      parameter Modelica.SIunits.Concentration c = 500 
-        "Anodic methanol concentration";
-      
       KrewerModel km(anode(AllowFrozenEta=true)) 
         annotation (extent=[-40,-50; 20,10]);
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
           startTime=10,
         I=5,
         offset=10)  annotation (extent=[-40,0; 20,60]);
+      parameter Temperature T = 343 "Cell temperature";
+      parameter MoleFraction xO2 = 0.1 
+        "Cathodic oxygen catalyst-layer concentration";
+      parameter MolarFlux Nx = 0.0025 "Crossover methanol flux";
+      parameter Concentration c = 500 "Anodic methanol concentration";
+      
     equation 
       km.cathode.N_x = Nx;
       km.cathode.p_O2/101325 = xO2;
