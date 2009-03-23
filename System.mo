@@ -43,7 +43,7 @@ package System "DMFC systems"
       annotation (points=[36,-52; 14,-52],    style(color=62, rgbcolor={0,127,
             127}));
     connect(environment.outlet, blower.inlet) 
-                                         annotation (points=[-63,27; -89.5,27; 
+                                         annotation (points=[-63,27; -89.5,27;
           -89.5,6; -70,6],    style(color=62, rgbcolor={0,127,127}));
     connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
@@ -202,14 +202,15 @@ package System "DMFC systems"
       annotation (extent=[-32,-30; -18,-16]);
   equation 
     connect(pump.inlet, mixer.outlet) 
-      annotation (points=[-44.12,-32; -8,-32], style(color=62, rgbcolor={0,127,
+      annotation (points=[-44,-32; -8,-32],    style(color=62, rgbcolor={0,127,
             127}));
-    connect(pureMethanolSource.c, fuelPump.inlet) 
-      annotation (points=[36,-52; 13.88,-52], style(color=62, rgbcolor={0,127,
+    connect(pureMethanolSource.outlet, fuelPump.inlet) 
+      annotation (points=[36,-52; 14,-52],    style(color=62, rgbcolor={0,127,
             127}));
-    connect(environment.c, blower.inlet) annotation (points=[-81,27; -89.5,27;
-          -89.5,6; -70.08,6], style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10;
+    connect(environment.outlet, blower.inlet) 
+                                         annotation (points=[-63,27; -89.5,27; 
+          -89.5,6; -70,6],    style(color=62, rgbcolor={0,127,127}));
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-46; 0,-46; 0,-40; 6.10623e-16,-40],
@@ -217,17 +218,17 @@ package System "DMFC systems"
     connect(cooler.outlet, degasser.inlet) annotation (points=[21.34,5; 32,5],
                                                      style(color=62, rgbcolor={
             0,127,127}));
-    connect(degasser.gasOutlet, co2sink.flowPort) annotation (points=[49,9.4;
+    connect(degasser.gasOutlet, co2sink.inlet)    annotation (points=[49,9.4;
           48,9.4; 48,24; 54.4,24],
         style(color=62, rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
           -14,0; -4,0; -4,5; 0.66,5], style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
           -50,0; -76,0; -76,-26; -44,-26],
                               style(
         color=62,
@@ -236,7 +237,7 @@ package System "DMFC systems"
         rgbfillColor={0,127,127},
         fillPattern=1));
     connect(load.n, fuelCell.plus)   annotation (points=[-32,44; -32,29.6; -32,
-          15.2; -21.2,15.2],
+          15.2; -42.8,15.2],
         style(
         color=3,
         rgbcolor={0,0,255},
@@ -245,7 +246,7 @@ package System "DMFC systems"
         rgbfillColor={255,85,85},
         fillPattern=1));
     connect(load.p, fuelCell.minus)   annotation (points=[-52,44; -58,44; -58,
-          -16; -42.8,-16; -42.8,15.2],
+          -16; -21.2,-16; -21.2,15.2],
                                    style(
         color=3,
         rgbcolor={0,0,255},
@@ -253,8 +254,8 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -42.8,-16;
-          -42.8,15.2],
+    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -21.2,-16; 
+          -21.2,15.2],
                  style(
         color=3,
         rgbcolor={0,0,255},
@@ -262,9 +263,9 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1;
+    connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1; 
           -4,10.1; -4,5; 0.66,5], style(color=62, rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6;
+    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6; 
           48.5,0.6; 48.5,-32; 8,-32], style(color=62, rgbcolor={0,127,127}));
   end CoolingIntegration;
 end System;
