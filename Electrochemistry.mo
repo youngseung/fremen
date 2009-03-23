@@ -1,5 +1,6 @@
 import " Units.mo";
 
+
 package Electrochemistry "Package containing electrochemical models" 
   
   partial model DynamicModelling 
@@ -293,6 +294,106 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     anode.T = cathode.T;
   end KrewerModel;
   
+  model Diffusion "A one-dimensional model for multicomponent diffusion" 
+    import Modelica.SIunits.Density;
+    import Modelica.SIunits.MolarMass;
+    import Modelica.SIunits.SurfaceTension;
+    import Modelica.SIunits.Angle;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.PartialPressure;
+    import Modelica.SIunits.MoleFraction;
+    import Modelica.SIunits.Velocity;
+    import Modelica.SIunits.Pressure;
+    import Modelica.SIunits.Length;
+    import Modelica.SIunits.CurrentDensity;
+    import Modelica.Constants.R;
+    
+    import Thermo.pDoverT175;
+    import Thermo.AllSpecies;
+    
+    import Units.DynamicViscosity;
+    import Units.MolarFlux;
+    import Units.Permeability;
+    import Units.Porosity;
+    import Units.Saturation;
+    import Units.CondensationCoefficient;
+    import Units.ReactionRate;
+    
+    parameter Integer n(min=3) = 10 "Discretisation steps";
+    
+    parameter Length t = 0.5E-3 "Layer thickness";
+    parameter Porosity eps = 0.5 "Layer porosity";
+    parameter Permeability K = 2.55E-13 "Absolute permeability";
+    parameter DynamicViscosity mu = 405E-6 "Liquid viscosity";
+    parameter Saturation s_im= 0.1 "Immobile saturation";
+    parameter SurfaceTension sigma = 64.4E-3 
+      "Surface tension between water and air";
+    parameter Angle theta = 1.0472 
+      "Contact angle between water, air and backing";
+    parameter CondensationCoefficient gamma = 900 
+      "Condensation coefficient of water";
+    
+    parameter MolarFlux N_H "Proton flow"; // TODO find values
+    parameter MolarFlux N_x "Crossover flow";
+    
+    parameter MoleFraction[size(AllSpecies,1)] y_bulk = {0, 0.2, 0.1, 0.05, 0.65} 
+      "Bulk concentrations";
+    MolarFlux[size(AllSpecies,1)] N_0 "Molar fluxes at catalyst layer";
+    
+    constant MolarMass M = Thermo.mw(Thermo.Water) "Water molar mass";
+    constant Pressure p = 101325 "Atmospheric pressure";
+    
+    Temperature T "Temperature";
+    Density rho = Thermo.rho(T, Thermo.Water, Thermo.LiquidPhase) 
+      "Liquid density";
+    PartialPressure p_vap = Thermo.p_vap(T, Thermo.Water) 
+      "Liquid partial pressure";
+    
+    Velocity[n] liquidVelocity "Average liquid velocity";
+    Saturation[n] s "Liquid water saturation (volumetric)";
+    Saturation[n] S "Reduced liquid saturation";
+    Permeability[n] K_rel "Relative permeability of liquid water";
+    
+    MoleFraction[n,size(AllSpecies,1)] y "Gas molar fractions";
+    MolarFlux[n+1,size(AllSpecies,1)] N "Gas molar flux";
+    ReactionRate[n] e "Water evaporation rate";
+    
+  protected 
+    parameter Real epsFactor = eps*((eps-0.11)/(1-0.11))^0.785 
+      "Effective diffusivity-porosity factor";
+    parameter Length deltaX = t/n "Thickness of each sub-layer";
+    
+  equation 
+    // Boundary condition for flow at catalyst layer
+    N_0 = N_H*{0, 0.5, -0.25, 0, 0} + N_x*{0, 2, -1.5, 1, 0};
+    
+    // Continuity equation FIXME only water has R
+    (p/R/T) * y[1,:] = (N_0-N[1,:])/deltaX;// + R[1];
+    for i in 2:n loop
+      (p/R/T) * der(y[i,:]) = (N[i-1,:]-N[i,:])/deltaX;// + R[i];
+    end for;
+    
+    // Stefan-Maxwell diffusion
+    for i in 1:n-1 loop
+      for j in 1:size(AllSpecies,1) loop
+        (p/R/T) * (y[i+1,j]-y[i,j]) / deltaX =
+          sum( ((y[i+1,j]+y[i,j])/2*N[i,k] - (y[i+1,k]+y[i,k])/2*N[i,j]) /
+               (pDoverT175(j,k) / p * T^1.75 * epsFactor * (1-(s[i+1]+s[i])/2)^2) 
+               for k in 1:size(AllSpecies,1));
+      end for;
+    end for;
+    // Stefan-Maxwell diffusion at last discretisation step (interface to bulk)
+    for j in 1:size(AllSpecies,1) loop
+      (p/R/T) * (y_bulk[j]-y[n,j]) / deltaX =
+        sum( ((y_bulk[j]+y[n,j])/2*N[n,k] - (y_bulk[k]+y[n,k])/2*N[n,j]) /
+             (pDoverT175(j,k) / p * T^1.75 * epsFactor * (1-s[n])^2) 
+             for k in 1:size(AllSpecies,1));
+    end for;
+    
+    // TODO all equations for the liquid phase
+    
+  end Diffusion;
+
   package Test 
     
     model KrewerAnodeTest 
@@ -389,7 +490,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
                                    style(color=3, rgbcolor={0,0,255}));
       connect(pulseCurrent.p, km.p) annotation (points=[-40,30; -40,-20],
                                    style(color=3, rgbcolor={0,0,255}));
-      connect(pulseCurrent.n, km.n) annotation (points=[20,30; 20,17.5; 20,17.5; 
+      connect(pulseCurrent.n, km.n) annotation (points=[20,30; 20,17.5; 20,17.5;
             20,5; 20,-20; 20,-20], style(color=3, rgbcolor={0,0,255}));
     end KrewerModelTest;
     annotation (Documentation(info="<html>

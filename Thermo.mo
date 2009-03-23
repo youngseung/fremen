@@ -1,5 +1,6 @@
 import " Units.mo";
 
+
 encapsulated package Thermo "Thermodynamic library" 
   
   import Modelica.SIunits.Temperature;
@@ -573,7 +574,7 @@ temperature and in the given phase.</p>
 </html>"));
   end cp;
   
-protected 
+public 
   function p_vap 
     input Temperature T;
     input Species n "Component";
@@ -882,6 +883,77 @@ protected
     der_beta := dbeta_da*da_dt + dbeta_db*db_dt + dbeta_dc*dc_dt;
     
   end drr_dt;
+  
+public 
+  function pDoverT175 "Non-varying part of diffusivity coefficients" 
+    input Species i "First species";
+    input Species j "Second species";
+    output Real pDT "Constant part of the diffusivity coefficient";
+    
+  algorithm 
+    pDT := 0.1013 * sqrt(1E-3/mw(i)+1E-3/mw(j)) / (diffVol(i)^(1/3)+diffVol(j)^(1/3))^2;
+    
+    annotation (Documentation(info="<html>
+<p>This function provides the constant part of a gas-phase diffusivity coefficient
+estimated with Fuller's rule. The full-fledged diffusivity coefficient is obtained 
+by multiplying by temperature in kelvin raised to 1.75 and dividing by pressure 
+in pascal.</p>
+<p>The order in which the components are provided is irrelevant.</p>
+<p>Data obtained by Perry's Chemical Engineers' Handbook, 7<sup>th</sup> edition,
+page 2-370.</p>
+</html>"));
+  end pDoverT175;
+  
+protected 
+  function diffVol "Molecular diffusion volumes" 
+    input Species i;
+    output Real v;
+    
+  algorithm 
+    if i == Methanol then
+      v := 29.901;
+    elseif i == Water then
+      v := 12.7;
+    elseif i == Oxygen then
+      v := 16.6;
+    elseif i == CarbonDioxide then
+      v := 26.9;
+    elseif i == Nitrogen then
+      v := 17.9;
+    else
+      assert( false, "==> Unhandled component '"+String(i)+"' requested to Thermo.diffVol.");
+    end if;
+    
+    annotation (Documentation(info="<html>
+<p>This simple function returns the molecular diffusion volumes of some
+species. Data is taken from page 2-370 of Perry's Chemical Engineers' 
+Handbook, 7<sup>th</sup> edition, table 2-400.</p>
+</html>"));
+  end diffVol;
+  
+public 
+  function D "Non-varying part of diffusivity coefficients" 
+    
+    import Modelica.SIunits.DiffusionCoefficient;
+    
+    input Temperature T "Temperature";
+    input Pressure p "Enviroment pressure";
+    input Species i "First species";
+    input Species j "Second species";
+    output DiffusionCoefficient Dij 
+      "Constant part of the diffusivity coefficient";
+    
+  algorithm 
+    Dij := pDoverT175(i,j) * T^1.75 / p;
+    
+    annotation (Documentation(info="<html>
+<p>This function provides the a gas-phase diffusivity coefficient estimated with Fuller's 
+rule, given two components between which to calculate it.</p>
+<p>The order in which the components are provided is irrelevant.</p>
+<p>Data obtained by Perry's Chemical Engineers' Handbook, 7<sup>th</sup> edition,
+page 2-370.</p>
+</html>"));
+  end D;
   
 public 
   package Test 
