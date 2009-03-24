@@ -272,8 +272,8 @@ classes could specialize).</p>
     m = sum({inlet.n[i] * mw(i) for i in AllSpecies});
     F = sum(inlet.n);
     
-    connect(inlet, outlet) annotation (points=[5.55112e-16,5.55112e-16; 
-          5.55112e-16,25; 5.55112e-16,25; 5.55112e-16,50; 5.55112e-16,100; 
+    connect(inlet, outlet) annotation (points=[5.55112e-16,5.55112e-16;
+          5.55112e-16,25; 5.55112e-16,25; 5.55112e-16,50; 5.55112e-16,100;
           5.55112e-16,100], style(color=62, rgbcolor={0,127,127}));
   end FlowController;
   
@@ -408,7 +408,7 @@ reading results will be less comfortable.</p>
       end if;
     
       connect(inlet, outlet) 
-                          annotation (points=[-100,5.55112e-16; 0,-4.87687e-22; 
+                          annotation (points=[-100,5.55112e-16; 0,-4.87687e-22;
           0,5.55112e-16; 100,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
     end FlowTemperature;
   
@@ -878,8 +878,9 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     CurrentDensity i = I/A "Cell current density";
     
     MolarFlow n_H = I/F "Proton flow through the membrane";
-    MolarFlux N_x "Crossover methanol flux";
     MolarFlow n_x = N_x * A "Crossover methanol flow";
+    MolarFlux N_H = n_H / A "Proton flux";
+    MolarFlux N_x "Crossover methanol flux";
     
     Concentration c_a = anodeOutletTC.c 
       "Methanol concentration, outlet is representative";
@@ -1174,11 +1175,11 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-47,31; -70.5,31; -70.5,
