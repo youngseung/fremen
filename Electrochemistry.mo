@@ -46,16 +46,16 @@ package Electrochemistry "Package containing electrochemical models"
     
   equation 
     connect(R.p, anode.n) 
-      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16; 
+      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16;
           -50,6.10623e-16],                style(color=3, rgbcolor={0,0,255}));
-    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16; 
+    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16;
           -96,0; -90,0; -90,-20; 80,-20; 80,6.10623e-16; 70,6.10623e-16],
                                                                       style(
           color=3, rgbcolor={0,0,255}));
-    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16; 
+    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16;
           35,6.10623e-16; 20,6.10623e-16; 20,6.10623e-16; -10,6.10623e-16],
         style(color=3, rgbcolor={0,0,255}));
-    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16; 
+    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16;
           -80,20; 10,20], style(color=3, rgbcolor={0,0,255}));
     connect(E.n, n) annotation (points=[30,20; 90,20; 90,5.55112e-16; 100,
           5.55112e-16], style(color=3, rgbcolor={0,0,255}));
@@ -310,6 +310,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     
     import Thermo.pDoverT175;
     import Thermo.AllSpecies;
+    import Thermo.Water;
     
     import Units.DynamicViscosity;
     import Units.MolarFlux;
@@ -319,8 +320,9 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Units.CondensationCoefficient;
     import Units.ReactionRate;
     
-    parameter Integer n(min=3) = 10 "Discretisation steps";
+    parameter Integer n(min=2) = 2 "Discretisation steps";
     
+    parameter Temperature T = 333 "Temperature";
     parameter Length t = 0.5E-3 "Layer thickness";
     parameter Porosity eps = 0.5 "Layer porosity";
     parameter Permeability K = 2.55E-13 "Absolute permeability";
@@ -333,29 +335,29 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     parameter CondensationCoefficient gamma = 900 
       "Condensation coefficient of water";
     
-    parameter MolarFlux N_H "Proton flow"; // TODO find values
-    parameter MolarFlux N_x "Crossover flow";
+    parameter MolarFlux N_H = 0.02 "Proton flow";
+    parameter MolarFlux N_x = 0.003 "Crossover flow";
     
     parameter MoleFraction[size(AllSpecies,1)] y_bulk = {0, 0.2, 0.1, 0.05, 0.65} 
       "Bulk concentrations";
     MolarFlux[size(AllSpecies,1)] N_0 "Molar fluxes at catalyst layer";
     
-    constant MolarMass M = Thermo.mw(Thermo.Water) "Water molar mass";
+    constant MolarMass M = Thermo.mw(Water) "Water molar mass";
     constant Pressure p = 101325 "Atmospheric pressure";
     
-    Temperature T "Temperature";
-    Density rho = Thermo.rho(T, Thermo.Water, Thermo.LiquidPhase) 
-      "Liquid density";
-    PartialPressure p_vap = Thermo.p_vap(T, Thermo.Water) 
-      "Liquid partial pressure";
+    Density rho = Thermo.rho(T, Water, Thermo.LiquidPhase) "Liquid density";
+    PartialPressure p_vap = Thermo.p_vap(T, Water) "Liquid partial pressure";
     
-    Velocity[n] liquidVelocity "Average liquid velocity";
+    Pressure[n] p_c = sigma*cos(theta)/sqrt(K/eps) * (1.417*S - 1.12*S.*S + 1.263*S.*S.*S) 
+      "Capillary pressure";
+    
+    Velocity[n] v "Average liquid velocity in pores";
     Saturation[n] s "Liquid water saturation (volumetric)";
     Saturation[n] S "Reduced liquid saturation";
-    Permeability[n] K_rel "Relative permeability of liquid water";
+    Permeability[n] K_rel = S.*S.*S "Relative permeability of liquid water";
     
     MoleFraction[n,size(AllSpecies,1)] y "Gas molar fractions";
-    MolarFlux[n+1,size(AllSpecies,1)] N "Gas molar flux";
+    MolarFlux[n,size(AllSpecies,1)] N "Gas molar flux";
     ReactionRate[n] e "Water evaporation rate";
     
   protected 
@@ -363,14 +365,33 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       "Effective diffusivity-porosity factor";
     parameter Length deltaX = t/n "Thickness of each sub-layer";
     
+    Real[n] dp_c_dS = sigma*cos(theta)/sqrt(K/eps) * (1.417*ones(size(S,1)) - 4.24*S + 3.789*S.*S) 
+      "Derivative of capillary pressure with reduced liquid saturation";
+    
+    // TODO Still to define...
+    Real[n,size(AllSpecies,1)] dy_dx "Partial derivative of gas molar fraction";
+    Real[n,size(AllSpecies,1)] dN_dx "Partial derivative of molar flux";
+    Real[n] dv_dx "Partial derivative of liquid velocity in pores";
+    Real[n] dS_dx "Partial derivative of reduced liquid water saturation";
+    
   equation 
     // Boundary condition for flow at catalyst layer
+    // NOTE assumption: all water formed in gas phase (can later condense)
     N_0 = N_H*{0, 0.5, -0.25, 0, 0} + N_x*{0, 2, -1.5, 1, 0};
     
-    // Continuity equation FIXME only water has R
-    (p/R/T) * y[1,:] = (N_0-N[1,:])/deltaX;// + R[1];
-    for i in 2:n loop
-      (p/R/T) * der(y[i,:]) = (N[i-1,:]-N[i,:])/deltaX;// + R[i];
+    // Continuity equation, note special case for water accounting for evaporation
+    for j in AllSpecies loop
+      if j == Water then
+        (p/R/T) * y[1,j] = (N_0[j]-N[1,j])/deltaX + e[1];
+        for i in 2:n loop
+          (p/R/T) * der(y[i,j]) = (N[i-1,j]-N[i,j])/deltaX + e[i];
+        end for;
+      else
+        (p/R/T) * y[1,j] = (N_0[j]-N[1,j])/deltaX;
+        for i in 2:n loop
+          (p/R/T) * der(y[i,j]) = (N[i-1,j]-N[i,j])/deltaX;
+        end for;
+      end if;
     end for;
     
     // Stefan-Maxwell diffusion
@@ -382,7 +403,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
                for k in 1:size(AllSpecies,1));
       end for;
     end for;
-    // Stefan-Maxwell diffusion at last discretisation step (interface to bulk)
+    // Stefan-Maxwell diffusion at last discretisation step (interface to bulk, boundary condition y_bulk)
     for j in 1:size(AllSpecies,1) loop
       (p/R/T) * (y_bulk[j]-y[n,j]) / deltaX =
         sum( ((y_bulk[j]+y[n,j])/2*N[n,k] - (y_bulk[k]+y[n,k])/2*N[n,j]) /
@@ -390,10 +411,44 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
              for k in 1:size(AllSpecies,1));
     end for;
     
-    // TODO all equations for the liquid phase
+    // The evaporation rate; it is zero if there is no liquid water and conditions would bring evaporation.
+    for i in 1:n loop
+      if s[i] >= 0 or p_vap >= p*y[i,Water] then
+        R * T * e[i] = gamma * (p_vap - p*y[i,Water]);
+      else
+        e[i] = 0;
+      end if;
+    end for;
+    
+    // Reduced liquid saturation S, from 0 to 1.
+    for i in 1:n loop
+      if s[i] >= s_im then
+        S[i] = (s[i] - s_im)/(1-s_im);
+      else
+        S[i] = 0;
+      end if;
+    end for;
+    
+    // Average liquid velocity in pores
+    for i in 1:(n-1) loop
+      v[i] = - K*(K_rel[i+1]+K_rel[i])/2/mu * (dp_c_dS[i+1]+dp_c_dS[i])/2 * (S[i+1]-S[i])/deltaX;
+    end for;
+    // Loss of liquid water to bulk; S=0 in bulk since there are no pores.
+    v[n] = - K*K_rel[n]/mu * dp_c_dS[n] * (-S[n])/deltaX;
+    
+    // Liquid volumetric saturation
+    der(s[1]) = v[1]/deltaX - e[1]*M/rho;
+    for i in 2:n loop
+      der(s[i]) = (v[i]-v[i-1])/deltaX - e[i]*M/rho;
+    end for;
+    
+  initial equation 
+    for i in 2:n loop
+      y[i,:] = y_bulk;
+    end for;
     
   end Diffusion;
-
+  
   package Test 
     
     model KrewerAnodeTest 
