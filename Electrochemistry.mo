@@ -411,8 +411,8 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       for j in AllSpecies loop
         (p/R/T) * dy_dx[i,j] =
           sum( (y[i,j]*N[i,k] - y[i,k]*N[i,j]) /
-               (pDoverT175(j,k) / p * T^1.75 * epsFactor) 
-               for k in AllSpecies);                     // * (1-s[i]^2)) 
+               (pDoverT175(j,k) / p * T^1.75 * epsFactor * (1-s[i]^2)) 
+               for k in AllSpecies);
       end for;
     end for;
     
