@@ -309,7 +309,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Modelica.SIunits.CurrentDensity;
     import Modelica.Constants.R;
     
-    import Thermo.pDoverT175;
+    import Thermo.D;
     import Thermo.AllSpecies;
     import Thermo.Water;
     
@@ -414,9 +414,8 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     for i in 2:n loop
       for j in AllSpecies loop
         (p/R/T) * dy_dx[j].d[i] =
-          sum( (y[i,j]*N[i,k] - y[i,k]*N[i,j]) /
-               (pDoverT175(j,k) / p * T^1.75 * epsFactor * (1-s[i]^2)) 
-               for k in AllSpecies);
+          sum( (y[i,j]*N[i,k] - y[i,k]*N[i,j]) / (D(T,p,j,k) * epsFactor * (1-s[i]^2)) 
+               for k in cat(1,1:(j-1),(j+1):AllSpecies[end]));
       end for;
     end for;
     
@@ -562,4 +561,5 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
 <p>Test cases for the electrochemical models.</p>
 </html>"));
   end Test;
+  
 end Electrochemistry;
