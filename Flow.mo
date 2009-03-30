@@ -501,7 +501,10 @@ additional object down- or upstream to measure the temperature.</p>
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
     
   public 
-    Temperature T = ft.T "Separator temperature";
+    outer parameter Temperature T_env;
+    
+  public 
+    Temperature T(start=T_env) = ft.T "Separator temperature";
     
   equation 
     liquidOutlet.n = -ft.liquid;
@@ -750,6 +753,7 @@ by default it is 1 M.</p>
     import Modelica.SIunits.DiffusionCoefficient;
     import Modelica.SIunits.FaradayConstant;
     import Modelica.SIunits.Length;
+    import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.PartialPressure;
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.Temperature;
@@ -759,11 +763,14 @@ by default it is 1 M.</p>
     import Modelica.Electrical.Analog.Interfaces.NegativePin;
     
     import Thermo.mw;
+    import Thermo.rho;
     import Thermo.AllSpecies;
     import Thermo.GasSpecies;
+    import Thermo.Methanol;
     import Thermo.Water;
     import Thermo.Oxygen;
     import Thermo.speciesName;
+    import Thermo.LiquidPhase;
     
     import Units.MassTransportCoefficient;
     import Units.MolarFlow;
@@ -881,10 +888,16 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     MolarFlow n_x = N_x * A "Crossover methanol flow";
     MolarFlux N_H = n_H / A "Proton flux";
     MolarFlux N_x "Crossover methanol flux";
+    MolarFlow n_drag_ch3oh = n_H * k_drag * x_ac "Drag methanol flow";
+    MolarFlow n_drag_h2o =   n_H * k_drag * (1-x_ac) "Drag water flow";
+    MolarFlux N_drag_ch3oh = n_drag_ch3oh / A "Drag methanol flux";
+    MolarFlux N_drag_h2o =   n_drag_h2o   / A "Drag water flux";
     
     Concentration c_a = anodeOutletTC.c 
       "Methanol concentration, outlet is representative";
     Concentration c_ac "Catalyst-layer methanol concentration";
+    MoleFraction x_ac "Catalyst-layer methanol molar fraction";
+    
     PartialPressure p_o2 "Oxygen partial pressure, outlet is representative";
     PartialPressure p_h2o 
       "Cathodic water partial pressure, outlet is representative";
@@ -896,8 +909,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
    * proton (*H) and crossover-methanol (*M) flows must be 
    * multiplied to  find the associated production terms for all
    * species on cathode and anode. */
-    Real[:] cathode_H = {0, 1/2+k_drag, -1/4, 0, 0};
-    Real[:] anode_H = {-1/6, -1/6-k_drag, 0, 1/6, 0};
+    Real[:] cathode_H = {k_drag*x_ac, 1/2+(1-x_ac)*k_drag, -1/4, 0, 0};
+    Real[:] anode_H = {-1/6+x_ac*k_drag, -1/6-(1-x_ac)*k_drag, 0, 1/6, 0};
     constant Real[:] cathode_M = {0, 2, -3/2, 1, 0};
     constant Real[:] anode_M = {-1, 0, 0, 0, 0};
     
@@ -916,6 +929,9 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     // Definition of water partial pressure (on the cathode side). On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
+    
+    // Relate catalyst-layer methanol concentration and molar fraction
+    x_ac = c_ac * (x_ac*mw(Methanol)/rho(T,Methanol,LiquidPhase) + (1-x_ac)*mw(Water)/rho(T,Water,LiquidPhase));
     
     // Methanol transport: binds c_a, c_ac and i (N_x is a function of c_ac).
     k_ad * (c_a-c_ac) = N_x + i/6/F;
@@ -1175,11 +1191,11 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-47,31; -70.5,31; -70.5,
