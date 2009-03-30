@@ -4,8 +4,8 @@ package DSS "Derivative approximation functions"
     parameter Real dx "Step size";
     parameter Integer m "Number of points";
     
-    Real[n] v "values";
-    Real[n] d "derivatives";
+    Real[m] v "values";
+    Real[m] d "derivatives";
   equation 
     
     annotation (Documentation(info="<html>
@@ -62,7 +62,7 @@ polynomials up to the fourth degree.</p>
     model Test_2 
       
       parameter Real[:] v = (1:10).^2;
-      FirstDer_2 d(n=10,dx=1);
+      FirstDer_2 d(m=10,dx=1);
       Real error = max(2*(1:10) - d.d);
       
     equation 
@@ -74,7 +74,7 @@ polynomials up to the fourth degree.</p>
     model Test_4 
       
       parameter Real[:] v = (1:10).^4;
-      FirstDer_4 d(n=10,dx=1);
+      FirstDer_4 d(m=10,dx=1);
       Real error = max(4*(1:10).^3 - d.d);
       
     equation 
