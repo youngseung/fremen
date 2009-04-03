@@ -308,10 +308,12 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Modelica.SIunits.Length;
     import Modelica.SIunits.CurrentDensity;
     import Modelica.Constants.R;
+    import Modelica.Constants.eps;
     
     import Thermo.D;
     import Thermo.AllSpecies;
     import Thermo.Water;
+    import Thermo.speciesName;
     
     import DSS.FirstDer_4;
     
@@ -412,11 +414,12 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
    * Note the insertion of the boundary condition at the first step. */
     N[1,:] = N_0;
     for i in 2:n loop
-      for j in AllSpecies loop
+      for j in AllSpecies[2:end] loop
         (p/R/T) * dy_dx[j].d[i] =
           sum( (y[i,j]*N[i,k] - y[i,k]*N[i,j]) / (D(T,p,j,k) * epsFactor * (1-s[i]^2)) 
                for k in cat(1,1:(j-1),(j+1):AllSpecies[end]));
       end for;
+      sum(dy_dx[j].d[i] for j in AllSpecies) = 0;
     end for;
     
     // The evaporation rate; it is zero if there is no liquid water and conditions would bring evaporation.
@@ -451,9 +454,15 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     der(s[1:n-1]) = dv_dx.d[1:n-1] - e[1:n-1] * M/rho;
     s[n]          = 0;
     
+    for i in 1:n loop
+      for j in AllSpecies loop
+        assert( y[i,j] > -eps, "==> Negative fraction of "+speciesName(j)+" at point "+String(i));
+      end for;
+    end for;
+    
   initial equation 
     for i in 1:n-1 loop
-      y[i,:] = y_bulk;
+      y[i,2:end] = y_bulk[2:end];
     end for;
     
   end Diffusion;
