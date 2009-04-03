@@ -10,8 +10,10 @@ package Units "Collection of additional units"
   type CondensationCoefficient = Real(final quantity="Condensation coefficient",
                                       final unit="1/s", min=0);
   type DynamicViscosity = Real (final quantity="Dynamic viscosity", final unit="kg/ms", min=0);
-  type MassTransportCoefficient = Real (final quantity="Mass transport coefficient",
-                                        final unit="m/s");
+  type HeatTransferCoefficient = Real(final quantity="Heat transfer coefficient",
+                                      final unit="W/(m2.K)", min=0);
+  type MassTransportCoefficient = Real(final quantity="Mass transport coefficient",
+                                       final unit="m/s", min=0);
   type MolarEnthalpy = Modelica.SIunits.MolarInternalEnergy;
   type MolarFlow = Real(final quantity="Molar flow rate", final unit="mol/s");
   type MolarFlux = Real(final quantity="Molar flux", final unit="mol/(m2.s)");

@@ -631,6 +631,66 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillPattern=1));
   end Cooler;
   
+  model HeatExchanger "Our trusty IMM micro heat exchanger" 
+    extends Cooler;
+    
+    import Modelica.Math.log;
+    import Modelica.SIunits.Area;
+    import Modelica.SIunits.Temperature;
+    import Modelica.Constants.eps;
+    import Units.HeatTransferCoefficient;
+    import Thermo.AllSpecies;
+    import Units.MolarFlow;
+    
+    outer parameter Temperature T_env = 298.25;
+    
+    parameter Area A = 2.3E-2;
+    parameter HeatTransferCoefficient U = 188;
+    
+    Temperature t_in = T_env "Coolant air inlet temperature";
+    Temperature t_out = ft_out_air.T "Coolant air outlet temperature";
+    Temperature LMTD "The log-mean temperature difference";
+    
+    MolarFlow n_air(min=0) = sum(airSink.inlet.n) "Cooling air flow";
+    
+  protected 
+    EnvironmentPort env "Environmental air source" 
+      annotation (extent=[-60,-60; -40,-40]);
+    FlowTemperature ft_out_air "Temperature measurement on the air outlet" 
+      annotation (extent=[20,40; 40,60]);
+    SinkPort airSink annotation (extent=[58,40; 78,60]);
+    annotation (Diagram, Documentation(info="<html>
+<p>This class implements a simple steady-state model for our micro heat 
+exchanger from IMM, assuming counter-current layout. The parameters are pre-set 
+to the values provided us
+by IMM for the symmetric heat exchanger, while for the condenser one should
+substitute A=3.46E-2 m<sup>2</sup>, U=82W/m<sup>2</sup>K.</p>
+<p>Note that specifying the outlet temperature may cause a co-current flow 
+to be chosen by the algorithm (it is mathematically just as good, after all):
+the non-uniqueness of the solution is due to the nonlinearity of the problem
+(i.e. the LMTD). Therefore, when setting an outlet temperature, take care to
+build a feedback loop with a high gain and acting on the air flow n_air,
+instead of setting the outlet temperature directly.</p>
+</html>"),
+      Icon);
+  equation 
+    LMTD = ((T_in-t_out) - (T_out - t_in)) / log((T_in-t_out) / (T_out-t_in));
+    Q = A * U * LMTD;
+    
+    // No lost heat
+    sink.inlet.H = 0;
+    // No material exchange
+    env.outlet.n + airSink.inlet.n = zeros( size(AllSpecies, 1));
+    
+    connect(airSink.inlet, ft_out_air.outlet) annotation (points=[59,50; 40,50],
+        style(color=62, rgbcolor={0,127,127}));
+    connect(ft_out_air.inlet, env.outlet) annotation (points=[20,50; 0,50; 0,
+          -55; -41,-55], style(color=62, rgbcolor={0,127,127}));
+    connect(sink.inlet, ft_out_air.inlet) annotation (points=[9,-40; 0,-40; 0,
+          50; 20,50], style(color=62, rgbcolor={0,127,127}));
+    
+  end HeatExchanger;
+  
   model Mixer "A unit mixing four molar flows." 
     
     import Modelica.SIunits.Temperature;
@@ -752,6 +812,7 @@ by default it is 1 M.</p>
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.DiffusionCoefficient;
     import Modelica.SIunits.FaradayConstant;
+    import Modelica.SIunits.HeatCapacity;
     import Modelica.SIunits.Length;
     import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.PartialPressure;
@@ -873,6 +934,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     parameter Length d_M = 142E-6 "Membrane thickness";
     parameter Area A = 26E-4 "Membrane active area";
+    parameter HeatCapacity Cp = 1000 "Overall heat capacity of the stack";
     parameter DiffusionCoefficient D_M = 6E-10 
       "Methanol diffusion coefficient in the membrane";
     
@@ -893,7 +955,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     MolarFlux N_drag_ch3oh = n_drag_ch3oh / A "Drag methanol flux";
     MolarFlux N_drag_h2o =   n_drag_h2o   / A "Drag water flux";
     
-    Concentration c_a = anodeOutletTC.c 
+    // KEEP THE INITIAL VALUE, or initialisation will crash on assertion.
+    Concentration c_a(start=1000) = anodeOutletTC.c 
       "Methanol concentration, outlet is representative";
     Concentration c_ac "Catalyst-layer methanol concentration";
     MoleFraction x_ac "Catalyst-layer methanol molar fraction";
@@ -901,7 +964,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     PartialPressure p_o2 "Oxygen partial pressure, outlet is representative";
     PartialPressure p_h2o 
       "Cathodic water partial pressure, outlet is representative";
-    Temperature T(start=T_env) = cathodeT.T "Representative stack temperature";
+    Temperature T(start=300) = cathodeT.T "Representative stack temperature";
     
   protected 
     constant FaradayConstant F = 96485.3415;
@@ -922,7 +985,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     cathode_inlet.n + cathode_outlet.n + cathode_H*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
     
     // The energy "lost" from the heat balance is the electrical power.
-    nexus.inlet.H = I*V;
+    nexus.inlet.H = I*V + der(T)*Cp;
     
     // Definition of oxygen partial pressure. On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
@@ -946,7 +1009,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     cathodeT.T = anodeOutletTC.T;
     
     // Sanity check: crash simulation if conditions are unphysical
-    assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+").");
+    assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+" mol/m^3) at temperature "+String(T)+" K, bulk concentration "+String(c_a)+" mol/m^3, inlet concentration "+String(anodeInletTC.c)+".");
     
     for i in AllSpecies loop
       assert( cathode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the cathode outlet.");
@@ -1059,7 +1122,7 @@ current.</p>
                         annotation (extent=[46,-16; 54,-8]);
       annotation (Diagram);
       SinkPort gasSink   annotation (extent=[46,30; 54,38]);
-      EnvironmentPort env             annotation (extent=[-52,46; -32,66]);
+      EnvironmentPort env             annotation (extent=[-54,28; -34,48]);
       MethanolSolution solution         annotation (extent=[-78,8; -68,18]);
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
@@ -1069,8 +1132,8 @@ current.</p>
       sum(env.outlet.n) = -1;
       sum(solution.outlet.n) = -2;
       
-      connect(env.outlet, separator.inlet)        annotation (points=[-33,51;
-            -33,32.5; -22,32.5; -22,13], style(color=62, rgbcolor={0,127,127}));
+      connect(env.outlet, separator.inlet)        annotation (points=[-35,33;
+            -35,32.5; -22,32.5; -22,13], style(color=62, rgbcolor={0,127,127}));
       connect(solution.outlet, separator.inlet) 
         annotation (points=[-73,13; -22,13], style(color=62, rgbcolor={0,127,
               127}));
@@ -1083,16 +1146,20 @@ current.</p>
     
     model CoolerTest 
       
+      import Units.MolarFlow;
+      
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
       
-      EnvironmentPort env             annotation (extent=[-60,20; -40,40]);
+      EnvironmentPort env             annotation (extent=[-70,-4; -50,16]);
       SinkPort sink     annotation (extent=[60,-4; 68,4]);
       Cooler cooler annotation (extent=[-24,-20; 20,20]);
       annotation (Diagram,
         experiment(StopTime=80),
         experimentSetupOutput);
+      
+      parameter MolarFlow n = 1;
     equation 
       connect(sink.inlet, cooler.outlet)        annotation (points=[60.4,
             3.88578e-17; 38,3.88578e-17; 38,1.06581e-15; 18.68,1.06581e-15],
@@ -1103,17 +1170,61 @@ current.</p>
           rgbfillColor={255,255,255},
           fillPattern=1));
       connect(cooler.inlet, env.outlet)        annotation (points=[-22.68,
-            1.06581e-15; -76.05,1.06581e-15; -76.05,25; -41,25], style(
+            1.06581e-15; -36,0; -50,0; -50,1; -51,1],            style(
           color=62,
           rgbcolor={0,127,127},
           fillColor=7,
           rgbfillColor={255,255,255},
           fillPattern=1));
+      sum(env.outlet.n) = -n;
       
-      sum(env.outlet.n) = -1;
       cooler.T_out = cooler.T_in + time;
       
     end CoolerTest;
+    
+    model HeatExchangerTest 
+      
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Real RH_env = 60;
+      import Units.MolarFlow;
+      
+      HeatExchanger exchanger(n_air(start=1)) 
+                    annotation (extent=[4,-20; 48,20]);
+      annotation (Diagram,
+        experiment(StopTime=3),
+        experimentSetupOutput);
+    protected 
+      EnvironmentPort env             annotation (extent=[-82,-6; -60,16]);
+      SinkPort sink     annotation (extent=[60,-4; 68,4]);
+      Cooler heater annotation (extent=[-46,-16; -14,16]);
+      
+    public 
+      parameter MolarFlow n = 1;
+      
+    equation 
+      heater.T_out = 330;
+      sum(env.outlet.n) = -n;
+      exchanger.n_air = 0.01+time*n;
+      
+      connect(sink.inlet, exchanger.outlet)     annotation (points=[60.4,
+            3.88578e-17; 58,0; 54,0; 54,1.06581e-15; 46.68,1.06581e-15],
+          style(
+          color=62,
+          rgbcolor={0,127,127},
+          fillColor=7,
+          rgbfillColor={255,255,255},
+          fillPattern=1));
+      connect(env.outlet, heater.inlet) annotation (points=[-61.1,-0.5; -60,
+            -0.5; -60,0; -52,0; -52,2.9754e-16; -45.04,2.9754e-16],
+                                                              style(color=62,
+            rgbcolor={0,127,127}));
+      connect(heater.outlet, exchanger.inlet) annotation (points=[-14.96,
+            2.9754e-16; -10,2.9754e-16; -10,1.06581e-15; 5.32,1.06581e-15],
+                                                                style(color=62,
+            rgbcolor={0,127,127}));
+      
+    end HeatExchangerTest;
     
     model MixerTest 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
@@ -1176,7 +1287,7 @@ current.</p>
       annotation (Diagram);
       Pump pump "Pump for the anode flow" annotation (extent=[-42,-30; -30,-18]);
       Cooler heater annotation (extent=[-28,2; -8,22]);
-      EnvironmentPort air annotation (extent=[-66,26; -46,46]);
+      EnvironmentPort air annotation (extent=[-68,18; -48,38]);
       GasFlowController blower annotation (extent=[-42,18; -34,26]);
       SinkPort anodeSink annotation (extent=[62,10; 68,16]);
       SinkPort cathodeSink annotation (extent=[62,18; 68,24]);
@@ -1198,8 +1309,8 @@ current.</p>
       connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
-                                   annotation (points=[-47,31; -70.5,31; -70.5,
-            22; -38,22],    style(color=62, rgbcolor={0,127,127}));
+                                   annotation (points=[-49,23; -50,23; -50,22;
+            -38,22],        style(color=62, rgbcolor={0,127,127}));
       connect(cathodeSink.inlet, fuelCell.cathode_outlet)    annotation (points=[62.3,21;
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(anodeSink.inlet, fuelCell.anode_outlet)    annotation (points=[62.3,13;
