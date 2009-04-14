@@ -937,6 +937,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     parameter HeatCapacity Cp = 1000 "Overall heat capacity of the stack";
     parameter DiffusionCoefficient D_M = 6E-10 
       "Methanol diffusion coefficient in the membrane";
+    parameter Boolean enableSanityChecks = true 
+      "Whether to activate checks for some non-negative quantities";
     
     // Parameters for N115 membrane.  
     Real k_drag = 4 + 0.025*(T-303.15) "Drag factor for N115";
@@ -947,9 +949,9 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     CurrentDensity i = I/A "Cell current density";
     
     MolarFlow n_H = I/F "Proton flow through the membrane";
-    MolarFlow n_x = N_x * A "Crossover methanol flow";
+    MolarFlow n_x "Crossover methanol flow";
     MolarFlux N_H = n_H / A "Proton flux";
-    MolarFlux N_x "Crossover methanol flux";
+    MolarFlux N_x = n_x / A "Crossover methanol flux";
     MolarFlow n_drag_ch3oh = n_H * k_drag * x_ac "Drag methanol flow";
     MolarFlow n_drag_h2o =   n_H * k_drag * (1-x_ac) "Drag water flow";
     MolarFlux N_drag_ch3oh = n_drag_ch3oh / A "Drag methanol flux";
@@ -969,10 +971,12 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
   protected 
     constant FaradayConstant F = 96485.3415;
     /* This group of vectors represents the coefficients by which
-   * proton (*H) and crossover-methanol (*M) flows must be 
+   * proton (*_H) and crossover-methanol (*_M) flows must be 
    * multiplied to  find the associated production terms for all
-   * species on cathode and anode. */
-    Real[:] cathode_H = {k_drag*x_ac, 1/2+(1-x_ac)*k_drag, -1/4, 0, 0};
+   * species on cathode and anode; consumption terms are obviously
+   * negative. */
+    // NOTE remember that methanol reacts to 2 H2O, -3/2 O2, CO2!
+    Real[:] cathode_H = {0, 1/2+(1+x_ac)*k_drag, -1/4-3/2*k_drag*x_ac, k_drag*x_ac, 0};
     Real[:] anode_H = {-1/6+x_ac*k_drag, -1/6-(1-x_ac)*k_drag, 0, 1/6, 0};
     constant Real[:] cathode_M = {0, 2, -3/2, 1, 0};
     constant Real[:] anode_M = {-1, 0, 0, 0, 0};
@@ -996,8 +1000,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     // Relate catalyst-layer methanol concentration and molar fraction
     x_ac = c_ac * (x_ac*mw(Methanol)/rho(T,Methanol,LiquidPhase) + (1-x_ac)*mw(Water)/rho(T,Water,LiquidPhase));
     
-    // Methanol transport: binds c_a, c_ac and i (N_x is a function of c_ac).
-    k_ad * (c_a-c_ac) = N_x + i/6/F;
+    // Methanol transport: binds c_a, c_ac and i (N_x is a function of c_ac, N_drag_ch3oh of i).
+    k_ad * (c_a-c_ac) = N_x + N_drag_ch3oh + N_H/6;
     
     // Crossover methanol flux.
     N_x = D_M/d_M * c_ac;
@@ -1008,15 +1012,17 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     // Outlet temperatures are equal
     cathodeT.T = anodeOutletTC.T;
     
-    // Sanity check: crash simulation if conditions are unphysical
-    assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+" mol/m^3) at temperature "+String(T)+" K, bulk concentration "+String(c_a)+" mol/m^3, inlet concentration "+String(anodeInletTC.c)+".");
-    
-    for i in AllSpecies loop
-      assert( cathode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the cathode outlet.");
-      assert( anode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the anode outlet.");
-      assert( cathode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the cathode inlet.");
-      assert( anode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the anode inlet.");
-    end for;
+    if enableSanityChecks then
+      // Sanity check: crash simulation if conditions are unphysical
+      assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+" mol/m^3) at temperature "+String(T)+" K, bulk concentration "+String(c_a)+" mol/m^3, inlet concentration "+String(anodeInletTC.c)+".");
+      
+      for i in AllSpecies loop
+        assert( cathode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the cathode outlet.");
+        assert( anode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the anode outlet.");
+        assert( cathode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the cathode inlet.");
+        assert( anode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the anode inlet.");
+      end for;
+    end if;
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
@@ -1302,11 +1308,11 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-49,23; -50,23; -50,22;
