@@ -101,8 +101,10 @@ package System "DMFC systems"
   
   model Reference_ASME 
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell, mixer(T(fixed=
-              false), V(fixed=true)),
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell, mixer(
+                      V(fixed=true),
+        T(fixed=true),
+        c(fixed=true)),
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5));
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
