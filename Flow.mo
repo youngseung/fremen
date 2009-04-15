@@ -776,15 +776,11 @@ by default it is 1 M.</p>
     
     outer parameter Temperature T_env = 298.15 "Environment temperature";
     
-    parameter Temperature T_0 = T_env "Initial temperature";
-    parameter Volume V_0 = 5E-6 "Initial volume";
-    parameter Concentration c_0 = 1000.0 "Initial methanol concentration";
-    
     AmountOfSubstance n[size(Thermo.AllSpecies,1)] "Molar holdup";
     Modelica.SIunits.InternalEnergy U "Internal energy";
-    Concentration c(start=c_0, fixed=true) "Methanol concentration";
-    Temperature T(start=T_0, fixed=true) "Mixer temperature";
-    Volume V(start=V_0, fixed=true) "Solution volume";
+    Concentration c(start=1000) "Methanol concentration";
+    Temperature T(start=T_env) "Mixer temperature";
+    Volume V(start=5E-6) "Solution volume";
     
   equation 
     der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
@@ -960,7 +956,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     // KEEP THE INITIAL VALUE, or initialisation will crash on assertion.
     Concentration c_a(start=1000) = anodeOutletTC.c 
       "Methanol concentration, outlet is representative";
-    Concentration c_ac "Catalyst-layer methanol concentration";
+    Concentration c_ac(start=100) "Catalyst-layer methanol concentration";
     MoleFraction x_ac "Catalyst-layer methanol molar fraction";
     
     PartialPressure p_o2 "Oxygen partial pressure, outlet is representative";
@@ -1237,7 +1233,11 @@ current.</p>
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
       
-      Mixer mixer annotation (extent=[-20,0; 0,20]);
+      Mixer mixer(
+        c(fixed=true), 
+        V(fixed=true), 
+        T(fixed=true)) 
+                  annotation (extent=[-20,0; 0,20]);
       MethanolSolution anodicLoop(T=330) "Solution coming from the anodic loop"
         annotation (extent=[-20,40; 0,60]);
       PureMethanolSource fuelTank "Methanol from the fuel tank" 
@@ -1308,11 +1308,11 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12;
+      connect(heater.outlet, fuelCell.anode_inlet) annotation (points=[-8.6,12; 
             -1.3,12; -1.3,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12;
+      connect(heater.inlet, pump.outlet) annotation (points=[-27.4,12; -36,12; 
             -36,-18], style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-49,23; -50,23; -50,22;
