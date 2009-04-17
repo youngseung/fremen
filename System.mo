@@ -99,12 +99,9 @@ package System "DMFC systems"
   
   annotation (uses(Modelica(version="2.2.1")));
   
-  model Reference_ASME 
+  model Reference_Control 
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell, mixer(
-                      V(fixed=true),
-        T(fixed=true),
-        c(fixed=true)),
+    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(V(fixed=true),c(fixed=true),T(fixed=true)),
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5));
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
@@ -126,7 +123,7 @@ package System "DMFC systems"
     parameter Real lambda_a = 2 "Methanol solution excess ratio";
     parameter Concentration c_a_ref = 1000 
       "Target anodic methanol concentration";
-    parameter Temperature T_degasser = 310 "Degasser temperature";
+    parameter Temperature degasser_T = 300 "Set point for degasser temperature";
     
     Real a = 6*F*fuelCell.k_ad*b "Estimated dependence of i_x on c_a";
     Real b = 1/(fuelCell.k_ad*fuelCell.d_M/fuelCell.D_M +1) 
@@ -160,8 +157,9 @@ package System "DMFC systems"
     condenser.T = 330 + Kp * rho(mixer.T, Water, LiquidPhase) / mw(Water) * delta_V;
     Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.T, 1));
     
-    // Constant temperature in the degasser.
-    degasser.T = T_degasser;
+    // Constant temperature in the degasser 
+    // TODO implement control for fuelCell.T from here
+    degasser.T = degasser_T;
     
     when initial() then
       V_0 = mixer.V;
@@ -169,7 +167,7 @@ package System "DMFC systems"
     
     annotation (experiment(StopTime=7200), experimentSetupOutput,
       Diagram);
-  end Reference_ASME;
+  end Reference_Control;
   
   partial model CoolingIntegration 
     "The reference DMFC system, no control applied" 
