@@ -948,13 +948,14 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     MolarFlow n_x "Crossover methanol flow";
     MolarFlux N_H = n_H / A "Proton flux";
     MolarFlux N_x = n_x / A "Crossover methanol flux";
-    MolarFlow n_drag_h2o =   n_H * k_drag "Drag water flow";
-    MolarFlux N_drag_h2o =   n_drag_h2o   / A "Drag water flux";
+    MolarFlow n_drag_h2o = n_H * k_drag "Drag water flow";
+    MolarFlux N_drag_h2o = n_drag_h2o / A "Drag water flux";
     
     // KEEP THE INITIAL VALUE, or initialisation will crash on assertion.
     Concentration c_a(start=1000) = anodeOutletTC.c 
       "Methanol concentration, outlet is representative";
     Concentration c_ac(start=100) "Catalyst-layer methanol concentration";
+    MoleFraction x_ac "Catalyst-layer methanol molar fraction";
     
     PartialPressure p_o2 "Oxygen partial pressure, outlet is representative";
     PartialPressure p_h2o 
@@ -989,6 +990,9 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     // Definition of water partial pressure (on the cathode side). On the denominator, the sum of vapours (methanol and water) and gases (all others).
     p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
+    
+    // Relate catalyst-layer methanol molar fraction (in liquid phase) and concentration
+    x_ac = c_ac * (x_ac*mw(Methanol)/rho(T,Methanol,LiquidPhase) + (1-x_ac)*mw(Water)/rho(T,Water,LiquidPhase));
     
     // Methanol transport: binds c_a, c_ac and i (N_x is a function of c_ac, N_drag_ch3oh of i).
     k_ad * (c_a-c_ac) = N_x + N_H/6;
