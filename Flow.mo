@@ -497,14 +497,11 @@ and has an additional temperature port connected to the one on the
 <tt>FlowTemperature</tt> object so that it is not necessary to place an
 additional object down- or upstream to measure the temperature.</p>
 </html>"));
+    
+    Temperature T(start=298.15) = ft.T "Separator temperature";
+    
   protected 
     FlowTemperature ft annotation (extent=[-10,-10; 10,10]);
-    
-  public 
-    outer parameter Temperature T_env;
-    
-  public 
-    Temperature T(start=T_env) = ft.T "Separator temperature";
     
   equation 
     liquidOutlet.n = -ft.liquid;
@@ -642,7 +639,7 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     import Thermo.AllSpecies;
     import Units.MolarFlow;
     
-    outer parameter Temperature T_env = 298.25;
+    outer parameter Temperature T_env = 298.15;
     
     parameter Area A = 2.3E-2;
     parameter HeatTransferCoefficient U = 188;
@@ -661,10 +658,11 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
     SinkPort airSink annotation (extent=[58,40; 78,60]);
     annotation (Diagram, Documentation(info="<html>
 <p>This class implements a simple steady-state model for our micro heat 
-exchanger from IMM, assuming counter-current layout. The parameters are pre-set 
-to the values provided us
+exchanger from IMM, assuming <strong>counter-current</strong> layout. 
+The parameters are pre-set to the values provided us
 by IMM for the symmetric heat exchanger, while for the condenser one should
-substitute A=3.46E-2 m<sup>2</sup>, U=82W/m<sup>2</sup>K.</p>
+substitute A=3.46E-2 m<sup>2</sup>, U=82 W/m<sup>2</sup>K.</p>
+
 <p>Note that specifying the outlet temperature may cause a co-current flow 
 to be chosen by the algorithm (it is mathematically just as good, after all):
 the non-uniqueness of the solution is due to the nonlinearity of the problem
@@ -690,6 +688,90 @@ instead of setting the outlet temperature directly.</p>
           50; 20,50], style(color=62, rgbcolor={0,127,127}));
     
   end Cooler;
+  
+  model Condenser "A simplified heat exchanger" 
+    
+    FlowPort inlet "The condenser inlet" 
+                   annotation (extent=[-100,-6; -88,6]);
+    FlowPort gas "The gas outlet" 
+                    annotation (extent=[88,20; 100,32]);
+    annotation (Diagram, Icon(
+        Rectangle(extent=[-90,20; 90,-20], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255})),
+        Ellipse(extent=[-60,16; -28,-16], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255})),
+        Ellipse(extent=[28,16; 60,-16], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255})),
+        Rectangle(extent=[-44,18; -26,-18], style(
+            pattern=0,
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Rectangle(extent=[26,18; 44,-18], style(
+            pattern=0,
+            thickness=4,
+            fillColor=7,
+            rgbfillColor={255,255,255},
+            fillPattern=1)),
+        Line(points=[-44,16; 44,-16], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=0,
+            rgbfillColor={0,0,0},
+            fillPattern=1)),
+        Line(points=[-44,-16; 44,16], style(
+            color=0,
+            rgbcolor={0,0,0},
+            thickness=4,
+            fillColor=0,
+            rgbfillColor={0,0,0},
+            fillPattern=1)),
+        Text(
+          extent=[-102,82; 100,20],
+          style(
+            color=0,
+            rgbcolor={0,0,0},
+            fillColor=43,
+            rgbfillColor={255,85,85},
+            fillPattern=1),
+          string="%name")),
+      Documentation(info="<html>
+<p>This is a composition of a Cooler and a Separator, forming a complete condenser. 
+The heat-exchange parameters in the cooler are those of our condenser provided by IMM,
+i.e. A=3.46E-2 m<sup>2</sup>, U=82 W/m<sup>2</sup>K.</p>
+</html>"));
+    Cooler cooler(U=82, A=3.46E-2) "Heat-exchange unit" 
+      annotation (extent=[-60,-20; -20,20]);
+    Separator separator "Phase separation" annotation (extent=[0,-20; 40,20]);
+    FlowPort liquid "The liquid outlet" 
+                    annotation (extent=[88,-32; 100,-20]);
+    
+  equation 
+    connect(inlet, cooler.inlet) annotation (points=[-94,-2.22045e-16; -78,
+          -2.22045e-16; -78,1.06581e-15; -58.8,1.06581e-15], style(color=62,
+          rgbcolor={0,127,127}));
+    connect(separator.liquidOutlet, liquid) annotation (points=[34,-8; 34,-26;
+          94,-26], style(color=62, rgbcolor={0,127,127}));
+    connect(separator.gasOutlet, gas) annotation (points=[34,8; 34,26; 94,26],
+        style(color=62, rgbcolor={0,127,127}));
+    connect(separator.inlet, cooler.outlet) annotation (points=[-1.11022e-15,
+          1.22125e-15; -11,1.22125e-15; -11,1.06581e-15; -21.2,1.06581e-15],
+        style(color=62, rgbcolor={0,127,127}));
+  end Condenser;
   
   model Mixer "A unit mixing four molar flows." 
     
@@ -1198,7 +1280,8 @@ current.</p>
     protected 
       EnvironmentPort env             annotation (extent=[-82,-6; -60,16]);
       SinkPort sink     annotation (extent=[60,-4; 68,4]);
-      Cooler heater annotation (extent=[-46,-16; -14,16]);
+      BasicCooler heater 
+                    annotation (extent=[-46,-16; -14,16]);
       
     public 
       parameter MolarFlow n = 1;
@@ -1226,6 +1309,50 @@ current.</p>
             rgbcolor={0,127,127}));
       
     end CoolerTest;
+    
+    model CondenserTest 
+      
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Real RH_env = 110;
+      import Units.MolarFlow;
+      
+      Condenser condenser 
+                    annotation (extent=[4,-20; 48,20]);
+      annotation (Diagram,
+        experiment(StopTime=30),
+        experimentSetupOutput);
+    protected 
+      EnvironmentPort env             annotation (extent=[-82,-6; -60,16]);
+      SinkPort sink     annotation (extent=[62,-14; 70,-6]);
+      BasicCooler heater 
+                    annotation (extent=[-46,-16; -14,16]);
+      
+    public 
+      parameter MolarFlow n = 0.01;
+      
+    protected 
+      SinkPort sink1    annotation (extent=[64,10; 72,18]);
+    equation 
+      heater.T_out = 330;
+      sum(env.outlet.n) = -n;
+      condenser.cooler.n_air = time*n;
+      
+      connect(env.outlet, heater.inlet) annotation (points=[-61.1,-0.5; -60,
+            -0.5; -60,0; -52,0; -52,2.9754e-16; -45.04,2.9754e-16],
+                                                              style(color=62,
+            rgbcolor={0,127,127}));
+      connect(heater.outlet, condenser.inlet) annotation (points=[-14.96,
+            2.9754e-16; -10,2.9754e-16; -10,1.06581e-15; 5.32,1.06581e-15],
+                                                                style(color=62,
+            rgbcolor={0,127,127}));
+      
+      connect(sink.inlet, condenser.liquid) annotation (points=[62.4,-10; 54.2,
+            -10; 54.2,-5.2; 46.68,-5.2], style(color=62, rgbcolor={0,127,127}));
+      connect(sink1.inlet, condenser.gas) annotation (points=[64.4,14; 56,14;
+            56,5.2; 46.68,5.2], style(color=62, rgbcolor={0,127,127}));
+      
+    end CondenserTest;
     
     model MixerTest 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
