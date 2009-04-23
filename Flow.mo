@@ -519,7 +519,7 @@ additional object down- or upstream to measure the temperature.</p>
           6.10623e-16; 40,-40; 70,-40], style(color=62, rgbcolor={0,127,127}));
   end Separator;
   
-  model Cooler "A simplified heat exchanger" 
+  model BasicCooler "A simplified heat exchanger" 
     import Modelica.SIunits.HeatFlowRate;
     import Modelica.SIunits.Temperature;
     import Thermo.AllSpecies;
@@ -629,10 +629,10 @@ flow to the temperatures of inlet and outlet flows. The enthalpy loss is routed 
         fillColor=7,
         rgbfillColor={255,255,255},
         fillPattern=1));
-  end Cooler;
+  end BasicCooler;
   
-  model HeatExchanger "Our trusty IMM micro heat exchanger" 
-    extends Cooler;
+  model Cooler "Our trusty IMM micro heat exchanger" 
+    extends BasicCooler;
     
     import Modelica.Math.log;
     import Modelica.SIunits.Area;
@@ -689,7 +689,7 @@ instead of setting the outlet temperature directly.</p>
     connect(sink.inlet, ft_out_air.inlet) annotation (points=[9,-40; 0,-40; 0,
           50; 20,50], style(color=62, rgbcolor={0,127,127}));
     
-  end HeatExchanger;
+  end Cooler;
   
   model Mixer "A unit mixing four molar flows." 
     
@@ -1020,7 +1020,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[80,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
+    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.inlet)       annotation (points=[60,30; -40,
@@ -1028,13 +1028,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[80,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[60,-30; 
+    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[60,-30;
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-74,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-54,-30; 
+    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-54,-30;
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1144,7 +1144,7 @@ current.</p>
             18.4,23; 18.4,34; 46.4,34], style(color=62, rgbcolor={0,127,127}));
     end SeparatorTest;
     
-    model CoolerTest 
+    model BasicCoolerTest 
       
       import Units.MolarFlow;
       
@@ -1154,7 +1154,8 @@ current.</p>
       
       EnvironmentPort env             annotation (extent=[-70,-4; -50,16]);
       SinkPort sink     annotation (extent=[60,-4; 68,4]);
-      Cooler cooler annotation (extent=[-24,-20; 20,20]);
+      BasicCooler cooler 
+                    annotation (extent=[-24,-20; 20,20]);
       annotation (Diagram,
         experiment(StopTime=80),
         experimentSetupOutput);
@@ -1180,16 +1181,16 @@ current.</p>
       
       cooler.T_out = cooler.T_in + time;
       
-    end CoolerTest;
+    end BasicCoolerTest;
     
-    model HeatExchangerTest 
+    model CoolerTest 
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
       import Units.MolarFlow;
       
-      HeatExchanger exchanger(n_air(start=1)) 
+      Cooler exchanger(n_air(start=1)) 
                     annotation (extent=[4,-20; 48,20]);
       annotation (Diagram,
         experiment(StopTime=3),
@@ -1224,7 +1225,7 @@ current.</p>
                                                                 style(color=62,
             rgbcolor={0,127,127}));
       
-    end HeatExchangerTest;
+    end CoolerTest;
     
     model MixerTest 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
