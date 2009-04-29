@@ -881,10 +881,10 @@ cooling or heating duty.</p>
 </html>"));
     
   public 
-    parameter Area A = 2.3E-2;
-    parameter HeatTransferCoefficient U = 188;
+    parameter Area A = 2.3E-2 "Effective heat-transfer area";
+    parameter HeatTransferCoefficient U = 188 "Heat-transfer coefficient";
     
-    HeatFlowRate Q "Heating duty from side 1 to side 2";
+    HeatFlowRate Q "Heating duty from hot side to cold side";
     
     FlowPort cold_1 "Port for cold flow on side 2" 
                    annotation (extent=[80,20; 100,40]);
@@ -941,64 +941,49 @@ cooling or heating duty.</p>
           color=62, rgbcolor={0,127,127}));
   end LMTDHeatExchanger;
   
-    model DiscretisedHeatExchangerElement 
-    "TODO make subclass of AbstractHeatExchanger" 
+  model DiscretisedHeatExchangerStep 
+    "A step in a larger, discretised heat exchanger" 
+    extends AbstractHeatExchanger;
     
-      import Modelica.SIunits.Temperature;
-      import Modelica.SIunits.Area;
-      import Units.HeatTransferCoefficient;
-      import Modelica.SIunits.HeatFlowRate;
+    import Modelica.SIunits.Temperature;
     
-      parameter Area a "Element area";
-      parameter HeatTransferCoefficient U "Heat transfer coefficient";
-      HeatFlowRate q =  U*a*(T_hot-T_cold) 
-      "Heat transfer from cold side to hot side";
+    Temperature T_hot =  (hot_1_T.T  + hot_2_T.T)/2 
+      "Average hot-side temperature";
+    Temperature T_cold = (cold_1_T.T + cold_2_T.T)/2 
+      "Average cold-side temperature";
     
-      Temperature T_hot = (hot_1_T.T + hot_2_T.T)/2 "Average hot temperature";
-      Temperature T_cold = (cold_1_T.T + cold_2_T.T)/2 
-      "Average cold temperature";
+    FlowTemperature hot_1_T "Temperature of the hot flow on side 1"
+      annotation (extent=[-60,20; -40,40]);
+    FlowTemperature cold_1_T "Temperature of the cold flow on side 1"
+      annotation (extent=[40,20; 60,40]);
+    FlowTemperature hot_2_T "Temperature of the hot flow on side 2"
+      annotation (extent=[-60,-40; -40,-20]);
+    FlowTemperature cold_2_T "Temperature of the cold flow on side 2"
+      annotation (extent=[40,-40; 60,-20]);
+    annotation (Diagram);
+  protected 
+    SinkPort sink "Sink element" 
+                      annotation (extent=[20,-80; 40,-60]);
+  equation 
+    Q = U*A*(T_hot-T_cold);
     
-      FlowPort hot_1 "Hot flow on side 1" 
-        annotation (extent=[-100,20; -80,40]);
-      FlowPort cold_1 "Cold flow on side 1" 
-        annotation (extent=[-100,-40; -80,-20]);
-      FlowPort hot_2 "Hot flow on side 2" 
-        annotation (extent=[80,20; 100,40]);
-      FlowPort cold_2 "Cold flow on side 2" 
-        annotation (extent=[80,-40; 100,-20]);
-      annotation (Diagram);
-      FlowTemperature cold_1_T 
-      "Temperature measurement on the cold flow, side 1" 
-        annotation (extent=[-60,-40; -40,-20]);
-      FlowTemperature cold_2_T 
-      "Temperature measurement on the cold flow, side 2" 
-        annotation (extent=[40,-40; 60,-20]);
-      FlowTemperature hot_1_T "Temperature measurement on the hot flow, side 1"
-        annotation (extent=[-60,20; -40,40]);
-      FlowTemperature hot_2_T "Temperature measurement on the hot flow, side 2"
-        annotation (extent=[40,20; 60,40]);
-    equation 
-      // Connect material flow only
-      hot_1.n + hot_2.n = 0*hot_1.n;
-      // Enthalpy flow is different by a term q
-      hot_1.H + hot_2.H - q = 0;
-    
-      connect(hot_1_T.inlet, hot_1)     annotation (points=[-60,30; -90,30],
-          style(color=62, rgbcolor={0,127,127}));
-      connect(cold_1_T.inlet, cold_1)   annotation (points=[-60,-30; -90,-30],
-          style(color=62, rgbcolor={0,127,127}));
-      connect(hot_2_T.outlet, hot_2)       annotation (points=[60,30; 90,30],
-          style(color=62, rgbcolor={0,127,127}));
-      connect(cold_2_T.outlet, cold_2)     annotation (points=[60,-30; 90,-30],
-          style(color=62, rgbcolor={0,127,127}));
-      connect(cold_1_T.outlet, hot_1_T.outlet)    annotation (points=[-40,-30;
-            0,-30; 0,30; -40,30], style(color=62, rgbcolor={0,127,127}));
-      connect(hot_2_T.inlet, hot_1_T.outlet)      annotation (points=[40,30;
-            -40,30], style(color=62, rgbcolor={0,127,127}));
-      connect(cold_2_T.inlet, hot_1_T.outlet)     annotation (points=[40,-30; 0,
-          -30; 0,30; -40,30],   style(color=62, rgbcolor={0,127,127}));
-    end DiscretisedHeatExchangerElement;
-  
+    connect(hot_2_T.inlet, hot_2) annotation (points=[-60,-30; -90,-30], style(
+          color=62, rgbcolor={0,127,127}));
+    connect(hot_1_T.inlet, hot_1) annotation (points=[-60,30; -90,30], style(
+          color=62, rgbcolor={0,127,127}));
+    connect(cold_1_T.outlet, cold_1) annotation (points=[60,30; 90,30], style(
+          color=62, rgbcolor={0,127,127}));
+    connect(cold_2_T.outlet, cold_2) annotation (points=[60,-30; 90,-30], style(
+          color=62, rgbcolor={0,127,127}));
+    connect(sink.inlet, hot_2_T.outlet) annotation (points=[21,-70; 0,-70; 0,
+          -30; -40,-30], style(color=62, rgbcolor={0,127,127}));
+    connect(sink.inlet, cold_2_T.inlet) annotation (points=[21,-70; 0,-70; 0,
+          -30; 40,-30], style(color=62, rgbcolor={0,127,127}));
+    connect(sink.inlet, hot_1_T.outlet) annotation (points=[21,-70; 0,-70; 0,30; 
+          -40,30], style(color=62, rgbcolor={0,127,127}));
+    connect(sink.inlet, cold_1_T.inlet) annotation (points=[21,-70; 0,-70; 0,30; 
+          40,30], style(color=62, rgbcolor={0,127,127}));
+  end DiscretisedHeatExchangerStep;
   
   model DiscretisedHeatExchanger 
     "A heat exchanger made up of many discrete sections" 
@@ -1006,8 +991,11 @@ cooling or heating duty.</p>
     
     parameter Integer n(min=2) = 10 "Number of discretisation units";
     
-    DiscretisedHeatExchangerElement[n] steps(each a=A/n, each U=U);
+    DiscretisedHeatExchangerStep[n] steps(each A=A/n, each U=U);
     
+  protected 
+    SinkPort sink annotation (extent=[20,-80; 40,-60]);
+    annotation (Diagram);
   equation 
     connect(steps[1].hot_1,  hot_1);
     connect(steps[1].cold_1, cold_1);
@@ -1019,8 +1007,15 @@ cooling or heating duty.</p>
     connect(steps[n].hot_2,  hot_2);
     connect(steps[n].cold_2, cold_2);
     
+    Q = sum(steps[i].Q for i in 1:n);
+    
+    connect(sink.inlet, cold_2) annotation (points=[21,-70; 0,-70; 0,-30; 90,
+          -30], style(color=62, rgbcolor={0,127,127}));
+    connect(sink.inlet, hot_2) annotation (points=[21,-70; 0,-70; 0,-30; -90,
+          -30], style(color=62, rgbcolor={0,127,127}));
+    
   end DiscretisedHeatExchanger;
-
+  
   model Condenser "A simplified heat exchanger" 
     
     FlowPort inlet "The condenser inlet" 
@@ -1576,8 +1571,8 @@ current.</p>
         "The heat exchanger" annotation (extent=[-40,-20; 40,60]);
       SinkPort hotSink "Sink for the hot flow" 
                         annotation (extent=[-28,-52; -20,-44]);
-      MethanolSolution methanolSolution(T=330)
-        annotation (extent=[-80,20; -60,40]);
+      MethanolSolution methanolSolution(T=330) 
+        annotation (extent=[-80,22; -60,42]);
       
       parameter MolarFlow n_air = 1;
       parameter MolarFlow n_sol = 1;
@@ -1586,25 +1581,30 @@ current.</p>
       sum(env.outlet.n) = -n_air;
       sum(methanolSolution.outlet.n) = -n_sol;
       
-      connect(coldSink.inlet, exchanger.cold_1) annotation (points=[62.4,32; 
-            49.2,32; 49.2,32; 36,32], style(color=62, rgbcolor={0,127,127}));
+      connect(methanolSolution.outlet, exchanger.hot_1) annotation (points=[-70,
+            32; -53,32; -53,32; -36,32], style(color=62, rgbcolor={0,127,127}));
       connect(hotSink.inlet, exchanger.hot_2) annotation (points=[-27.6,-48; 
             -36,-48; -36,8], style(color=62, rgbcolor={0,127,127}));
       connect(env.outlet, exchanger.cold_2) annotation (points=[20.9,-52; 36,
             -52; 36,8], style(color=62, rgbcolor={0,127,127}));
-      connect(methanolSolution.outlet, exchanger.hot_1) annotation (points=[-70,
-            30; -36,30; -36,32], style(color=62, rgbcolor={0,127,127}));
+      connect(exchanger.cold_1, coldSink.inlet) annotation (points=[36,32; 49.2,
+            32; 49.2,32; 62.4,32], style(color=62, rgbcolor={0,127,127}));
     end AbstractHeatExchangerTest;
-
+    
     model LMTDHeatExchangerTest "Test for the LMTD-based heat exchanger" 
       extends AbstractHeatExchangerTest(redeclare LMTDHeatExchanger exchanger);
     end LMTDHeatExchangerTest;
+    
+    model DiscretisedHeatExchangerStepTest 
+      extends AbstractHeatExchangerTest(redeclare DiscretisedHeatExchangerStep 
+          exchanger);
+    end DiscretisedHeatExchangerStepTest;
 
     model DiscretisedHeatExchangerTest 
       extends AbstractHeatExchangerTest(redeclare DiscretisedHeatExchanger 
-          exchanger);
+          exchanger(n=5));
     end DiscretisedHeatExchangerTest;
-
+    
     model BasicCoolerTest 
       
       import Units.MolarFlow;
