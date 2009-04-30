@@ -9,7 +9,7 @@ package System "DMFC systems"
     Flow.Pump pump "The anodic-loop pump" 
               annotation (extent=[-50,-38; -38,-26]);
     annotation (Diagram);
-    replaceable Flow.BasicCooler anodeCooler "The solution-loop cooler" 
+    replaceable Flow.AbstractCooler anodeCooler "The solution-loop cooler" 
                   annotation (extent=[-6,-10; 16,10]);
     Flow.PureMethanolSource pureMethanolSource 
       "A substitute for an actual tank"   annotation (extent=[30,-58; 42,-46]);
@@ -25,7 +25,7 @@ package System "DMFC systems"
       annotation (extent=[-100,0; -78,22]);
     Flow.GasFlowController blower "The mass-flow controller" 
       annotation (extent=[-74,2; -66,10]);
-    replaceable Flow.BasicCooler cathodeCooler "The cathode-side cooler" 
+    replaceable Flow.AbstractCooler cathodeCooler "The cathode-side cooler" 
                   annotation (extent=[24,0; 46,20]);
     Flow.Separator condenser "The water-recuperating unit" 
                         annotation (extent=[72,0; 90,20]);
@@ -102,7 +102,9 @@ package System "DMFC systems"
   model Reference_Control 
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
     extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(V(fixed=true),c(fixed=true),T(fixed=true)),
-      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5));
+      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5), 
+      redeclare Flow.DiscretisedCooler cathodeCooler, 
+      redeclare Flow.LMTDCooler anodeCooler);
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Concentration;
@@ -210,7 +212,7 @@ package System "DMFC systems"
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-63,27; -89.5,27;
           -89.5,6; -70,6],    style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10;
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-46; 0,-46; 0,-40; 6.10623e-16,-40],
@@ -221,14 +223,14 @@ package System "DMFC systems"
     connect(degasser.gasOutlet, co2sink.inlet)    annotation (points=[49,9.4;
           48,9.4; 48,24; 54.4,24],
         style(color=62, rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
           -14,0; -4,0; -4,5; 0.66,5], style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
           -50,0; -76,0; -76,-26; -44,-26],
                               style(
         color=62,
@@ -254,7 +256,7 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -21.2,-16; 
+    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -21.2,-16;
           -21.2,15.2],
                  style(
         color=3,
@@ -263,9 +265,9 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1; 
+    connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1;
           -4,10.1; -4,5; 0.66,5], style(color=62, rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6; 
+    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6;
           48.5,0.6; 48.5,-32; 8,-32], style(color=62, rgbcolor={0,127,127}));
   end CoolingIntegration;
 end System;
