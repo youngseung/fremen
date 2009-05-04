@@ -47,16 +47,16 @@ package Electrochemistry "Package containing electrochemical models"
     
   equation 
     connect(R.p, anode.n) 
-      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16;
+      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16; 
           -50,6.10623e-16],                style(color=3, rgbcolor={0,0,255}));
-    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16;
+    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16; 
           -96,0; -90,0; -90,-20; 80,-20; 80,6.10623e-16; 70,6.10623e-16],
                                                                       style(
           color=3, rgbcolor={0,0,255}));
-    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16;
+    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16; 
           35,6.10623e-16; 20,6.10623e-16; 20,6.10623e-16; -10,6.10623e-16],
         style(color=3, rgbcolor={0,0,255}));
-    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16;
+    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16; 
           -80,20; 10,20], style(color=3, rgbcolor={0,0,255}));
     connect(E.n, n) annotation (points=[30,20; 90,20; 90,5.55112e-16; 100,
           5.55112e-16], style(color=3, rgbcolor={0,0,255}));
@@ -64,10 +64,6 @@ package Electrochemistry "Package containing electrochemical models"
   
   partial model Electrode "Generic electrode" 
     extends Modelica.Electrical.Analog.Interfaces.OnePort;
-    
-    import Thermo.AllSpecies;
-    import Units.MolarFlow;
-    
     annotation (Icon(
         Rectangle(extent=[-60,20; 60,-20], style(
             color=3,
@@ -83,11 +79,13 @@ package Electrochemistry "Package containing electrochemical models"
     
     parameter Modelica.SIunits.Area A = 26E-4 "Active electrode area";
     
-    MolarFlow[size(AllSpecies,1)] r 
+    Units.MolarFlow[size(Thermo.Molecules.All,1)] r 
       "Production of each species due to reaction";
+    
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415 
       "Faraday's constant";
+    
   end Electrode;
   
   model KrewerAnode "Full model of Ulrike's DMFC anode" 
@@ -100,12 +98,11 @@ package Electrochemistry "Package containing electrochemical models"
     import Modelica.SIunits.CurrentDensity;
     import Modelica.SIunits.Current;
     import Modelica.Constants.R;
-    import Thermo.AllSpecies;
-    import Thermo.Methanol;
-    import Thermo.Water;
-    import Thermo.Oxygen;
-    import Thermo.CarbonDioxide;
-    import Thermo.Nitrogen;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Oxygen;
+    import Thermo.Molecules.CarbonDioxide;
+    import Thermo.Molecules.Nitrogen;
     import Units.ArealCapacitance;
     import Units.SurfaceConcentration;
     import Units.ArealReactionRate;
@@ -246,12 +243,11 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Modelica.SIunits.Current;
     import Modelica.SIunits.MoleFraction;
     import Modelica.Constants.R;
-    import Thermo.AllSpecies;
-    import Thermo.Methanol;
-    import Thermo.Water;
-    import Thermo.Oxygen;
-    import Thermo.CarbonDioxide;
-    import Thermo.Nitrogen;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Oxygen;
+    import Thermo.Molecules.CarbonDioxide;
+    import Thermo.Molecules.Nitrogen;
     import Units.ArealCapacitance;
     import Units.ArealReactionRate;
     import Units.MolarFlux;
@@ -311,9 +307,9 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Modelica.Constants.eps;
     
     import Thermo.D;
-    import Thermo.AllSpecies;
-    import Thermo.Water;
-    import Thermo.speciesName;
+    import Thermo.Molecules.All;
+    import Thermo.Molecules.Water;
+    import Thermo.moleculeName;
     
     import DSS.FirstDer_4;
     
@@ -346,7 +342,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     constant MolarMass M = Thermo.mw(Water) "Water molar mass";
     constant Pressure p = 101325 "Atmospheric pressure";
     
-    parameter Density rho = Thermo.rho(T, Water, Thermo.LiquidPhase) 
+    parameter Density rho = Thermo.rho(T, Water, Thermo.Phases.Liquid) 
       "Liquid density";
     parameter PartialPressure p_vap = Thermo.p_vap(T, Water) 
       "Liquid partial pressure";
@@ -360,12 +356,12 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     
     ReactionRate[n] e "Water evaporation rate";
     
-    parameter MoleFraction[size(AllSpecies,1)] y_bulk = {0, 0.2, 0.1, 0.05, 0.65} 
+    parameter MoleFraction[size(All,1)] y_bulk = {0, 0.2, 0.1, 0.05, 0.65} 
       "Bulk concentrations";
-    MolarFlux[size(AllSpecies,1)] N_0 "Molar fluxes at catalyst layer";
+    MolarFlux[size(All,1)] N_0 "Molar fluxes at catalyst layer";
     
-    MoleFraction[n,size(AllSpecies,1)] y "Gas molar fractions";
-    MolarFlux[n,size(AllSpecies,1)] N "Gas molar flux";
+    MoleFraction[n,size(All,1)] y "Gas molar fractions";
+    MolarFlux[n,size(All,1)] N "Gas molar flux";
     
   protected 
     parameter Real epsFactor = eps*((eps-0.11)/(1-0.11))^0.785 
@@ -379,9 +375,9 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       "Partial derivative of liquid velocity in pores";
     FirstDer_4 dS_dx(m=n,dx=t/(n-1)) 
       "Partial derivative of reduced liquid water saturation";
-    FirstDer_4[size(AllSpecies,1)] dy_dx(each m=n, each dx=t/(n-1)) 
+    FirstDer_4[size(All,1)] dy_dx(each m=n, each dx=t/(n-1)) 
       "Partial derivative of gas molar fraction";
-    FirstDer_4[size(AllSpecies,1)] dN_dx(each m=n, each dx=t/(n-1)) 
+    FirstDer_4[size(All,1)] dN_dx(each m=n, each dx=t/(n-1)) 
       "Partial derivative of molar flux";
     
   equation 
@@ -392,7 +388,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     // Connect our values to the derivative estimation objects
     dv_dx.v = v;
     dS_dx.v = S;
-    for i in AllSpecies loop
+    for i in All loop
       dy_dx[i].v = y[:,i];
       dN_dx[i].v = N[:,i];
     end for;
@@ -401,7 +397,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
    * Note the special case for water due to evaporation,
    * and the enforcing of the Dirichlet boundary condition
    * at the last discretisation step. */
-    for j in AllSpecies loop
+    for j in All loop
       if j == Water then
         (p/R/T) * der(y[1:n-1,j])  = dN_dx[j].d[1:n-1] + e[1:n-1];
       else
@@ -414,12 +410,12 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
    * Note the insertion of the boundary condition at the first step. */
     N[1,:] = N_0;
     for i in 2:n loop
-      for j in AllSpecies[2:end] loop
+      for j in All[2:end] loop
         (p/R/T) * dy_dx[j].d[i] =
           sum( (y[i,j]*N[i,k] - y[i,k]*N[i,j]) / (D(T,p,j,k) * epsFactor * (1-s[i]^2)) 
-               for k in cat(1,1:(j-1),(j+1):AllSpecies[end]));
+               for k in cat(1,1:(j-1),(j+1):All[end]));
       end for;
-      sum(dy_dx[j].d[i] for j in AllSpecies) = 0;
+      sum(dy_dx[j].d[i] for j in All) = 0;
     end for;
     
     // The evaporation rate; it is zero if there is no liquid water and conditions would bring evaporation.
@@ -455,8 +451,8 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     s[n]          = 0;
     
     for i in 1:n loop
-      for j in AllSpecies loop
-        assert( y[i,j] > -eps, "==> Negative fraction of "+speciesName(j)+" at point "+String(i));
+      for j in All loop
+        assert( y[i,j] > -eps, "==> Negative fraction of "+moleculeName(j)+" at point "+String(i));
       end for;
     end for;
     

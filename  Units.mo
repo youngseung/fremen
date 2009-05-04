@@ -1,6 +1,9 @@
 package Units "Collection of additional units" 
   
-  annotation (uses(Modelica(version="2.2.1")));
+  annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
+<p>This package is a list of unit types that are useful in various parts
+of our modelling effort. They are mostly self-documenting.</p>
+</html>"));
   
   type ArealCapacitance = Real (final quantity="Areal capacitance", final unit="F/m2");
   type ArealReactionRate = Real(final quantity="Areal reaction rate",
@@ -23,5 +26,10 @@ package Units "Collection of additional units"
   type Saturation = Real (final quantity="Saturation", final unit="", min=0, max=1);
   type SurfaceConcentration = Real (final quantity="Surface concentration",
                                     final unit="mol/m2");
+  
+  type Molecule = Integer (final quantity="Molecule identifier", final min=1, final max=5) 
+    "Identifier for various types of molecules";
+  type Phase = Integer (final quantity="Phase identifier", final min=1001, final max=1002) 
+    "Identifier for phases";
   
 end Units;

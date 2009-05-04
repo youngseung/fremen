@@ -8,7 +8,7 @@ package Flow
     import Units.MolarFlow;
     import Modelica.SIunits.EnthalpyFlowRate;
     
-    flow MolarFlow[size(Thermo.AllSpecies,1)] n;
+    flow MolarFlow[size(Thermo.Molecules.All,1)] n;
     flow EnthalpyFlowRate H;
     
     annotation (Documentation(info="<html>
@@ -36,11 +36,11 @@ easy to model chemical reactions.</p>
     import Thermo.mw;
     import Thermo.rho;
     import Thermo.h;
-    import Thermo.GasSpecies;
-    import Thermo.Water;
-    import Thermo.Methanol;
-    import Thermo.GasPhase;
-    import Thermo.LiquidPhase;
+    import Thermo.Molecules.Incondensable;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Phases.Gas;
+    import Thermo.Phases.Liquid;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.Concentration;
@@ -70,23 +70,23 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     
   equation 
     assert(C >= 0, "==> Negative concentration given in MethanolSolution object.");
-    assert(C <= rho(T,Methanol,LiquidPhase)/mw(Methanol), "==> Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,LiquidPhase)) + " mol/m³).");
+    assert(C <= rho(T,Methanol,Liquid)/mw(Methanol), "==> Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,Liquid)) + " mol/m³).");
     
-    C = x_ch3oh / (x_ch3oh*mw(Methanol)/rho(T,Methanol,LiquidPhase) + x_h2o*mw(Water)/rho(T,Water,LiquidPhase));
+    C = x_ch3oh / (x_ch3oh*mw(Methanol)/rho(T,Methanol,Liquid) + x_h2o*mw(Water)/rho(T,Water,Liquid));
     x_ch3oh + x_h2o = 1.0;
     
-    outlet.n[GasSpecies] = zeros(size(GasSpecies, 1));
+    outlet.n[Incondensable] = zeros(size(Incondensable, 1));
     outlet.n[Methanol] * x_h2o = outlet.n[Water] * x_ch3oh;
-    outlet.H = outlet.n[Methanol]*h(T,Methanol,LiquidPhase) + outlet.n[Water]*h(T,Water,LiquidPhase);
+    outlet.H = outlet.n[Methanol]*h(T,Methanol,Liquid) + outlet.n[Water]*h(T,Water,Liquid);
     
   end MethanolSolution;
   
   model PureMethanolSource "Source of pure methanol" 
     import Thermo.h;
-    import Thermo.GasSpecies;
-    import Thermo.Water;
-    import Thermo.Methanol;
-    import Thermo.LiquidPhase;
+    import Thermo.Molecules.Incondensable;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Phases.Liquid;
     import Thermo.mw;
     import Thermo.rho;
     import Modelica.SIunits.Temperature;
@@ -112,14 +112,14 @@ released in terms of moles, mass and volume.</p>
     AmountOfSubstance n(start=0,fixed=true) 
       "Released methanol moles from simulation start";
     Mass m = n*mw(Methanol) "Released methanol mass";
-    Volume V = m / rho(T_env, Methanol, LiquidPhase) "Released methanol volume";
+    Volume V = m / rho(T_env, Methanol, Liquid) "Released methanol volume";
     
   equation 
     der(n) = -outlet.n[Methanol];
     
-    outlet.n[GasSpecies] = zeros(size(GasSpecies, 1));
+    outlet.n[Incondensable] = zeros(size(Incondensable, 1));
     outlet.n[Water] = 0;
-    outlet.H = outlet.n[Methanol]*h(T_env,Methanol,LiquidPhase);
+    outlet.H = outlet.n[Methanol]*h(T_env,Methanol,Liquid);
     
   end PureMethanolSource;
   
@@ -127,13 +127,13 @@ released in terms of moles, mass and volume.</p>
     
     import Thermo.h;
     import Thermo.K;
-    import Thermo.Methanol;
-    import Thermo.Water;
-    import Thermo.Oxygen;
-    import Thermo.CarbonDioxide;
-    import Thermo.Nitrogen;
-    import Thermo.GasPhase;
-    import Thermo.LiquidPhase;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Oxygen;
+    import Thermo.Molecules.CarbonDioxide;
+    import Thermo.Molecules.Nitrogen;
+    import Thermo.Phases.Gas;
+    import Thermo.Phases.Liquid;
     import Units.MolarEnthalpy;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Pressure;
@@ -203,9 +203,9 @@ also for humidity.</p>
     y_h2o + y_o2 + y_n2 = 1.0; // Fractions sum to 1.
     y_h2o = RH_env/100 * K(T_env, Water); // Humidity of air
     
-    h_h2o = h(T_env, Water, GasPhase);
-    h_o2  = h(T_env, Oxygen, GasPhase);
-    h_n2  = h(T_env, Nitrogen, GasPhase);
+    h_h2o = h(T_env, Water, Gas);
+    h_o2  = h(T_env, Oxygen, Gas);
+    h_n2  = h(T_env, Nitrogen, Gas);
     h_air = h_h2o*y_h2o + h_o2*y_o2 + h_n2*y_n2;
     
     // Write with * instead of / to avoid division by zero.
@@ -252,7 +252,7 @@ about which we do not care much.</p>
   model FlowController "A unit modelling a pump or a MFC" 
     
     import Thermo.mw;
-    import Thermo.AllSpecies;
+    import Thermo.Molecules.All;
     import Modelica.SIunits.MassFlowRate;
     import Units.MolarFlow;
     
@@ -286,7 +286,7 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     MassFlowRate m "Mass flow rate";
     
   equation 
-    m = sum({inlet.n[i] * mw(i) for i in AllSpecies});
+    m = sum({inlet.n[i] * mw(i) for i in All});
     F = sum(inlet.n);
     
     connect(inlet, outlet) annotation (points=[5.55112e-16,5.55112e-16; 
@@ -299,8 +299,8 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     
     import Thermo.rho;
     import Thermo.mw;
-    import Thermo.AllSpecies;
-    import Thermo.GasPhase;
+    import Thermo.Molecules.All;
+    import Thermo.Phases.Gas;
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     
@@ -320,7 +320,7 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
     VolumeFlowRate V "Volumetric flow rate";
     
   equation 
-    V = sum({inlet.n[i] * mw(i) / rho(T_ref, i, GasPhase) for i in AllSpecies});
+    V = sum({inlet.n[i] * mw(i) / rho(T_ref, i, Gas) for i in All});
     
   end GasFlowController;
   
@@ -330,8 +330,8 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
     import Thermo.rho;
     import Thermo.mw;
     import Thermo.h;
-    import Thermo.LiquidPhase;
-    import Thermo.LiquidSpecies;
+    import Thermo.Phases.Liquid;
+    import Thermo.Molecules.Condensable;
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     
@@ -345,9 +345,9 @@ in liquid phase; it takes their density from the Thermo library.</p>
     VolumeFlowRate V "Volumetric flow rate";
     
   equation 
-    V = sum({inlet.n[i] * mw(i) / rho(T, i, LiquidPhase) for i in LiquidSpecies});
+    V = sum({inlet.n[i] * mw(i) / rho(T, i, Liquid) for i in Condensable});
     // This is to find the temperature.
-    inlet.H = (sum(inlet.n[i]*h(T, i, LiquidPhase) for i in LiquidSpecies));
+    inlet.H = (sum(inlet.n[i]*h(T, i, Liquid) for i in Condensable));
     
   end Pump;
   
@@ -355,13 +355,13 @@ in liquid phase; it takes their density from the Thermo library.</p>
     
       import Modelica.SIunits.MoleFraction;
       import Modelica.SIunits.Temperature;
-      import Thermo.AllSpecies;
-      import Thermo.GasSpecies;
-      import Thermo.LiquidSpecies;
-      import Thermo.GasPhase;
-      import Thermo.LiquidPhase;
-      import Thermo.Water;
-      import Thermo.Methanol;
+      import Thermo.Molecules.All;
+      import Thermo.Molecules.Incondensable;
+      import Thermo.Molecules.Condensable;
+      import Thermo.Phases.Gas;
+      import Thermo.Phases.Liquid;
+      import Thermo.Molecules.Water;
+      import Thermo.Molecules.Methanol;
       import Thermo.h;
       import Thermo.rr;
       import Thermo.K;
@@ -398,8 +398,8 @@ equilibrium.</p>
       Temperature T(start=298.15) "Flow temperature";
       MoleFraction beta "Vapour fraction";
     
-      MolarFlow[size(AllSpecies,1)] vapour "Gas-phase flows";
-      MolarFlow[size(AllSpecies,1)] liquid "Liquid-phase flows";
+      MolarFlow[size(All,1)] vapour "Gas-phase flows";
+      MolarFlow[size(All,1)] liquid "Liquid-phase flows";
     
   protected 
       MoleFraction z_m "Overall methanol molar fraction";
@@ -409,9 +409,9 @@ equilibrium.</p>
       // Liquid and vapour sum to overall flow
       liquid + vapour       = inlet.n;
       // Condensable species are present in both phases
-      vapour[LiquidSpecies] = {inlet.n[i]*beta*K(T,i) / (1 + beta*(K(T,i) -1)) for i in LiquidSpecies};
+      vapour[Condensable]   = {inlet.n[i]*beta*K(T,i) / (1 + beta*(K(T,i) -1)) for i in Condensable};
       // Incondensable species are only in gas phase
-      liquid[GasSpecies]    = zeros(size(GasSpecies,1));
+      liquid[Incondensable] = zeros(size(Incondensable,1));
     
       /* Enforce definition of molar fractions. Avoid using divisions
    * in order to avoid division-by-zero errors. */
@@ -419,8 +419,8 @@ equilibrium.</p>
       inlet.n[Water]    = sum(inlet.n) * z_w;
     
       // Combine enthalpic flow with temperature, thermodynamic data and material flows.
-      inlet.H = sum( vapour[i] * h(T, i, GasPhase)    for i in AllSpecies)
-              + sum( liquid[i] * h(T, i, LiquidPhase) for i in LiquidSpecies);
+      inlet.H = sum( vapour[i] * h(T, i, Gas)    for i in All)
+              + sum( liquid[i] * h(T, i, Liquid) for i in Condensable);
     
       /* Use the beta returned by Thermo.rr only if:
    * 1) there can be a phase equilibrium at all at this temperature;
@@ -440,9 +440,9 @@ equilibrium.</p>
       extends FlowTemperature;
     
       import Modelica.SIunits.Concentration;
-      import Thermo.LiquidSpecies;
-      import Thermo.LiquidPhase;
-      import Thermo.Methanol;
+      import Thermo.Molecules.Condensable;
+      import Thermo.Phases.Liquid;
+      import Thermo.Molecules.Methanol;
       import Thermo.rho;
       import Thermo.mw;
     
@@ -460,7 +460,7 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
     
     equation 
       // Methanol flow is concentration times volumetric flow
-      liquid[Methanol] = c * sum(liquid[i]*mw(i)/rho(T,i,LiquidPhase) for i in LiquidSpecies);
+      liquid[Methanol] = c * sum(liquid[i]*mw(i)/rho(T,i,Liquid) for i in Condensable);
     
     end FlowConcentration;
   
@@ -470,10 +470,10 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
     import Modelica.SIunits.AmountOfSubstance;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Volume;
-    import Thermo.Methanol;
-    import Thermo.GasSpecies;
-    import Thermo.LiquidSpecies;
-    import Thermo.LiquidPhase;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Molecules.Incondensable;
+    import Thermo.Molecules.Condensable;
+    import Thermo.Phases.Liquid;
     import Thermo.h;
     import Thermo.mw;
     import Thermo.rho;
@@ -547,7 +547,7 @@ holdup.</p>
 by default it is 1 M.</p>
 </html>"));
     
-    AmountOfSubstance n[size(Thermo.AllSpecies,1)] "Molar holdup";
+    AmountOfSubstance n[size(Thermo.Molecules.All,1)] "Molar holdup";
     Modelica.SIunits.InternalEnergy U "Internal energy";
     Concentration c(start=1000) "Methanol concentration";
     Temperature T(start=298.15) "Mixer temperature";
@@ -562,21 +562,19 @@ by default it is 1 M.</p>
     // Bind outlet's H to specific internal energy and outlet flow
     outlet.H / sum(outlet.n) = U / sum(n);
     
-    U = sum(n[i]*h(T,i,LiquidPhase) for i in LiquidSpecies);
-    V = sum( n[i]*mw(i)/rho(T, i, LiquidPhase) for i in LiquidSpecies);
+    U = sum(n[i]*h(T,i,Liquid) for i in Condensable);
+    V = sum( n[i]*mw(i)/rho(T, i, Liquid) for i in Condensable);
     c = n[Methanol] / V;
     
   initial equation 
-    n[GasSpecies] = zeros(size(GasSpecies,1));
+    n[Incondensable] = zeros(size(Incondensable,1));
     
   end Mixer;
   
   model Separator 
     import Modelica.SIunits.Temperature;
-    import Thermo.AllSpecies;
-    import Thermo.GasSpecies;
-    import Thermo.LiquidSpecies;
-    import Thermo.LiquidPhase;
+    import Thermo.Molecules.Condensable;
+    import Thermo.Phases.Liquid;
     import Thermo.h;
     
     FlowPort inlet "Two-phase inlet" 
@@ -636,7 +634,7 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
     
   equation 
     liquidOutlet.n = -ft.liquid;
-    liquidOutlet.H = sum(h(T, i, LiquidPhase) * liquidOutlet.n[i] for i in LiquidSpecies);
+    liquidOutlet.H = sum(h(T, i, Liquid)* liquidOutlet.n[i] for i in Condensable);
     
     connect(ft.inlet, inlet) annotation (points=[-10,6.10623e-16; -54,
           6.10623e-16; -54,5.55112e-16; -100,5.55112e-16], style(color=62,
@@ -1039,13 +1037,13 @@ cathode-loop cooler (condenser).</p>
     
     import Thermo.mw;
     import Thermo.rho;
-    import Thermo.AllSpecies;
-    import Thermo.GasSpecies;
-    import Thermo.Methanol;
-    import Thermo.Water;
-    import Thermo.Oxygen;
-    import Thermo.speciesName;
-    import Thermo.LiquidPhase;
+    import Thermo.Molecules.All;
+    import Thermo.Molecules.Incondensable;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Oxygen;
+    import Thermo.moleculeName;
+    import Thermo.Phases.Liquid;
     
     import Units.MassTransportCoefficient;
     import Units.MolarFlow;
@@ -1195,22 +1193,22 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
   equation 
     // Anode-side mass balance, accounting for reaction, drag and crossover
-    anode_inlet.n + anode_outlet.n + anode_H*n_H + anode_M*n_x = zeros(size(AllSpecies,1));
+    anode_inlet.n + anode_outlet.n + anode_H*n_H + anode_M*n_x = zeros(size(All,1));
     
     // Cathode-side mass balance, accounting for reaction, drag and crossover
-    cathode_inlet.n + cathode_outlet.n + cathode_H*n_H + cathode_M*n_x = zeros(size(AllSpecies,1));
+    cathode_inlet.n + cathode_outlet.n + cathode_H*n_H + cathode_M*n_x = zeros(size(All,1));
     
     // The energy "lost" from the heat balance is the electrical power.
     nexus.inlet.H = I*V + der(T)*Cp;
     
     // Definition of oxygen partial pressure. On the denominator, the sum of vapours (methanol and water) and gases (all others).
-    p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
+    p_o2 = p_env * cathodeT.inlet.n[Oxygen] / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[Incondensable]));
     
     // Definition of water partial pressure (on the cathode side). On the denominator, the sum of vapours (methanol and water) and gases (all others).
-    p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[GasSpecies]));
+    p_h2o = p_env * cathodeT.vapour[Water]  / (sum(cathodeT.vapour) + sum(cathodeT.inlet.n[Incondensable]));
     
     // Relate catalyst-layer methanol molar fraction (in liquid phase) and concentration
-    x_ac = c_ac * (x_ac*mw(Methanol)/rho(T,Methanol,LiquidPhase) + (1-x_ac)*mw(Water)/rho(T,Water,LiquidPhase));
+    x_ac = c_ac * (x_ac*mw(Methanol)/rho(T,Methanol,Liquid) + (1-x_ac)*mw(Water)/rho(T,Water,Liquid));
     
     // Methanol transport: binds c_a, c_ac and i (N_x is a function of c_ac, N_drag_ch3oh of i).
     k_ad * (c_a-c_ac) = N_x + N_H/6;
@@ -1228,11 +1226,11 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       // Sanity check: crash simulation if conditions are unphysical
       assert( c_ac >= 0, "==> Methanol catalyst-layer concentration is negative ("+String(c_ac)+" mol/m^3) at temperature "+String(T)+" K, bulk concentration "+String(c_a)+" mol/m^3, inlet concentration "+String(anodeInletTC.c)+".");
       
-      for i in AllSpecies loop
-        assert( cathode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the cathode outlet.");
-        assert( anode_outlet.n[i] < eps, "==> "+speciesName(i)+" is entering from the anode outlet.");
-        assert( cathode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the cathode inlet.");
-        assert( anode_inlet.n[i] > -eps, "==> "+speciesName(i)+" is exiting from the anode inlet.");
+      for i in All loop
+        assert( cathode_outlet.n[i] < eps, "==> "+moleculeName(i)+" is entering from the cathode outlet.");
+        assert( anode_outlet.n[i] < eps, "==> "+moleculeName(i)+" is entering from the anode outlet.");
+        assert( cathode_inlet.n[i] > -eps, "==> "+moleculeName(i)+" is exiting from the cathode inlet.");
+        assert( anode_inlet.n[i] > -eps, "==> "+moleculeName(i)+" is exiting from the anode inlet.");
       end for;
     end if;
     
@@ -1334,6 +1332,48 @@ current.</p>
       extends FlowTemperatureTest(redeclare FlowConcentration measurement);
     end FlowConcentrationTest;
     
+    model MixerTest "Test for the mixer unit" 
+      inner parameter Modelica.SIunits.Pressure p_env = 101325;
+      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Real RH_env = 60;
+      
+      Mixer mixer(
+        c(fixed=true),
+        V(fixed=true),
+        T(fixed=true)) 
+                  annotation (extent=[-20,0; 0,20]);
+      MethanolSolution anodicLoop(T=330) "Solution coming from the anodic loop"
+        annotation (extent=[-20,40; 0,60]);
+      PureMethanolSource fuelTank "Methanol from the fuel tank" 
+        annotation (extent=[0,-40; 20,-20]);
+      MethanolSolution condenser(C=0, T=310) 
+        "Water recovered from the cathode outlet" 
+        annotation (extent=[20,0; 40,20]);
+      FlowTemperature flowTemperature annotation (extent=[-64,-26; -44,-6]);
+      SinkPort sinkPort annotation (extent=[-28,-20; -20,-12]);
+    equation 
+      
+      annotation (Diagram);
+      sum(fuelTank.outlet.n) = -0.1;
+      sum(anodicLoop.outlet.n) = -1;
+      sum(condenser.outlet.n) = -0.4;
+      sum(mixer.outlet.n) = -1.5;
+      
+      connect(flowTemperature.outlet, sinkPort.inlet) 
+        annotation (points=[-44,-16; -27.6,-16], style(color=62, rgbcolor={0,
+              127,127}));
+      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
+            -72,10; -72,-16; -64,-16], style(color=62, rgbcolor={0,127,127}));
+      connect(condenser.outlet, mixer.waterInlet) 
+        annotation (points=[30,10; -2,10], style(color=62, rgbcolor={0,127,127}));
+      connect(anodicLoop.outlet, mixer.loopInlet) 
+        annotation (points=[-10,50; -10,18], style(color=62, rgbcolor={0,127,
+              127}));
+      connect(mixer.fuelInlet, fuelTank.outlet) 
+        annotation (points=[-10,2; -10,-30; 10,-30], style(color=62, rgbcolor={
+              0,127,127}));
+    end MixerTest;
+
     model SeparatorTest "Test case for the separator unit" 
       
       Separator separator annotation (extent=[-22,-12; 26,38]);
@@ -1359,7 +1399,7 @@ current.</p>
       connect(separator.liquidOutlet, liquidSink.inlet) 
         annotation (points=[18.8,3; 18,3; 18,-12; 46.4,-12], style(color=62,
             rgbcolor={0,127,127}));
-      connect(separator.gasOutlet, gasSink.inlet)    annotation (points=[18.8,23;
+      connect(separator.gasOutlet, gasSink.inlet)    annotation (points=[18.8,23; 
             18.4,23; 18.4,34; 46.4,34], style(color=62, rgbcolor={0,127,127}));
     end SeparatorTest;
     
@@ -1442,10 +1482,10 @@ current.</p>
       pump.V = solution;
       cooler.V_air = coolingStart + time*(coolingStop-coolingStart);
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
@@ -1461,47 +1501,6 @@ current.</p>
       extends AbstractCoolerTest(redeclare DiscretisedCooler cooler(exchanger(n=10)));
     end DiscretisedCoolerTest;
     
-    model MixerTest "Test for the mixer unit" 
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
-      
-      Mixer mixer(
-        c(fixed=true),
-        V(fixed=true),
-        T(fixed=true)) 
-                  annotation (extent=[-20,0; 0,20]);
-      MethanolSolution anodicLoop(T=330) "Solution coming from the anodic loop"
-        annotation (extent=[-20,40; 0,60]);
-      PureMethanolSource fuelTank "Methanol from the fuel tank" 
-        annotation (extent=[0,-40; 20,-20]);
-      MethanolSolution condenser(C=0, T=310) 
-        "Water recovered from the cathode outlet" 
-        annotation (extent=[20,0; 40,20]);
-      FlowTemperature flowTemperature annotation (extent=[-64,-26; -44,-6]);
-      SinkPort sinkPort annotation (extent=[-28,-20; -20,-12]);
-    equation 
-      
-      annotation (Diagram);
-      sum(fuelTank.outlet.n) = -0.1;
-      sum(anodicLoop.outlet.n) = -1;
-      sum(condenser.outlet.n) = -0.4;
-      sum(mixer.outlet.n) = -1.5;
-      
-      connect(flowTemperature.outlet, sinkPort.inlet) 
-        annotation (points=[-44,-16; -27.6,-16], style(color=62, rgbcolor={0,
-              127,127}));
-      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
-            -72,10; -72,-16; -64,-16], style(color=62, rgbcolor={0,127,127}));
-      connect(condenser.outlet, mixer.waterInlet) 
-        annotation (points=[30,10; -2,10], style(color=62, rgbcolor={0,127,127}));
-      connect(anodicLoop.outlet, mixer.loopInlet) 
-        annotation (points=[-10,50; -10,18], style(color=62, rgbcolor={0,127,
-              127}));
-      connect(mixer.fuelInlet, fuelTank.outlet) 
-        annotation (points=[-10,2; -10,-30; 10,-30], style(color=62, rgbcolor={
-              0,127,127}));
-    end MixerTest;
     
     partial model CellTest "Generic test suite for fuel-cell models" 
       

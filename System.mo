@@ -1,3 +1,5 @@
+import " Units.mo";
+
 package System "DMFC systems" 
   partial model Reference "The reference DMFC system, no control applied" 
     
@@ -105,6 +107,7 @@ package System "DMFC systems"
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
       redeclare Flow.DiscretisedCooler cathodeCooler,
       redeclare Flow.DiscretisedCooler anodeCooler);
+    
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Concentration;
@@ -112,11 +115,13 @@ package System "DMFC systems"
     import Modelica.SIunits.Current;
     import Modelica.SIunits.Volume;
     import Modelica.SIunits.Time;
+    
     import Flow.MolarFlow;
-    import Thermo.Oxygen;
-    import Thermo.Water;
-    import Thermo.Methanol;
-    import Thermo.LiquidPhase;
+    
+    import Thermo.Molecules.Oxygen;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Phases.Liquid;
     import Thermo.rho;
     import Thermo.mw;
     import Thermo.K;
@@ -153,10 +158,10 @@ package System "DMFC systems"
     
     // Fuel flow feedforward control
     fuelPump.F = (1-b)/6/F*fuelCell.I + a*fuelCell.A/6/F * c_a_ref + f_M * c_a_ref * fuelCell.I;
-    f_M = K(degasser.T,Methanol)/(rho(degasser.T,Water,LiquidPhase)/mw(Water)) * fuelCell.I/(6*F*(1-K(degasser.T,Water)-K(degasser.T,Methanol)));
+    f_M = K(degasser.T,Methanol)/(rho(degasser.T,Water,Liquid)/mw(Water)) * fuelCell.I/(6*F*(1-K(degasser.T,Water)-K(degasser.T,Methanol)));
     
     // Water content feedback control
-    condenser.T = 330 + Kp * rho(mixer.T, Water, LiquidPhase) / mw(Water) * delta_V;
+    condenser.T = 330 + Kp * rho(mixer.T, Water, Liquid) / mw(Water) * delta_V;
     Kp = 1 / (tau_w * blower.F / p_env * Thermo.dp_h2o_dt(condenser.T, 1));
     
     // Constant temperature in the degasser 
@@ -212,7 +217,7 @@ package System "DMFC systems"
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-63,27; -89.5,27;
           -89.5,6; -70,6],    style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10;
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-46; 0,-46; 0,-40; 6.10623e-16,-40],
@@ -230,7 +235,7 @@ package System "DMFC systems"
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
           -50,0; -76,0; -76,-26; -44,-26],
                               style(
         color=62,
@@ -256,7 +261,7 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -21.2,-16;
+    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -21.2,-16; 
           -21.2,15.2],
                  style(
         color=3,
@@ -267,7 +272,7 @@ package System "DMFC systems"
         fillPattern=1));
     connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1;
           -4,10.1; -4,5; 0.66,5], style(color=62, rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6;
+    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6; 
           48.5,0.6; 48.5,-32; 8,-32], style(color=62, rgbcolor={0,127,127}));
   end CoolingIntegration;
 end System;
