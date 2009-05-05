@@ -1,5 +1,6 @@
 import " Units.mo";
 
+
 package System "DMFC systems" 
   partial model Reference "The reference DMFC system, no control applied" 
     
@@ -34,9 +35,11 @@ package System "DMFC systems"
     Flow.SinkPort airSink "The gas outlet of the condenser" 
                       annotation (extent=[92,28; 100,36]);
     replaceable Modelica.Electrical.Analog.Interfaces.OnePort load 
-      "Load connected to the cell"       annotation (extent=[-38,50; -26,62]);
+      "Load connected to the cell"       annotation (extent=[-52,54; -40,66]);
     Modelica.Electrical.Analog.Basic.Ground ground 
-      annotation (extent=[-12,26; 2,40]);
+      annotation (extent=[-8,24; 8,40]);
+    Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer 
+      "Current in external circuit" annotation (extent=[-32,70; -12,50]);
   equation 
     connect(pump.inlet, mixer.outlet) 
       annotation (points=[-44,-32; -8,-32],    style(color=62, rgbcolor={0,127,
@@ -91,13 +94,43 @@ package System "DMFC systems"
     connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[24.66,10; 
           -14,10; -14,10.1],                  style(color=62, rgbcolor={0,127,
             127}));
-    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -20,16; 
-          -20,40; -5,40], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -44,16; -44,
-          56; -38,56], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.minus, load.n) annotation (points=[-21.2,15.2; -20,16; -20,
-          56; -26,56], style(color=3, rgbcolor={0,0,255}));
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
+          2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
+    connect(amperometer.p, load.n)
+      annotation (points=[-32,60; -40,60], style(color=3, rgbcolor={0,0,255}));
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
+          -21.2,40; 0,40; 0,60; -12,60], style(color=3, rgbcolor={0,0,255}));
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
+          -64,40; -64,60; -52,60], style(color=3, rgbcolor={0,0,255}));
   end Reference;
+
+  model Reference_NoControl "Sets manipulable variables with parameters" 
+    extends Reference(
+      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
+      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82)),
+      redeclare Flow.DiscretisedCooler anodeCooler,
+      redeclare Flow.ConstantVoltageFuelCell fuelCell,
+      mixer(
+        c(fixed=true),
+        T(fixed=true),
+        V(fixed=true)));
+    
+    import Modelica.SIunits.VolumeFlowRate;
+    
+    parameter VolumeFlowRate V_fuel = 5E-8/60;
+    parameter VolumeFlowRate V_anode = 10E-6/60;
+    parameter VolumeFlowRate V_cathode = 500E-6/60;
+    parameter VolumeFlowRate V_cooler = 10E-3/60;
+    parameter VolumeFlowRate V_condenser = 2E-3/60;
+    
+  equation 
+    V_fuel = fuelPump.V;
+    V_anode = pump.V;
+    V_cathode = blower.V;
+    V_cooler = anodeCooler.mfc.V;
+    V_condenser = cathodeCooler.mfc.V;
+    
+  end Reference_NoControl;
   
   annotation (uses(Modelica(version="2.2.1")));
   
@@ -105,7 +138,7 @@ package System "DMFC systems"
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
     extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(V(fixed=true),c(fixed=true),T(fixed=true)),
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.DiscretisedCooler cathodeCooler,
+      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82)),
       redeclare Flow.DiscretisedCooler anodeCooler);
     
     import Modelica.SIunits.VolumeFlowRate;
@@ -217,7 +250,7 @@ package System "DMFC systems"
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-63,27; -89.5,27;
           -89.5,6; -70,6],    style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10;
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-46; 0,-46; 0,-40; 6.10623e-16,-40],
@@ -235,7 +268,7 @@ package System "DMFC systems"
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
           -50,0; -76,0; -76,-26; -44,-26],
                               style(
         color=62,
@@ -261,7 +294,7 @@ package System "DMFC systems"
         fillColor=43,
         rgbfillColor={255,85,85},
         fillPattern=1));
-    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -21.2,-16; 
+    connect(ground.p, fuelCell.minus) annotation (points=[-25,-16; -21.2,-16;
           -21.2,15.2],
                  style(
         color=3,
@@ -272,7 +305,7 @@ package System "DMFC systems"
         fillPattern=1));
     connect(fuelCell.cathode_outlet, cooler.inlet) annotation (points=[-14,10.1;
           -4,10.1; -4,5; 0.66,5], style(color=62, rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6; 
+    connect(degasser.liquidOutlet, mixer.waterInlet) annotation (points=[49,0.6;
           48.5,0.6; 48.5,-32; 8,-32], style(color=62, rgbcolor={0,127,127}));
   end CoolingIntegration;
 end System;
