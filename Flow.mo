@@ -993,9 +993,10 @@ used only for condensing flows where LMTD theory is not valid.</p>
             fillPattern=1),
           string="%name")),
       Documentation(info="<html>
-<p>This is the interface for a generic air cooler. It only specifies that the outlet
-species is equal to the inlet ones, and that the difference in enthalpic flow is the
-cooling or heating duty.</p>
+<p>This is the interface for a generic air cooler, whose heat-exchange model is 
+left unspecified. It includes an internal PI controller that sets the process'
+outlet temperature by manipulating the coolant flow. The coolant itself enters
+at environment temperature.</p>
 </html>"));
     TemperatureOutput T_process_in "Process inlet temperature" annotation (extent=[-88,-20;
           -100,-8]);
@@ -1026,14 +1027,14 @@ cooling or heating duty.</p>
     connect(mfc.outlet, exchanger.cold_2) annotation (points=[30,22; 30,56; 12,
           56],
         style(color=62, rgbcolor={0,127,127}));
-    connect(exchanger.T_hot_1, T_process_in) annotation (points=[-60,88; -74,88; 
+    connect(exchanger.T_hot_1, T_process_in) annotation (points=[-60,88; -74,88;
           -74,-14; -94,-14],
                            style(color=3, rgbcolor={0,0,255}));
     connect(exchanger.T_hot_2, T_process_out) annotation (points=[-60,48; -70,
           48; -70,-14; 94,-14], style(color=3, rgbcolor={0,0,255}));
-    connect(K.u_s, T_ref)
+    connect(K.u_s, T_ref) 
       annotation (points=[69.6,14; 94,14], style(color=3, rgbcolor={0,0,255}));
-    connect(K.y, mfc.V)
+    connect(K.y, mfc.V) 
       annotation (points=[51.2,14; 38,14], style(color=3, rgbcolor={0,0,255}));
     connect(K.u_m, exchanger.T_hot_2) annotation (points=[60,4.4; 60,-14; -70,
           -14; -70,48; -60,48], style(color=3, rgbcolor={0,0,255}));
@@ -1042,7 +1043,7 @@ cooling or heating duty.</p>
   model LMTDCooler "A heat exchanger based on the LMTD" 
     extends AbstractCooler(redeclare LMTDHeatExchanger exchanger);
     annotation (Diagram, Documentation(info="<html>
-<p>A cooler that uses a LMTD implementation. It can for instance be applied as the
+<p>A cooler using a LMTD implementation. It can for instance be applied as the
 anode-loop cooler or as a recuperating heat exchanger on the anode side.</p>
 </html>"),
       Icon);
@@ -1537,10 +1538,10 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
