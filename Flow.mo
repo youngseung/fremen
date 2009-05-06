@@ -316,21 +316,21 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
     
-    annotation (Icon,     Documentation(info="<html>
+    annotation (defaultComponentName="mfc", Icon,     Documentation(info="<html>
 <p>This class implements a mass flow controller with volumetric units (\"field units\").
 Since there are at least <em>two</em> different standards (the one named \"standard\" at 
 0 Celsius and the one named \"norm\" at 70 Fahrenheit or 21.111... Celsius), it is 
 necessary to provide the reference temperature; the default assumes zero Celsius 
 (the so-called \"standard\" value).</p>
-
+ 
 <p>The flow assumes that all components are in gas phase and takes their density from
 the Thermo library, where the ideal gas law is (usually) assumed.</p>
-</html>"), 
+</html>"),
       Diagram);
     
     parameter Temperature T_ref = 273.15 "Reference temperature";
     
-    VolumeFlowRateInput V "Volumetric flow rate"
+    VolumeFlowRateInput V "Volumetric flow rate" 
       annotation (extent=[110,-10; 90,10]);
     
   equation 
@@ -353,7 +353,7 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
 <p>This class implements a liquid pump with field volumetric units.</p>
 <p>The flow assumes that only water and methanol are present and are completely
 in liquid phase; it takes their density from the Thermo library.</p>
-</html>"), 
+</html>"),
       Diagram);
     
     Temperature T(start=298.15) "Temperature of the flow";
@@ -384,7 +384,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       import Thermo.K;
       import Units.MolarFlow;
     
-      annotation (Diagram, Icon(
+      annotation (defaultComponentName="T",Diagram, Icon(
           Text(extent=[-100,100; 100,140],string="%name",
             style(color=0, rgbcolor={0,0,0}))),
       Documentation(info="<html>
@@ -413,7 +413,7 @@ equilibrium.</p>
       MoleFraction z_w(start=0.1) "Overall water molar fraction";
     
   public 
-      TemperatureOutput T "The flow temperature"
+      TemperatureOutput T "The flow temperature" 
       annotation (extent=[46,-74; 30,-54]);
     equation 
       // Liquid and vapour sum to overall flow
@@ -457,7 +457,7 @@ equilibrium.</p>
       import Thermo.mw;
     
       annotation (Diagram, Icon,
-      Documentation(info="<html>
+      Documentation(defaultComponentName="c", info="<html>
 <p>Adds the ability to read the methanol concentration <em>in the liquid 
 phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
 <p>If there is no liquid flow, then the reported value is zero.</p>
@@ -557,7 +557,7 @@ by default it is 1 M.</p>
     Modelica.SIunits.InternalEnergy U "Internal energy";
     Concentration c(start=1000) "Methanol concentration";
     Temperature T(start=298.15) "Mixer temperature";
-    VolumeOutput V(start=5E-6) "Solution volume"
+    VolumeOutput V(start=5E-6) "Solution volume" 
       annotation (extent=[-52,-82; -36,-62]);
     
   equation 
@@ -662,7 +662,7 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
                    annotation (extent=[-100,20; -80,40]);
     FlowPort hot_2 "Port for hot flow on side 2" 
                     annotation (extent=[-100,-40; -80,-20]);
-    annotation (Diagram, Icon(
+    annotation (defaultComponentName="exchanger", Diagram, Icon(
         Rectangle(extent=[-100,40; 100,-40],
                                            style(
             color=0,
@@ -725,13 +725,13 @@ connections of the flows to the two sides.</p>
                    annotation (extent=[80,20; 100,40]);
     FlowPort cold_2 "Port for cold flow on side 2" 
                    annotation (extent=[80,-40; 100,-20]);
-    TemperatureOutput T_hot_1 "Temperature of hot stream on side 1"
+    TemperatureOutput T_hot_1 "Temperature of hot stream on side 1" 
       annotation (extent=[-80,40; -100,60]);
-    TemperatureOutput T_hot_2 "Temperature of hot stream on side 2"
+    TemperatureOutput T_hot_2 "Temperature of hot stream on side 2" 
       annotation (extent=[-80,-60; -100,-40]);
-    TemperatureOutput T_cold_1 "Temperature of cold stream on side 1"
+    TemperatureOutput T_cold_1 "Temperature of cold stream on side 1" 
       annotation (extent=[80,40; 100,60]);
-    TemperatureOutput T_cold_2 "Temperature of cold stream on side 2"
+    TemperatureOutput T_cold_2 "Temperature of cold stream on side 2" 
       annotation (extent=[80,-60; 100,-40]);
     
     parameter Area A = 2.3E-2 "Effective heat-transfer area";
@@ -785,11 +785,11 @@ condensation is very important there.</p>
     
     connect(hot_2_T.outlet, sinkPort.inlet)    annotation (points=[-42,-30; 0,
           -30; 0,-70; 21,-70], style(color=62, rgbcolor={0,127,127}));
-    connect(cold_2_T.inlet, sinkPort.inlet)   annotation (points=[42,-30; 0,-30; 
+    connect(cold_2_T.inlet, sinkPort.inlet)   annotation (points=[42,-30; 0,-30;
           0,-70; 21,-70], style(color=62, rgbcolor={0,127,127}));
     connect(cold_1_T.inlet, sinkPort.inlet)  annotation (points=[42,30; 0,30; 0,
           -70; 21,-70], style(color=62, rgbcolor={0,127,127}));
-    connect(hot_1_T.outlet, sinkPort.inlet)   annotation (points=[-42,30; 0,30; 
+    connect(hot_1_T.outlet, sinkPort.inlet)   annotation (points=[-42,30; 0,30;
           0,-70; 21,-70], style(color=62, rgbcolor={0,127,127}));
     connect(cold_1, cold_1_T.outlet) 
       annotation (points=[90,30; 58,30], style(color=62, rgbcolor={0,127,127}));
@@ -801,7 +801,7 @@ condensation is very important there.</p>
           color=62, rgbcolor={0,127,127}));
     connect(hot_1_T.T, T_hot_1) annotation (points=[-46.2,23.6; -46,23.6; -46,
           20; -40,20; -40,50; -90,50], style(color=3, rgbcolor={0,0,255}));
-    connect(cold_1_T.T, T_cold_1) annotation (points=[53.8,23.6; 54,23.6; 54,20; 
+    connect(cold_1_T.T, T_cold_1) annotation (points=[53.8,23.6; 54,23.6; 54,20;
           40,20; 40,50; 90,50], style(color=3, rgbcolor={0,0,255}));
     connect(cold_2_T.T, T_cold_2) annotation (points=[53.8,-36.4; 54,-36.4; 54,
           -50; 90,-50], style(color=3, rgbcolor={0,0,255}));
@@ -829,7 +829,7 @@ condensation is very important there.</p>
       annotation (extent=[-60,-40; -40,-20]);
     FlowTemperature cold_2_T "Temperature of the cold flow on side 2" 
       annotation (extent=[40,-40; 60,-20]);
-    annotation (Diagram, Documentation(info="<html>
+    annotation (defaultComponentName="step", Diagram, Documentation(info="<html>
 <p>To implement a discretised heat exchanger, a single step is implemented 
 here as a simplistic heat exchanger. It could be based on LMTD, but using
 the average temperature is numerically more robust and allows Dymola to
@@ -857,13 +857,13 @@ perform algebraic manipulation.</p>
           -42,30], style(color=62, rgbcolor={0,127,127}));
     connect(sink.inlet, cold_1_T.inlet) annotation (points=[21,-70; 0,-70; 0,30;
           42,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cold_1_T.T, T_cold_1) annotation (points=[53.8,23.6; 54,23.6; 54,20; 
+    connect(cold_1_T.T, T_cold_1) annotation (points=[53.8,23.6; 54,23.6; 54,20;
           40,20; 40,50; 90,50],   style(color=3, rgbcolor={0,0,255}));
     connect(cold_2_T.T, T_cold_2) annotation (points=[53.8,-36.4; 54,-36.4; 54,
           -50; 90,-50],                    style(color=3, rgbcolor={0,0,255}));
     connect(hot_2_T.T, T_hot_2) annotation (points=[-46.2,-36.4; -46,-36.4; -46,
           -50; -90,-50],                      style(color=3, rgbcolor={0,0,255}));
-    connect(hot_1_T.T, T_hot_1) annotation (points=[-46.2,23.6; -46,23.6; -46,20; -40,20; 
+    connect(hot_1_T.T, T_hot_1) annotation (points=[-46.2,23.6; -46,23.6; -46,20; -40,20;
           -40,50; -90,50], style(color=3, rgbcolor={0,0,255}));
   end DiscretisedHeatExchangerStep;
   
@@ -882,7 +882,7 @@ perform algebraic manipulation.</p>
     annotation (Diagram, Documentation(info="<html>
 <p>This heat exchanger is much more complex than a LMTD exchanger, and should be
 used only for condensing flows where LMTD theory is not valid.</p>
-</html>"), 
+</html>"),
       Icon);
   equation 
     Q = sum(steps[i].Q for i in 1:n);
@@ -930,7 +930,7 @@ used only for condensing flows where LMTD theory is not valid.</p>
                    annotation (extent=[-100,-6; -88,6]);
     FlowPort outlet "Outlet from the cooler" 
                     annotation (extent=[88,-6; 100,6]);
-    annotation (Diagram, Icon(
+    annotation (defaultComponentName="cooler", Diagram, Icon(
         Rectangle(extent=[-90,20; 90,-20], style(
             color=0,
             rgbcolor={0,0,0},
@@ -989,23 +989,22 @@ used only for condensing flows where LMTD theory is not valid.</p>
 species is equal to the inlet ones, and that the difference in enthalpic flow is the
 cooling or heating duty.</p>
 </html>"));
-    TemperatureOutput T_process_in "Process inlet temperature" annotation (extent=[-88,8; 
+    TemperatureOutput T_process_in "Process inlet temperature" annotation (extent=[-88,8;
           -100,20]);
-    TemperatureOutput T_process_oun "Process outlet temperature" annotation (extent=[88,8; 
+    TemperatureOutput T_process_oun "Process outlet temperature" annotation (extent=[88,8;
           100,20]);
     replaceable AbstractHeatExchanger exchanger 
       "The heat exchanger implementing the cooler" 
       annotation (extent=[-64,28; 16,108]);
+    GasFlowController mfc "Mass flow controller for cooling air" 
+      annotation (extent=[20,20; 40,40]);
+    TemperatureInput T_ref "Reference temperature for the process outlet" 
+      annotation (extent=[100,-20; 88,-8]);
   protected 
     EnvironmentPort env "Environmental air source" 
       annotation (extent=[0,0; 20,20]);
     SinkPort airSink "Air outlet sink" annotation (extent=[50,70; 70,90]);
     
-  public 
-    GasFlowController mfc "Mass flow controller for cooling air" 
-      annotation (extent=[20,20; 40,40]);
-    TemperatureInput T_ref "Reference temperature for the process outlet"
-      annotation (extent=[100,-20; 88,-8]);
   equation 
     connect(exchanger.hot_2, outlet) annotation (points=[-60,56; -60,
           -2.22045e-16; 94,-2.22045e-16], style(color=62, rgbcolor={0,127,127}));
@@ -1018,7 +1017,7 @@ cooling or heating duty.</p>
     connect(mfc.outlet, exchanger.cold_2) annotation (points=[30,40; 30,56; 12,
           56],
         style(color=62, rgbcolor={0,127,127}));
-    connect(exchanger.T_hot_1, T_process_in) annotation (points=[-60,88; -72,88; 
+    connect(exchanger.T_hot_1, T_process_in) annotation (points=[-60,88; -72,88;
           -72,14; -94,14], style(color=3, rgbcolor={0,0,255}));
     connect(exchanger.T_cold_1, T_process_oun) annotation (points=[12,88; 40,88; 
           40,94; 80,94; 80,14; 94,14], style(color=3, rgbcolor={0,0,255}));
@@ -1074,7 +1073,7 @@ cathode-loop cooler (condenser).</p>
     import Units.MolarFlow;
     import Units.MolarFlux;
     
-    annotation (Icon(Rectangle(extent=[-100,60; 100,0], style(
+    annotation (defaultComponentName="cell", Icon(Rectangle(extent=[-100,60; 100,0], style(
             color=0,
             rgbcolor={0,0,0},
             thickness=4,
@@ -1279,7 +1278,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
-    connect(T, cathodeT.T) annotation (points=[110,2; 80,2; 80,23.6; 73.8,23.6], 
+    connect(T, cathodeT.T) annotation (points=[110,2; 80,2; 80,23.6; 73.8,23.6],
         style(color=3, rgbcolor={0,0,255}));
   end FuelCell;
   
@@ -1389,7 +1388,7 @@ current.</p>
       connect(flowTemperature.outlet, sinkPort.inlet) 
         annotation (points=[-46,-16; -27.6,-16], style(color=62, rgbcolor={0,
               127,127}));
-      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10; 
+      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
             -72,10; -72,-16; -62,-16], style(color=62, rgbcolor={0,127,127}));
       connect(condenser.outlet, mixer.waterInlet) 
         annotation (points=[30,10; -2,10], style(color=62, rgbcolor={0,127,127}));
@@ -1428,50 +1427,57 @@ current.</p>
       connect(separator.liquidOutlet, liquidSink.inlet) 
         annotation (points=[18.8,3; 18,3; 18,-12; 46.4,-12], style(color=62,
             rgbcolor={0,127,127}));
-      connect(separator.gasOutlet, gasSink.inlet)    annotation (points=[18.8,23; 
+      connect(separator.gasOutlet, gasSink.inlet)    annotation (points=[18.8,23;
             18.4,23; 18.4,34; 46.4,34], style(color=62, rgbcolor={0,127,127}));
     end SeparatorTest;
     
     partial model AbstractHeatExchangerTest "Generic test for heat exchangers" 
       
-      import Units.MolarFlow;
+      import Modelica.SIunits.VolumeFlowRate;
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
       inner parameter Real RH_env = 60;
       
     protected 
-      EnvironmentPort env             annotation (extent=[0,-58; 22,-34]);
+      EnvironmentPort env             annotation (extent=[100,-60; 80,-40]);
       SinkPort coldSink "Sink for the cold flow" 
                         annotation (extent=[62,28; 70,36]);
       annotation (Diagram,
         experiment(StopTime=80),
         experimentSetupOutput);
     public 
-                     replaceable AbstractHeatExchanger exchanger 
-        "The heat exchanger" annotation (extent=[-40,-20; 40,60]);
+      replaceable AbstractHeatExchanger exchanger "The heat exchanger" 
+                             annotation (extent=[-40,-20; 40,60]);
     protected 
       SinkPort hotSink "Sink for the hot flow" 
                         annotation (extent=[-28,-52; -20,-44]);
       MethanolSolution methanolSolution(T=330) 
-        annotation (extent=[-80,22; -60,42]);
+        annotation (extent=[-80,-40; -60,-20]);
+      Pump pump annotation (extent=[-80,0; -60,20]);
+    public 
+      GasFlowController mfc annotation (extent=[52,-42; 72,-22]);
       
     public 
-      parameter MolarFlow n_air = 1;
-      parameter MolarFlow n_sol = 1;
+      parameter VolumeFlowRate air = 100E-3/60 "Full scale of cooling air";
+      parameter VolumeFlowRate sol = 10E-6/60 "Loop solution";
       
     equation 
-      sum(env.outlet.n) = -n_air;
-      sum(methanolSolution.outlet.n) = -n_sol;
+      mfc.V = 0.01*air+0.99*air*time;
+      pump.V = sol;
       
-      connect(methanolSolution.outlet, exchanger.hot_1) annotation (points=[-70,32; 
-            -53,32; -53,32; -36,32],     style(color=62, rgbcolor={0,127,127}));
       connect(hotSink.inlet, exchanger.hot_2) annotation (points=[-27.6,-48; 
             -36,-48; -36,8], style(color=62, rgbcolor={0,127,127}));
-      connect(env.outlet, exchanger.cold_2) annotation (points=[20.9,-52; 36,
-            -52; 36,8], style(color=62, rgbcolor={0,127,127}));
       connect(exchanger.cold_1, coldSink.inlet) annotation (points=[36,32; 49.2,
             32; 49.2,32; 62.4,32], style(color=62, rgbcolor={0,127,127}));
+      connect(env.outlet, mfc.inlet) annotation (points=[81,-55; 62,-55; 62,-32], 
+          style(color=62, rgbcolor={0,127,127}));
+      connect(mfc.outlet, exchanger.cold_2) annotation (points=[62,-22; 62,8; 
+            36,8], style(color=62, rgbcolor={0,127,127}));
+      connect(pump.outlet, exchanger.hot_1) annotation (points=[-70,20; -70,32; 
+            -36,32], style(color=62, rgbcolor={0,127,127}));
+      connect(methanolSolution.outlet, pump.inlet) annotation (points=[-70,-30; 
+            -70,10], style(color=62, rgbcolor={0,127,127}));
     end AbstractHeatExchangerTest;
     
     model LMTDHeatExchangerTest "Test for the LMTD-based heat exchanger" 
@@ -1487,7 +1493,7 @@ current.</p>
     model DiscretisedHeatExchangerTest 
       "Test for the discretised heat exchanger" 
       extends AbstractHeatExchangerTest(redeclare DiscretisedHeatExchanger 
-          exchanger(n=5));
+          exchanger);
     end DiscretisedHeatExchangerTest;
     
     partial model AbstractCoolerTest "Generic test for air coolers" 
@@ -1571,14 +1577,14 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-38,26;
             -18,26; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-49,23; -50,23; -50,22;
             -38,22],        style(color=62, rgbcolor={0,127,127}));
       connect(cathodeSink.inlet, fuelCell.cathode_outlet)    annotation (points=[62.3,21;
             52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
-      connect(anodeSink.inlet, fuelCell.anode_outlet)    annotation (points=[62.3,13; 
+      connect(anodeSink.inlet, fuelCell.anode_outlet)    annotation (points=[62.3,13;
             52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
       connect(ground.p, I_cell.n) 
         annotation (points=[48,60; 34,60], style(color=3, rgbcolor={0,0,255}));
@@ -1587,7 +1593,7 @@ current.</p>
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
             34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18; 
+      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18;
             -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
     end CellTest;
     
