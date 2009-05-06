@@ -1,6 +1,10 @@
 package Control "Controllers for the DMFC system" 
   block CoolerControl "PI controller with saturation" 
     extends Modelica.Blocks.Interfaces.SVcontrol;
+    
+    import Modelica.SIunits.Time;
+    import Modelica.SIunits.VolumeFlowRate;
+    
     annotation (defaultComponentName="K",Diagram,
       Icon(
         Line(points=[-80,76; -80,-92],   style(color=8)),
@@ -13,7 +17,7 @@ package Control "Controllers for the DMFC system"
         Text(
           extent=[-20,-22; 80,-62],
           style(color=8),
-          string="PI+sat")), 
+          string="PI+sat")),
       Documentation(info="<html>
 <p>This controller is used in the <tt>AbstractCooler</tt> class to set
 the process outlet temperature by manipulating the coolant air flow.</p>
