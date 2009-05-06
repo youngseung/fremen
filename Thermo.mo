@@ -34,6 +34,26 @@ encapsulated package Thermo "Thermodynamic library"
       "All incondensable species (gases)";
     constant Molecule[:] Condensable =   1:2 "All condensable species";
     
+    annotation (Documentation(info="<html>
+<p>This enumeration contains the species considered in our model. Each has
+an associated integer in order to emulate enumerations.</p>
+<p>Some convenience vectors are provided with the most commons sets of species:
+<tt>All</tt> for all species, <tt>Condensable</tt> for those species that can
+be present in liquid and gas phase, and <tt>Incondensable</tt> for those that
+can be present in gas phase only.</p>
+<p>Whereas it is true that all species are condensable to a certain degree, 
+modelling some (most) species as absolutely incondensable allows to use direct
+calculations for the multicomponent equilibrium, which speeds up simulation
+times immensely. The only \"incondensable\" species that would be interesting in
+liquid phase would be carbon dioxide (corrosion due to formation of carbonic 
+acid), but since our system is atmospheric it is never going to be important 
+anyway.</p>
+<p>A better name for this enumeration would have been <tt>Species</tt>, but 
+it happens that that word has no plural; since it is common practice to use the 
+singular for the data type (defined as <tt>Units.Molecule</tt>) and the plural 
+for the enumeration itself (<tt>Thermo.Molecules</tt>), the word \"Molecule\" was
+preferred.</p>
+</html>"));
   end Molecules;
   
 public 
@@ -47,6 +67,14 @@ public
     
     constant Phase[:] All = 1001:1002 "All modelled phases";
     
+    annotation (Documentation(info="<html>
+<p>This enumeration contains constants that indicate phases considered
+in the model. Note that the integers referred to are <em>not</em> the
+same as in <tt>Molecules</tt>, in fact not even close, in order to 
+cause immediate crashes in case someone calls a function with the
+wrong order of arguments (e.g. <tt>rho(T, phase, species)</tt>).</p>
+<p>A commodity vector containing all phases, <tt>All</tt>, is provided.</p>
+</html>"));
   end Phases;
   
 protected 
