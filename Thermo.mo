@@ -23,15 +23,16 @@ encapsulated package Thermo "Thermodynamic library"
     
     import Units.Molecule;
     
-    constant Molecule Methanol =      1;
-    constant Molecule Water =         2;
-    constant Molecule Oxygen =        3;
-    constant Molecule CarbonDioxide = 4;
-    constant Molecule Nitrogen =      5;
+    constant Molecule Methanol =      1 "Methanol";
+    constant Molecule Water =         2 "Water";
+    constant Molecule Oxygen =        3 "Oxygen";
+    constant Molecule CarbonDioxide = 4 "Carbon dioxide";
+    constant Molecule Nitrogen =      5 "Nitrogen";
     
-    constant Molecule[:] All =           1:5;
-    constant Molecule[:] Incondensable = 3:5;
-    constant Molecule[:] Condensable =   1:2;
+    constant Molecule[:] All =           1:5 "All modelled species";
+    constant Molecule[:] Incondensable = 3:5 
+      "All incondensable species (gases)";
+    constant Molecule[:] Condensable =   1:2 "All condensable species";
     
   end Molecules;
   
@@ -41,10 +42,10 @@ public
     
     import Units.Phase;
     
-    constant Phase Gas =     1001;
-    constant Phase Liquid =  1002;
+    constant Phase Gas =     1001 "Gas phase";
+    constant Phase Liquid =  1002 "Liquid phase";
     
-    constant Phase[:] All = 1001:1002;
+    constant Phase[:] All = 1001:1002 "All modelled phases";
     
   end Phases;
   
@@ -96,7 +97,7 @@ Source: Perry's Chemical Engineers' Handbook, 7th edition, page 2-171.</p>
 </html>"));
   end LiquidMethanolParameters;
   
-protected
+protected 
   package Shomate "Parameters for shomate equations" 
     
     record Parameters "Set of parameters for Shomate equations" 
@@ -976,7 +977,6 @@ page 2-370.</p>
 public 
   package Test 
     
-    
   model Test_h "test case for specific enthalpy" 
       import Modelica.SIunits.Temperature;
       import Units.MolarEnthalpy;
@@ -1015,7 +1015,7 @@ public
       annotation (experiment, experimentSetupOutput);
       
   end Test_h;
-
+    
   model Test_cp "test case for specific enthalpy" 
       import Modelica.SIunits.Temperature;
       import Units.MolarEnthalpy;
@@ -1058,7 +1058,7 @@ public
       annotation (experiment, experimentSetupOutput);
       
   end Test_cp;
-
+    
   model Test_p_vap "test case for species equilibrum constant" 
       import Modelica.SIunits.Temperature;
       import Modelica.SIunits.PartialPressure;
@@ -1082,7 +1082,7 @@ public
     PartialPressure old_p_ch3oh = delay(p_ch3oh, blinkOfAnEye);
       
   end Test_p_vap;
-
+    
   model Test_K "test case for species equilibrum constant" 
       import Modelica.SIunits.Temperature;
       import Modelica.SIunits.Time;
@@ -1105,7 +1105,6 @@ public
     Real old_K_ch3oh = delay(K_ch3oh, blinkOfAnEye);
       
   end Test_K;
-    
     
   model Test_rho "test case for specific enthalpy" 
       import Modelica.SIunits.Temperature;
@@ -1145,7 +1144,7 @@ public
       annotation (experiment, experimentSetupOutput);
       
   end Test_rho;
-
+    
     model TestRR 
       import Modelica.SIunits.Temperature;
       import Modelica.SIunits.MoleFraction;
