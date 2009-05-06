@@ -1,3 +1,4 @@
+import " Control.mo";
 import " Units.mo";
 
 
@@ -153,7 +154,7 @@ released in terms of moles, mass and volume.</p>
     
     FlowPort outlet "Environment-air port" 
                  annotation (extent=[80,-60; 100,-40]);
-    annotation (Documentation(info="<html>
+    annotation (defaultComponentName="env", Documentation(info="<html>
 <p>This object generates a gas flow corresponding to ambient air, accounting
 also for humidity.</p>
 </html>"), Icon(
@@ -1004,23 +1005,15 @@ cooling or heating duty.</p>
       "The heat exchanger implementing the cooler" 
       annotation (extent=[-64,28; 16,108]);
     GasFlowController mfc "Mass flow controller for cooling air" 
-      annotation (extent=[40,10; 20,30]);
+      annotation (extent=[22,6; 38,22]);
     TemperatureInput T_ref "Reference temperature for the process outlet" 
-      annotation (extent=[100,-28; 88,-16]);
+      annotation (extent=[100,8; 88,20]);
   protected 
     EnvironmentPort env "Environmental air source" 
-      annotation (extent=[70,6; 50,26]);
+      annotation (extent=[0,0; 20,20]);
     SinkPort airSink "Air outlet sink" annotation (extent=[50,70; 70,90]);
-    
-    Modelica.Blocks.Math.Feedback difference "Offset estimation" 
-      annotation (extent=[80,-20; 60,-40]);
   public 
-    Modelica.Blocks.Continuous.PI PI(T=600, k=-6.6667e-05) 
-      "Feedback controller for process outlet temperature" 
-      annotation (extent=[40,-40; 20,-20]);
-    Modelica.Blocks.Nonlinear.Limiter limiter(uMax=100E-3/60, uMin=2E-3/60) 
-      "Coolant flow is constrained to be positive and bounded" 
-      annotation (extent=[0,-40; -20,-20]);
+    Control.CoolerControl K annotation (extent=[68,6; 52,22]);
   equation 
     connect(exchanger.hot_2, outlet) annotation (points=[-60,56; -60,
           -2.22045e-16; 94,-2.22045e-16], style(color=62, rgbcolor={0,127,127}));
@@ -1028,26 +1021,22 @@ cooling or heating duty.</p>
           -2.22045e-16; -80,80; -60,80], style(color=62, rgbcolor={0,127,127}));
     connect(airSink.inlet, exchanger.cold_1) annotation (points=[51,80; 12,80],
         style(color=62, rgbcolor={0,127,127}));
-    connect(env.outlet, mfc.inlet) annotation (points=[51,11; 30,11; 30,20],
+    connect(env.outlet, mfc.inlet) annotation (points=[19,5; 30,5; 30,14],
         style(color=62, rgbcolor={0,127,127}));
-    connect(mfc.outlet, exchanger.cold_2) annotation (points=[30,30; 30,56; 12,
+    connect(mfc.outlet, exchanger.cold_2) annotation (points=[30,22; 30,56; 12,
           56],
         style(color=62, rgbcolor={0,127,127}));
-    connect(exchanger.T_hot_1, T_process_in) annotation (points=[-60,88; -72,88;
-          -72,-14; -94,-14],
+    connect(exchanger.T_hot_1, T_process_in) annotation (points=[-60,88; -74,88; 
+          -74,-14; -94,-14],
                            style(color=3, rgbcolor={0,0,255}));
-    connect(exchanger.T_hot_2, T_process_out) annotation (points=[-60,48; -68,
-          48; -68,-14; 94,-14], style(color=3, rgbcolor={0,0,255}));
-    connect(difference.u2, exchanger.T_hot_2) annotation (points=[70,-22; 70,
-          -14; -68,-14; -68,48; -60,48], style(color=3, rgbcolor={0,0,255}));
-    connect(T_ref, difference.u1) annotation (points=[94,-22; 84,-22; 84,-30;
-          78,-30], style(color=3, rgbcolor={0,0,255}));
-    connect(PI.u, difference.y) 
-      annotation (points=[42,-30; 61,-30], style(color=3, rgbcolor={0,0,255}));
-    connect(limiter.u, PI.y) 
-      annotation (points=[2,-30; 19,-30], style(color=3, rgbcolor={0,0,255}));
-    connect(limiter.y, mfc.V) annotation (points=[-21,-30; -40,-30; -40,20; 20,
-          20], style(color=1, rgbcolor={255,0,0}));
+    connect(exchanger.T_hot_2, T_process_out) annotation (points=[-60,48; -70,
+          48; -70,-14; 94,-14], style(color=3, rgbcolor={0,0,255}));
+    connect(K.u_s, T_ref)
+      annotation (points=[69.6,14; 94,14], style(color=3, rgbcolor={0,0,255}));
+    connect(K.y, mfc.V)
+      annotation (points=[51.2,14; 38,14], style(color=3, rgbcolor={0,0,255}));
+    connect(K.u_m, exchanger.T_hot_2) annotation (points=[60,4.4; 60,-14; -70,
+          -14; -70,48; -60,48], style(color=3, rgbcolor={0,0,255}));
   end AbstractCooler;
   
   model LMTDCooler "A heat exchanger based on the LMTD" 
@@ -1548,10 +1537,10 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
