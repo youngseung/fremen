@@ -96,7 +96,7 @@ Source: Perry's Chemical Engineers' Handbook, 7th edition, page 2-171.</p>
 </html>"));
   end LiquidMethanolParameters;
   
-public 
+protected
   package Shomate "Parameters for shomate equations" 
     
     record Parameters "Set of parameters for Shomate equations" 
