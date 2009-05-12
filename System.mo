@@ -10,14 +10,14 @@ package System "DMFC systems"
     
     Flow.Mixer mixer annotation (extent=[-10,-42; 10,-22]);
     Flow.Pump pump "The anodic-loop pump" 
-              annotation (extent=[-50,-38; -38,-26]);
+              annotation (extent=[-38,-38; -50,-26]);
     annotation (Diagram);
     replaceable Flow.AbstractCooler anodeCooler "The solution-loop cooler" 
                   annotation (extent=[-6,-10; 16,10]);
     Flow.PureMethanolSource pureMethanolSource 
       "A substitute for an actual tank"   annotation (extent=[30,-58; 42,-46]);
     Flow.Pump fuelPump "The smaller fuel pump" 
-                  annotation (extent=[8,-58; 20,-46]);
+                  annotation (extent=[20,-58; 8,-46]);
     Flow.Separator degasser "The CO2-degasser" 
                         annotation (extent=[50,-10; 70,10]);
     Flow.SinkPort co2sink "The gas outlet of the degasser" 
@@ -25,9 +25,9 @@ package System "DMFC systems"
     replaceable Flow.FuelCell fuelCell 
                       annotation (extent=[-50,-12; -14,22]);
     Flow.EnvironmentPort environment "The air from the environment" 
-      annotation (extent=[-100,0; -78,22]);
+      annotation (extent=[-100,0; -80,20]);
     Flow.GasFlowController blower "The mass-flow controller" 
-      annotation (extent=[-74,2; -66,10]);
+      annotation (extent=[-74,6; -66,14], rotation=270);
     replaceable Flow.AbstractCooler cathodeCooler "The cathode-side cooler" 
                   annotation (extent=[24,0; 46,20]);
     Flow.Separator condenser "The water-recuperating unit" 
@@ -48,9 +48,9 @@ package System "DMFC systems"
       annotation (points=[36,-52; 14,-52],    style(color=62, rgbcolor={0,127,
             127}));
     connect(environment.outlet, blower.inlet) 
-                                         annotation (points=[-79.1,5.5; -78,5.5;
-          -78,6; -70,6],      style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-70,10; 
+                                         annotation (points=[-81,10; -70,10],
+                              style(color=62, rgbcolor={0,127,127}));
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-66,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(cathodeCooler.outlet, condenser.inlet) 
       annotation (points=[45.34,10; 72,10], style(color=62, rgbcolor={0,127,127}));
@@ -96,14 +96,14 @@ package System "DMFC systems"
             127}));
     connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
           2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
-    connect(amperometer.p, load.n)
+    connect(amperometer.p, load.n) 
       annotation (points=[-32,60; -40,60], style(color=3, rgbcolor={0,0,255}));
     connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
           -21.2,40; 0,40; 0,60; -12,60], style(color=3, rgbcolor={0,0,255}));
     connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
           -64,40; -64,60; -52,60], style(color=3, rgbcolor={0,0,255}));
   end Reference;
-
+  
   model Reference_NoControl "Sets manipulable variables with parameters" 
     extends Reference(
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),

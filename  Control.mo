@@ -1,6 +1,6 @@
 package Control "Controllers for the DMFC system" 
   block CoolerControl "PI controller with saturation" 
-    extends Modelica.Blocks.Interfaces.SVcontrol;
+    extends Modelica.Blocks.Interfaces.BlockIcon;
     
     import Modelica.SIunits.Time;
     import Modelica.SIunits.VolumeFlowRate;
@@ -48,33 +48,83 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
   protected 
     Modelica.Blocks.Math.Feedback difference "Calculates the offset" 
-      annotation (extent=[-10,-10; 10,10]);
+      annotation (extent=[-50,-10; -30,10]);
     Modelica.Blocks.Continuous.PI PI(k=Kc, T=tau) "The actual PI controller" 
-                                 annotation (extent=[30,-10; 50,10]);
+                                 annotation (extent=[-10,-10; 10,10]);
     Modelica.Blocks.Nonlinear.Limiter limiter(uMax=maxFlow, uMin=0) 
-      "Limitations of the MFC" annotation (extent=[70,-10; 90,10]);
+      "Limitations of the MFC" annotation (extent=[40,-10; 60,10]);
     
   public 
     parameter Real Kc = -6.6667E-5 "Proportionality constant";
     parameter Time tau = 600 "Integral time";
     parameter VolumeFlowRate maxFlow = 100E-3/60 "Maximum flow rate";
     
+    Flow.TemperatureInput T_r "Reference"
+      annotation (extent=[-140,-20; -100,20]);
+    Flow.TemperatureInput T_m "Measurement"
+      annotation (extent=[-20,-140; 20,-100], rotation=90);
+    Flow.VolumeFlowRateOutput V "Manipulable variable"
+      annotation (extent=[100,-20; 140,20]);
   equation 
-    connect(u_s, difference.u1) annotation (points=[-120,1.11022e-15; -76,
-          1.11022e-15; -76,6.66134e-16; -8,6.66134e-16], style(color=74, rgbcolor=
-           {0,0,127}));
-    connect(u_m, difference.u2) annotation (points=[-1.11022e-15,-120; 
-          -1.11022e-15,-65; 6.66134e-16,-65; 6.66134e-16,-8], style(color=74,
-          rgbcolor={0,0,127}));
-    connect(difference.y, PI.u) annotation (points=[9,6.10623e-16; 16,
-          6.10623e-16; 16,0; 22,0; 22,6.66134e-16; 28,6.66134e-16],
+    connect(difference.y, PI.u) annotation (points=[-31,6.10623e-16; -14,
+          6.10623e-16; -14,0; -8,0; -8,6.66134e-16; -12,6.66134e-16],
                                                        style(color=74, rgbcolor={
             0,0,127}));
-    connect(PI.y, limiter.u) annotation (points=[51,6.10623e-16; 59.5,
-          6.10623e-16; 59.5,6.66134e-16; 68,6.66134e-16], style(color=74,
+    connect(PI.y, limiter.u) annotation (points=[11,6.10623e-16; 29.5,
+          6.10623e-16; 29.5,6.66134e-16; 38,6.66134e-16], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.y, y) annotation (points=[91,6.10623e-16; 97.5,6.10623e-16; 
-          97.5,5.55112e-16; 110,5.55112e-16], style(color=74, rgbcolor={0,0,127}));
+    connect(difference.u2, T_m) annotation (points=[-40,-8; -40,-40; 0,-40; 0,
+          -120; 1.11022e-15,-120], style(color=74, rgbcolor={0,0,127}));
+    connect(difference.u1, T_r) annotation (points=[-48,6.66134e-16; -62,
+          6.66134e-16; -62,1.11022e-15; -120,1.11022e-15], style(color=74, 
+          rgbcolor={0,0,127}));
+    connect(limiter.y, V) annotation (points=[61,6.10623e-16; 83.5,6.10623e-16; 
+          83.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
   end CoolerControl;
   annotation (uses(Modelica(version="2.2.1")));
+  block CathodeLambdaControl "Feedforward controller for the cathodic flow" 
+    extends Modelica.Blocks.Interfaces.BlockIcon;
+    
+    import Modelica.Constants.R;
+    import Modelica.SIunits.MoleFraction;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.Pressure;
+    
+    parameter Real lambda = 2 "Reactant excess ratio";
+    
+    parameter Real aA "Partial derivative of I_x wrt. c";
+    parameter Real b "Partial derivative of I_x wrt. I";
+    
+    parameter MoleFraction x_O2_env = 0.2 
+      "Oxygen molar fraction in environment";
+    parameter Pressure p_env = 101325 "Environment pressure";
+    parameter Tempearture T_env = 298.15 "Environment temperature";
+    
+    annotation (Diagram, Icon(Text(
+          extent=[100,100; -100,-100], 
+          style(color=3, rgbcolor={0,0,255}), 
+          string="V = f(I,c)")));
+    Flow.ConcentrationInput c "Estimate of concentration"
+      annotation (extent=[-140,-70; -100,-30]);
+    Flow.CurrentInput I "Measurement of current"
+      annotation (extent=[-140,30; -100,70]);
+    Flow.VolumeFlowRateOutput V annotation (extent=[100,-20; 140,20]);
+  protected 
+    constant Modelica.SIunits.FaradayConstant F = 96485.3415;
+    
+    Modelica.Blocks.Math.Add add(k1=(1 - b), k2=aA) 
+      "Sums the measurement with the appropriate weights"
+      annotation (extent=[-20,-10; 0,10]);
+    Modelica.Blocks.Math.Gain gain(k=lambda/(4*F)/x_O2_env*(R*T_env/p_env))
+      annotation (extent=[40,-10; 60,10]);
+  equation 
+    connect(add.y, gain.u) annotation (points=[1,6.10623e-16; 6.5,6.10623e-16; 
+          6.5,6.66134e-16; 38,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
+    connect(gain.y, V) annotation (points=[61,6.10623e-16; 73.5,6.10623e-16; 
+          73.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
+    connect(add.u1, I) annotation (points=[-22,6; -60,6; -60,50; -120,50], 
+        style(color=74, rgbcolor={0,0,127}));
+    connect(add.u2, c) annotation (points=[-22,-6; -60,-6; -60,-50; -120,-50], 
+        style(color=74, rgbcolor={0,0,127}));
+  end CathodeLambdaControl;
 end Control;
