@@ -22,7 +22,8 @@ package Control "Controllers for the DMFC system"
 <p>This controller is used in the <tt>AbstractCooler</tt> class to set
 the process outlet temperature by manipulating the coolant air flow.</p>
 <p>The controller includes a standard Modelica PI controller and a 
-saturation limit between zero and a configurable maximum.</p>
+saturation limit between configurable minimum and maximum; set the minimum
+to a little higher than zero to avoid initialisation problems.</p>
 
 <h3>Tuning Procedure</h3>
 <p>This controller has been tuned with the Skogestad rules for PI controllers of 
@@ -48,15 +49,16 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
   protected 
     Modelica.Blocks.Math.Feedback difference "Calculates the offset" 
-      annotation (extent=[-50,-10; -30,10]);
-    Modelica.Blocks.Continuous.PI PI(k=Kc, T=tau) "The actual PI controller" 
-                                 annotation (extent=[-10,-10; 10,10]);
-    Modelica.Blocks.Nonlinear.Limiter limiter(uMax=maxFlow, uMin=0) 
-      "Limitations of the MFC" annotation (extent=[40,-10; 60,10]);
+      annotation (extent=[-60,-10; -40,10]);
+    Modelica.Blocks.Continuous.PI PI(T=tau, k=Kc) "The actual PI controller" 
+                                 annotation (extent=[20,-10; 40,10]);
+    Modelica.Blocks.Nonlinear.Limiter limiter(uMax=maxFlow, uMin=minFlow) 
+      "Limitations of the MFC" annotation (extent=[60,-10; 80,10]);
     
   public 
-    parameter Real Kc = -6.6667E-5 "Proportionality constant";
+    parameter Real Kc = 6.6667E-5 "Proportionality constant";
     parameter Time tau = 600 "Integral time";
+    parameter VolumeFlowRate minFlow = 0.1E-3/60 "Minimum flow rate";
     parameter VolumeFlowRate maxFlow = 100E-3/60 "Maximum flow rate";
     
     Flow.TemperatureInput T_r "Reference" 
@@ -65,21 +67,26 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
       annotation (extent=[-20,-140; 20,-100], rotation=90);
     Flow.VolumeFlowRateOutput V "Manipulable variable" 
       annotation (extent=[100,-20; 140,20]);
+  protected 
+    Modelica.Blocks.Math.Gain signChange(k=-1) 
+      "Change the sign to get the error signal" 
+      annotation (extent=[-20,-10; 0,10]);
   equation 
-    connect(difference.y, PI.u) annotation (points=[-31,6.10623e-16; -14,
-          6.10623e-16; -14,0; -8,0; -8,6.66134e-16; -12,6.66134e-16],
-                                                       style(color=74, rgbcolor={
-            0,0,127}));
-    connect(PI.y, limiter.u) annotation (points=[11,6.10623e-16; 29.5,
-          6.10623e-16; 29.5,6.66134e-16; 38,6.66134e-16], style(color=74,
-          rgbcolor={0,0,127}));
-    connect(difference.u2, T_m) annotation (points=[-40,-8; -40,-40; 0,-40; 0,
+    connect(difference.u2, T_m) annotation (points=[-50,-8; -50,-40; 0,-40; 0,
           -120; 1.11022e-15,-120], style(color=74, rgbcolor={0,0,127}));
-    connect(difference.u1, T_r) annotation (points=[-48,6.66134e-16; -62,
+    connect(difference.u1, T_r) annotation (points=[-58,6.66134e-16; -62,
           6.66134e-16; -62,1.11022e-15; -120,1.11022e-15], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.y, V) annotation (points=[61,6.10623e-16; 83.5,6.10623e-16; 
+    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16;
           83.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
+    connect(PI.u, signChange.y) annotation (points=[18,6.66134e-16; 12,
+          6.66134e-16; 12,6.10623e-16; 1,6.10623e-16], style(color=74, rgbcolor=
+           {0,0,127}));
+    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16;
+          -24,6.66134e-16; -24,6.10623e-16; -41,6.10623e-16], style(color=74,
+          rgbcolor={0,0,127}));
+    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16;
+          50,6.10623e-16; 41,6.10623e-16], style(color=74, rgbcolor={0,0,127}));
   end CoolerControl;
   annotation (uses(Modelica(version="2.2.1")));
   block CathodeLambdaControl "Feedforward controller for the cathodic flow" 
@@ -92,8 +99,8 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     
     parameter Real lambda = 2 "Reactant excess ratio";
     
-    parameter Real aA = 4.5 "Partial derivative of I_x wrt. c";
-    parameter Real b = 0.15 "Partial derivative of I_x wrt. I";
+    parameter Real aA = 5E-3 "Partial derivative of I_x wrt. c";
+    parameter Real b = 0.21 "Partial derivative of I_x wrt. I";
     
     outer parameter Pressure p_env = 101325 "Environment pressure";
     outer parameter Temperature T_env = 298.15 "Environment temperature";
@@ -103,9 +110,9 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
           style(color=3, rgbcolor={0,0,255}),
           string="V = f(I,c)")));
     Flow.ConcentrationInput c "Concentration target" 
-      annotation (extent=[-140,-70; -100,-30]);
+      annotation (extent=[-140,-80; -100,-40]);
     Flow.CurrentInput I "Current measurement" 
-      annotation (extent=[-140,30; -100,70]);
+      annotation (extent=[-140,40; -100,80]);
     Flow.VolumeFlowRateOutput V "Air flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
@@ -118,13 +125,13 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     Modelica.Blocks.Math.Gain gain(k=lambda/(4*F)/x_O2_env*(R*T_env/p_env)) 
       annotation (extent=[40,-10; 60,10]);
   equation 
-    connect(add.y, gain.u) annotation (points=[1,6.10623e-16; 6.5,6.10623e-16; 
+    connect(add.y, gain.u) annotation (points=[1,6.10623e-16; 6.5,6.10623e-16;
           6.5,6.66134e-16; 38,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
-    connect(gain.y, V) annotation (points=[61,6.10623e-16; 73.5,6.10623e-16; 
+    connect(gain.y, V) annotation (points=[61,6.10623e-16; 73.5,6.10623e-16;
           73.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
-    connect(add.u1, I) annotation (points=[-22,6; -60,6; -60,50; -120,50],
+    connect(add.u1, I) annotation (points=[-22,6; -60,6; -60,60; -120,60],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.u2, c) annotation (points=[-22,-6; -60,-6; -60,-50; -120,-50],
+    connect(add.u2, c) annotation (points=[-22,-6; -60,-6; -60,-60; -120,-60],
         style(color=74, rgbcolor={0,0,127}));
   end CathodeLambdaControl;
   
@@ -133,17 +140,17 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     
     parameter Real lambda = 2 "Reactant excess ratio";
     
-    parameter Real aA = 4.5 "Partial derivative of I_x wrt. c";
-    parameter Real b = 0.15 "Partial derivative of I_x wrt. I";
+    parameter Real aA = 5E-3 "Partial derivative of I_x wrt. c";
+    parameter Real b = 0.21 "Partial derivative of I_x wrt. I";
     
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
           style(color=3, rgbcolor={0,0,255}),
           string="V = f(I,c)")));
     Flow.ConcentrationInput c "Concentration estimate" 
-      annotation (extent=[-140,-70; -100,-30]);
+      annotation (extent=[-140,-80; -100,-40]);
     Flow.CurrentInput I "Current measurement" 
-      annotation (extent=[-140,30; -100,70]);
+      annotation (extent=[-140,40; -100,80]);
     Flow.VolumeFlowRateOutput V "Solution flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
@@ -160,17 +167,17 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
   equation 
     connect(add.y, gain.u) annotation (points=[-19,6; -14.75,6; -14.75,6; -10.5,
           6; -10.5,6; -2,6],                style(color=74, rgbcolor={0,0,127}));
-    connect(add.u1, I) annotation (points=[-42,12; -60,12; -60,50; -120,50],
+    connect(add.u1, I) annotation (points=[-42,12; -60,12; -60,60; -120,60],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.u2, c) annotation (points=[-42,5.55112e-16; -60,5.55112e-16; 
-          -60,-50; -120,-50],
+    connect(add.u2, c) annotation (points=[-42,5.55112e-16; -60,5.55112e-16;
+          -60,-60; -120,-60],
         style(color=74, rgbcolor={0,0,127}));
-    connect(divide.y, V) annotation (points=[71,6.10623e-16; 87.5,6.10623e-16; 
+    connect(divide.y, V) annotation (points=[71,6.10623e-16; 87.5,6.10623e-16;
           87.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(gain.y, divide.u1) annotation (points=[21,6; 27.75,6; 27.75,6; 34.5,
           6; 34.5,6; 48,6],
                          style(color=74, rgbcolor={0,0,127}));
-    connect(divide.u2, c) annotation (points=[48,-6; 36,-6; 36,-50; -120,-50],
+    connect(divide.u2, c) annotation (points=[48,-6; 36,-6; 36,-60; -120,-60],
         style(color=74, rgbcolor={0,0,127}));
   end AnodeLambdaControl;
   
@@ -187,8 +194,8 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     
     outer parameter Temperature T_env = 298.15 "Environment temperature";
     
-    parameter Real aA = 4.5 "Partial derivative of I_x wrt. c";
-    parameter Real b = 0.15 "Partial derivative of I_x wrt. I";
+    parameter Real aA = 5E-3 "Partial derivative of I_x wrt. c";
+    parameter Real b = 0.21 "Partial derivative of I_x wrt. I";
     
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
@@ -200,19 +207,19 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
       annotation (extent=[-140,40; -100,80]);
     Flow.VolumeFlowRateOutput V "Solution flow" 
                                 annotation (extent=[100,-20; 140,20]);
+    Flow.TemperatureInput T_deg "Degasser temperature" 
+      annotation (extent=[-140,-80; -100,-40]);
+    
   protected 
     constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     Real fM "Degasser loss factor";
     Real n_to_V "Conversion factor from methanol moles to volume";
     
-  public 
-    Flow.TemperatureInput T "Degasser temperature" 
-      annotation (extent=[-140,-80; -100,-40]);
   equation 
-    fM = K(T, Methanol)*mw(Water)/rho(T, Water, Liquid)/(6*F)/(1-K(T,Water));
+    fM = K(T_deg, Methanol)*mw(Water)/rho(T_deg, Water, Liquid)/(6*F)/(1-K(T_deg,Water));
     n_to_V = mw(Methanol)/rho(T_env, Methanol, Liquid);
     
-    V = n_to_V * ((1-b)*I + aA*c)/(6*F) + fM*I*c;
+    V = n_to_V * (((1-b)*I + aA*c)/(6*F) + fM*I*c);
     
   end FuelControl;
   
@@ -245,7 +252,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
         Line(points=[-80,-82; -80,-82; -80,-82; 80,58; 80,58]),
         Text(
           extent=[-20,-22; 80,-62],
-          style(color=8), 
+          style(color=8),
           string="P")));
   public 
     Flow.TemperatureInput T_cond "Condenser temperature" 
@@ -268,4 +275,73 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     end when;
     
   end WaterControl;
+  
+  block TemperatureControl "PID for temperature control" 
+    extends Modelica.Blocks.Interfaces.BlockIcon;
+    
+    import Modelica.SIunits.Time;
+    import Modelica.SIunits.VolumeFlowRate;
+    import Modelica.SIunits.Temperature;
+    
+    annotation (defaultComponentName="K",Diagram,
+      Icon(
+        Line(points=[-80,76; -80,-92],   style(color=8)),
+        Polygon(points=[-80,88; -88,66; -72,66; -80,88],     style(color=8,
+               fillColor=8)),
+        Line(points=[-90,-82; 82,-82],   style(color=8)),
+        Polygon(points=[90,-82; 68,-74; 68,-90; 90,-82],     style(color=8,
+               fillColor=8)),
+        Line(points=[-80,-82; -80,-22; -80,-22; 30,58; 80,58]),
+        Text(
+          extent=[-20,-22; 80,-62],
+          style(color=8),
+          string="PI+sat")),
+      Documentation(info="<html>
+<h3>References</h3>
+Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
+tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
+</html>"));
+    
+  public 
+    parameter Real Kc = 0.5 "Proportionality constant";
+    parameter Time tau_I = 600 "Integral time";
+    parameter Time tau_D = 30 "Derivative time";
+    
+    parameter Temperature T_0 = 315 "Nominal degasser temperature";
+    parameter Temperature T_FC_ref = 333 
+      "Set-point for the fuel cell's temperature";
+    
+    Flow.TemperatureInput T_m "Measurement" 
+      annotation (extent=[-140,-20; -100,20]);
+    Flow.TemperatureOutput T_deg_ref "Manipulable variable" 
+      annotation (extent=[100,-20; 140,20]);
+  protected 
+    Modelica.Blocks.Sources.RealExpression nominalTemperature(y=T_0) 
+      "The nominal temperature of the degasser" 
+      annotation (extent=[20,0; 40,20]);
+    Modelica.Blocks.Math.Add add annotation (extent=[60,-10; 80,10]);
+    Modelica.Blocks.Continuous.PID PID(
+      k=Kc,
+      Ti=tau_I,
+      Td=tau_D) annotation (extent=[20,-20; 40,0]);
+  protected 
+    Modelica.Blocks.Sources.RealExpression setPoint(y=T_FC_ref) 
+      "The set-point for the fuel-cell temperature" 
+      annotation (extent=[-80,10; -60,30]);
+    Modelica.Blocks.Math.Feedback feedback annotation (extent=[-50,10; -30,30]);
+  equation 
+    connect(add.y, T_deg_ref) annotation (points=[81,6.10623e-16; 82,
+          6.10623e-16; 82,1.11022e-15; 120,1.11022e-15], style(color=74,
+          rgbcolor={0,0,127}));
+    connect(nominalTemperature.y, add.u1) annotation (points=[41,10; 50,10; 50,
+          6; 58,6], style(color=74, rgbcolor={0,0,127}));
+    connect(PID.y, add.u2) annotation (points=[41,-10; 50,-10; 50,-6; 58,-6],
+        style(color=74, rgbcolor={0,0,127}));
+    connect(feedback.u1, setPoint.y) annotation (points=[-48,20; -59,20], style(
+          color=74, rgbcolor={0,0,127}));
+    connect(feedback.u2, T_m) annotation (points=[-40,12; -40,1.11022e-15; -120,
+          1.11022e-15], style(color=74, rgbcolor={0,0,127}));
+    connect(feedback.y, PID.u) annotation (points=[-31,20; -20,20; -20,-10; 18,
+          -10], style(color=74, rgbcolor={0,0,127}));
+  end TemperatureControl;
 end Control;

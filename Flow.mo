@@ -1028,7 +1028,7 @@ at environment temperature.</p>
     GasFlowController mfc "Mass flow controller for cooling air" 
       annotation (extent=[60,46; 40,66], rotation=270);
     TemperatureInput T_ref "Reference temperature for the process outlet" 
-      annotation (extent=[30,-40; 10,-20], rotation=90);
+      annotation (extent=[10,-40; -10,-20],rotation=90);
   protected 
     EnvironmentPort env "Environmental air source" 
       annotation (extent=[100,46; 80,66], rotation=0);
@@ -1053,12 +1053,13 @@ at environment temperature.</p>
           48; -70,-14; 94,-14], style(color=3, rgbcolor={0,0,255}));
     connect(K.V, mfc.V) annotation (points=[29.6,12; 50,12; 50,46], style(color=
            3, rgbcolor={0,0,255}));
-    connect(K.T_r, exchanger.T_hot_2) annotation (points=[10.4,12; -20,12; -20,
-          -14; -70,-14; -70,48; -60,48], style(color=3, rgbcolor={0,0,255}));
-    connect(T_ref, K.T_m) annotation (points=[20,-30; 20,2.4], style(
-        color=3,
-        rgbcolor={0,0,255},
+    connect(K.T_r, T_ref) annotation (points=[10.4,12; 0,12; 0,-30; 
+          -5.55112e-16,-30], style(
+        color=3, 
+        rgbcolor={0,0,255}, 
         pattern=3));
+    connect(exchanger.T_hot_2, K.T_m) annotation (points=[-60,48; -70,48; -70,
+          -14; 20,-14; 20,2.4], style(color=3, rgbcolor={0,0,255}));
   end AbstractCooler;
   
   model LMTDCooler "A heat exchanger based on the LMTD" 
@@ -1218,6 +1219,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     Real k_drag = 4 + 0.025*(T-303.15) "Drag factor for N115";
     MassTransportCoefficient k_ad = 15.6E-6*T/333 "Mass transport coefficient";
     
+    Real a = 6*F*k_ad/(k_ad*d_M/D_M+1) 
+      "Partial derivative of crossover current density wrt. methanol concentration";
+    Real aA = a*A 
+      "Partial derivative of crossover current wrt. methanol concentration";
+    Real b = 1/(k_ad*d_M/D_M+1) 
+      "Opposite of partial derivative of crossover current wrt. current";
+    
     Current I = -plus.i "Cell current (generator convention)";
     Voltage V = plus.v - minus.v "Cell voltage";
     CurrentDensity i = I/A "Cell current density";
@@ -1298,7 +1306,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[78,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
+    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.inlet)       annotation (points=[62,30; -40,
@@ -1306,13 +1314,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[78,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[62,-30;
+    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[62,-30; 
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-72,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-56,-30;
+    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-56,-30; 
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1559,10 +1567,10 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
@@ -1572,7 +1580,7 @@ current.</p>
     model LMTDCoolerTest "Test for the LMTD-based air cooler" 
       extends AbstractCoolerTest(redeclare LMTDCooler cooler);
       
-      annotation (experiment(StopTime=3600), experimentSetupOutput);
+      annotation (experiment(StopTime=5000), experimentSetupOutput);
     end LMTDCoolerTest;
     
     model DiscretisedCoolerTest "Test for the discretised air cooler" 
@@ -1616,7 +1624,7 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42; 
             -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-51,38; -36,38],
@@ -1632,7 +1640,7 @@ current.</p>
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
             34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18;
+      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18; 
             -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
     end CellTest;
     
