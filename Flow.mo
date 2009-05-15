@@ -1,3 +1,19 @@
+  /**
+ * Â© Federico Zenith, 2008-2009.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 
 package Flow 
@@ -94,7 +110,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     
   equation 
     assert(C >= 0, "==> Negative concentration given in MethanolSolution object.");
-    assert(C <= rho(T,Methanol,Liquid)/mw(Methanol), "==> Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,Liquid)) + " mol/m³).");
+    assert(C <= rho(T,Methanol,Liquid)/mw(Methanol), "==> Methanol concentration over limit (" + String(mw(Methanol)/rho(T,Methanol,Liquid)) + " mol/m3).");
     
     C = x_ch3oh / (x_ch3oh*mw(Methanol)/rho(T,Methanol,Liquid) + x_h2o*mw(Water)/rho(T,Water,Liquid));
     x_ch3oh + x_h2o = 1.0;
@@ -1054,7 +1070,7 @@ at environment temperature.</p>
           48; -70,-14; 94,-14], style(color=3, rgbcolor={0,0,255}));
     connect(K.V, mfc.V) annotation (points=[29.6,12; 50,12; 50,46], style(color=
            3, rgbcolor={0,0,255}));
-    connect(K.T_r, T_ref) annotation (points=[10.4,12; 0,12; 0,-30; 
+    connect(K.T_r, T_ref) annotation (points=[10.4,12; 0,12; 0,-30;
           -5.55112e-16,-30], style(
         color=3,
         rgbcolor={0,0,255},
@@ -1307,7 +1323,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[78,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
+    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.inlet)       annotation (points=[62,30; -40,
@@ -1315,13 +1331,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[78,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[62,-30; 
+    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[62,-30;
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-72,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-56,-30; 
+    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-56,-30;
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
@@ -1358,7 +1374,7 @@ constant voltage for the cell.</p>
 to set the open-circuit voltage and the specific resistance of the cell, from which resistivity and
 overall resistance will be calculated (it is trivial to modify the class so that resistivity or
 resistance can be set instead).</p>
-<p>The default value of the area-specific resistance, 13.3×10<sup>-6</sup>, is valid for a Nafion 
+<p>The default value of the area-specific resistance, 13.3&times;10<sup>-6</sup>, is valid for a Nafion 
 N155 membrane.</p>
 <p>Note that the open-circuit value to set is not the one measured on the actual cell, but the one 
 that would result by extrapolating the characteristic of the ohmic region to the value of no 

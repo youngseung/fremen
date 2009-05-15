@@ -1,3 +1,19 @@
+  /**
+ * © Federico Zenith, 2009.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 
 package Electrochemistry "Package containing electrochemical models" 
@@ -45,16 +61,16 @@ package Electrochemistry "Package containing electrochemical models"
     
   equation 
     connect(R.p, anode.n) 
-      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16;
+      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16; 
           -50,6.10623e-16],                style(color=3, rgbcolor={0,0,255}));
-    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16;
+    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16; 
           -96,0; -90,0; -90,-20; 80,-20; 80,6.10623e-16; 70,6.10623e-16],
                                                                       style(
           color=3, rgbcolor={0,0,255}));
-    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16;
+    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16; 
           35,6.10623e-16; 20,6.10623e-16; 20,6.10623e-16; -10,6.10623e-16],
         style(color=3, rgbcolor={0,0,255}));
-    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16;
+    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16; 
           -80,20; 10,20], style(color=3, rgbcolor={0,0,255}));
     connect(E.n, n) annotation (points=[30,20; 90,20; 90,5.55112e-16; 100,
           5.55112e-16], style(color=3, rgbcolor={0,0,255}));

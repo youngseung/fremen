@@ -1,4 +1,19 @@
-import "Units.mo";
+  /**
+ * Â© Federico Zenith, 2008-2009.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 
 encapsulated package Thermo "Thermodynamic library" 
@@ -89,7 +104,7 @@ protected
 <p>These parameters are necessary to calculate the enthalpy or specific heat of
 water vapour. Results are reliable between 300 and 2500 kelvin.<br/>
 Source: Perry's Chemical Engineers' Handbook, 7th edition, page 2-163.</p>
-<p>Note: parameter D has been added to those from Perry, so that enthalpy would be 0 at 25°C.</p>
+<p>Note: parameter D has been added to those from Perry, so that enthalpy would be 0 at 25&deg;C.</p>
 </html>"));
   end WaterVapourParameters;
   
@@ -121,7 +136,7 @@ protected
 <p>These parameters are necessary to calculate the enthalpy or specific heat of
 liquid methanol. Results are reliable between 175.47 and 400 kelvin.<br/>
 Source: Perry's Chemical Engineers' Handbook, 7th edition, page 2-171.</p>
-<p>Note: parameter D has been added to those from Perry, so that enthalpy would be 0 at 25°C.</p>
+<p>Note: parameter D has been added to those from Perry, so that enthalpy would be 0 at 25&deg;C.</p>
 </html>"));
   end LiquidMethanolParameters;
   
@@ -432,7 +447,7 @@ protected
 <p>This function returns the density of water in liquid phase at one 
 standard atmosphere of pressure; the data has been interpolated with 
 a cubic function, and deviates from data provided by NIST by at most
-0.25 kg/m³.</p>
+0.25 kg/m&sup3;.</p>
 </html>"));
   end rho_h2o;
   
@@ -462,7 +477,7 @@ protected
 <p>This function returns the density of methanol in liquid phase at 
 one standard atmosphere of pressure; the data has been interpolated 
 with a linear function, and deviates from data provided by NIST by at 
-most 0.5 kg/m³.</p>
+most 0.5 kg/m&sup3;.</p>
 </html>"));
   end rho_ch3oh;
   
@@ -812,7 +827,7 @@ the fractions of methanol and water.</li>
 easily found with the formula for 2nd-degree polynomials.</p>
  
 <p>The actual polynomial is:<br/>
-C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub> &beta;<sup>2</sup> + 
+C<sub>H<sub>2</sub>O</sub>C<sub>CH<sub>3</sub>OH</sub> &beta;&sup2; + 
 [C<sub>CH<sub>3</sub>OH</sub>z<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>z<sub>H<sub>2</sub>O</sub>
 + (C<sub>CH<sub>3</sub>OH</sub> + C<sub>H<sub>2</sub>O</sub>)z<sub>g</sub>] &beta; + z<sub>g</sub> = 0</p>
 <p>For a simpler notation, C<sub>i</sub> = K<sub>i</sub> - 1 has been used.</p>
@@ -831,7 +846,7 @@ we have to pick a different solution when we pass beyond this temperature.</p>
 <li>If C<sub>H<sub>2</sub>O</sub> is smaller than zero, yet C<sub>CH<sub>3</sub>OH</sub> is larger, we need to select the <em>second</em> or larger solution.</li>
 <li>Otherwise, we select the <em>first</em> or smaller solution.</li>
 </ul>
-<p>Notice that the two cases of higher and lower solution have <em>the same mathematical expression</em>, since the coefficient of &beta;<sup>2</sup> changes sign in correspondance of the change in root selection; therefore, we do not need to change the sign in front of the root of &Delta;.</p>
+<p>Notice that the two cases of higher and lower solution have <em>the same mathematical expression</em>, since the coefficient of &beta;&sup2; changes sign in correspondance of the change in root selection; therefore, we do not need to change the sign in front of the root of &Delta;.</p>
  
 <h3>References</h3>
 <p>Whitson, Curtis H., and Michelsen, Michael L.: <em>The negative flash</em>, Fluid Phase Equilibria 53, 51&ndash;71, 1989.</p>
