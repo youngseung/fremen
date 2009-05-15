@@ -159,6 +159,7 @@ released in terms of moles, mass and volume.</p>
     import Thermo.Phases.Gas;
     import Thermo.Phases.Liquid;
     import Units.MolarEnthalpy;
+    import Units.RelativeHumidity;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.MoleFraction;
@@ -207,7 +208,7 @@ also for humidity.</p>
           string="%name")),
       Diagram);
     
-    outer Real RH_env "Environment relative humidity";
+    outer RelativeHumidity RH_env "Environment relative humidity";
     outer Temperature T_env "Environment temperature";
     outer Pressure p_env "Environment pressure";
     
@@ -241,7 +242,7 @@ also for humidity.</p>
     
   end EnvironmentPort;
   
-  model SinkPort 
+  model SinkPort "A general-purpose flow sink" 
     
     annotation (Diagram, Icon(
         Rectangle(extent=[-100,100; 100,-100], style(
@@ -597,7 +598,7 @@ by default it is 1 M.</p>
     
   end Mixer;
   
-  model Separator 
+  model Separator "Splits a flow in two parts" 
     import Modelica.SIunits.Temperature;
     import Thermo.Molecules.Condensable;
     import Thermo.Phases.Liquid;
@@ -945,7 +946,7 @@ used only for condensing flows where LMTD theory is not valid.</p>
     
   end DiscretisedHeatExchanger;
   
-  partial model AbstractCooler "An abstract heat exchanger" 
+  partial model AbstractCooler "An abstract cooler for a process stream" 
     
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.VolumeFlowRate;
@@ -1055,14 +1056,14 @@ at environment temperature.</p>
            3, rgbcolor={0,0,255}));
     connect(K.T_r, T_ref) annotation (points=[10.4,12; 0,12; 0,-30; 
           -5.55112e-16,-30], style(
-        color=3, 
-        rgbcolor={0,0,255}, 
+        color=3,
+        rgbcolor={0,0,255},
         pattern=3));
     connect(exchanger.T_hot_2, K.T_m) annotation (points=[-60,48; -70,48; -70,
           -14; 20,-14; 20,2.4], style(color=3, rgbcolor={0,0,255}));
   end AbstractCooler;
   
-  model LMTDCooler "A heat exchanger based on the LMTD" 
+  model LMTDCooler "A cooler implemented with a LMTD heat exchanger" 
     extends AbstractCooler(redeclare LMTDHeatExchanger exchanger);
     annotation (Diagram, Documentation(info="<html>
 <p>A cooler using a LMTD implementation. It can for instance be applied as the
@@ -1072,6 +1073,7 @@ anode-loop cooler or as a recuperating heat exchanger on the anode side.</p>
   end LMTDCooler;
   
   model DiscretisedCooler 
+    "A cooler implemented with a discretised heat exchanger" 
     extends AbstractCooler(redeclare DiscretisedHeatExchanger exchanger);
     annotation (Documentation(info="<html>
 <p>A cooler using a discretised implementation. It can for instance be applied as the
@@ -1086,7 +1088,6 @@ cathode-loop cooler (condenser).</p>
     import Modelica.SIunits.CurrentDensity;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.DiffusionCoefficient;
-    import Modelica.SIunits.FaradayConstant;
     import Modelica.SIunits.HeatCapacity;
     import Modelica.SIunits.Length;
     import Modelica.SIunits.MoleFraction;
@@ -1111,6 +1112,7 @@ cathode-loop cooler (condenser).</p>
     import Units.MassTransportCoefficient;
     import Units.MolarFlow;
     import Units.MolarFlux;
+    import Units.F;
     
     annotation (defaultComponentName="cell", Icon(Rectangle(extent=[-100,60; 100,0], style(
             color=0,
@@ -1248,14 +1250,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       "Cathodic water partial pressure, outlet is representative";
     TemperatureOutput T "Representative stack temperature" annotation (extent=[100,-8; 120,12]);
     
-  protected 
-    constant FaradayConstant F = 96485.3415;
     /* This group of vectors represents the coefficients by which
    * proton (*_H) and crossover-methanol (*_M) flows must be 
    * multiplied to  find the associated production terms for all
    * species on cathode and anode; consumption terms are obviously
    * negative. */
     // NOTE remember that methanol reacts to 2 H2O, -3/2 O2, CO2!
+  protected 
     Real[:] cathode_H = {0, 1/2+k_drag, -1/4, 0, 0};
     Real[:] anode_H = {-1/6, -1/6-k_drag, 0, 1/6, 0};
     constant Real[:] cathode_M = {0, 2, -3/2, 1, 0};
@@ -1381,7 +1382,7 @@ current.</p>
                                         annotation (extent=[-80,-10; -68,2]);
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner Real RH_env = time;
+      inner Units.RelativeHumidity RH_env = time;
       
     equation 
       /* Running from time 0 to 1 will test negative flows and
@@ -1407,7 +1408,7 @@ current.</p>
     model MixerTest "Test for the mixer unit" 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
+      inner parameter Units.RelativeHumidity RH_env = 60;
       
       Mixer mixer(
         c(fixed=true),
@@ -1459,7 +1460,7 @@ current.</p>
     public 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
+      inner parameter Units.RelativeHumidity RH_env = 60;
       
     equation 
       sum(env.outlet.n) = -1;
@@ -1483,7 +1484,7 @@ current.</p>
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
+      inner parameter Units.RelativeHumidity RH_env = 60;
       
     protected 
       EnvironmentPort env             annotation (extent=[100,-60; 80,-40]);
@@ -1549,7 +1550,7 @@ current.</p>
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
       inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Real RH_env = 60;
+      inner parameter Units.RelativeHumidity RH_env = 60;
       
     protected 
       SinkPort sink     annotation (extent=[60,-4; 68,4]);
@@ -1567,10 +1568,10 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
@@ -1595,7 +1596,8 @@ current.</p>
         "Environment pressure";
       inner parameter Modelica.SIunits.Temperature T_env = 298.15 
         "Enviroment temperature";
-      inner parameter Real RH_env = 60 "Environment relative humidity";
+      inner parameter Units.RelativeHumidity RH_env = 60 
+        "Environment relative humidity";
       
       parameter Modelica.SIunits.VolumeFlowRate anodeFlow = 30E-6/60 
         "Anodic volumetric flow rate";
@@ -1624,7 +1626,7 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42;
             -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-51,38; -36,38],
@@ -1640,7 +1642,7 @@ current.</p>
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
             34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18; 
+      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18;
             -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
     end CellTest;
     

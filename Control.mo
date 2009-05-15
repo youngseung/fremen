@@ -22,8 +22,8 @@ package Control "Controllers for the DMFC system"
 <p>This controller is used in the <tt>AbstractCooler</tt> class to set
 the process outlet temperature by manipulating the coolant air flow.</p>
 <p>The controller includes a standard Modelica PI controller and a 
-saturation limit between configurable minimum and maximum; set the minimum
-to a little higher than zero to avoid initialisation problems.</p>
+saturation limit between configurable minimum and maximum. The minimum must
+be set to a little higher than zero to avoid initialisation problems.</p>
 
 <h3>Tuning Procedure</h3>
 <p>This controller has been tuned with the Skogestad rules for PI controllers of 
@@ -44,7 +44,7 @@ was found to be an acceptable approximation for &tau;.</p>
 to avoid variable saturation during transients.</p>
 
 <h3>References</h3>
-Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
+<p>Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
 tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
   protected 
@@ -77,18 +77,21 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     connect(difference.u1, T_r) annotation (points=[-58,6.66134e-16; -62,
           6.66134e-16; -62,1.11022e-15; -120,1.11022e-15], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16;
+    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16; 
           83.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(PI.u, signChange.y) annotation (points=[18,6.66134e-16; 12,
           6.66134e-16; 12,6.10623e-16; 1,6.10623e-16], style(color=74, rgbcolor=
            {0,0,127}));
-    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16;
+    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16; 
           -24,6.66134e-16; -24,6.10623e-16; -41,6.10623e-16], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16;
+    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16; 
           50,6.10623e-16; 41,6.10623e-16], style(color=74, rgbcolor={0,0,127}));
   end CoolerControl;
-  annotation (uses(Modelica(version="2.2.1")));
+  annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
+<p>A collection of controllers for system-wide control and for
+some particular units, such as coolers.</p>
+</html>"));
   block CathodeLambdaControl "Feedforward controller for the cathodic flow" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
@@ -96,6 +99,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Pressure;
+    import Units.F;
     
     parameter Real lambda = 2 "Reactant excess ratio";
     
@@ -108,7 +112,18 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
           style(color=3, rgbcolor={0,0,255}),
-          string="V = f(I,c)")));
+          string="V = f(I,c)")), 
+      Documentation(info="<html>
+<p>This feedforward controller uses the current and the anodic 
+methanol concentration (either a measurement or a value) to set
+the volumetric cathodic inflow to a fuel cell.</p>
+<p>The provided concentration value is supposed to be the one
+in the anodic bulk, usually assumed to be the outlet one.</p>
+<p>The controller allows to set an excess ratio &lambda;; other
+parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
+to estimate the extent of cross-over current in the cell to compensate
+for.</p>
+</html>"));
     Flow.ConcentrationInput c "Concentration target" 
       annotation (extent=[-140,-80; -100,-40]);
     Flow.CurrentInput I "Current measurement" 
@@ -116,7 +131,6 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     Flow.VolumeFlowRateOutput V "Air flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
-    constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     constant MoleFraction x_O2_env = 0.2 "Oxygen molar fraction in air";
     
     Modelica.Blocks.Math.Add add(k1=(1 - b), k2=aA) 
@@ -125,9 +139,9 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     Modelica.Blocks.Math.Gain gain(k=lambda/(4*F)/x_O2_env*(R*T_env/p_env)) 
       annotation (extent=[40,-10; 60,10]);
   equation 
-    connect(add.y, gain.u) annotation (points=[1,6.10623e-16; 6.5,6.10623e-16;
+    connect(add.y, gain.u) annotation (points=[1,6.10623e-16; 6.5,6.10623e-16; 
           6.5,6.66134e-16; 38,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
-    connect(gain.y, V) annotation (points=[61,6.10623e-16; 73.5,6.10623e-16;
+    connect(gain.y, V) annotation (points=[61,6.10623e-16; 73.5,6.10623e-16; 
           73.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(add.u1, I) annotation (points=[-22,6; -60,6; -60,60; -120,60],
         style(color=74, rgbcolor={0,0,127}));
@@ -138,6 +152,8 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
   block AnodeLambdaControl "Feedforward controller for the anodic flow" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
+    import Units.F;
+    
     parameter Real lambda = 2 "Reactant excess ratio";
     
     parameter Real aA = 5E-3 "Partial derivative of I_x wrt. c";
@@ -146,7 +162,18 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
           style(color=3, rgbcolor={0,0,255}),
-          string="V = f(I,c)")));
+          string="V = f(I,c)")), 
+      Documentation(info="<html>
+<p>This feedforward controller uses the current and the anodic 
+methanol concentration (either a measurement or a value) to set
+the volumetric anodic inflow to a fuel cell.</p>
+<p>The provided concentration value is supposed to be the one
+in the anodic bulk, usually assumed to be the outlet one.</p>
+<p>The controller allows to set an excess ratio &lambda;; other
+parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
+to estimate the extent of cross-over current in the cell to compensate
+for.</p>
+</html>"));
     Flow.ConcentrationInput c "Concentration estimate" 
       annotation (extent=[-140,-80; -100,-40]);
     Flow.CurrentInput I "Current measurement" 
@@ -154,8 +181,6 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     Flow.VolumeFlowRateOutput V "Solution flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
-    constant Modelica.SIunits.FaradayConstant F = 96485.3415;
-    
     Modelica.Blocks.Math.Add add(k1=(1 - b), k2=aA) 
       "Sums the measurement with the appropriate weights" 
       annotation (extent=[-40,-4; -20,16]);
@@ -169,10 +194,10 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
           6; -10.5,6; -2,6],                style(color=74, rgbcolor={0,0,127}));
     connect(add.u1, I) annotation (points=[-42,12; -60,12; -60,60; -120,60],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.u2, c) annotation (points=[-42,5.55112e-16; -60,5.55112e-16;
+    connect(add.u2, c) annotation (points=[-42,5.55112e-16; -60,5.55112e-16; 
           -60,-60; -120,-60],
         style(color=74, rgbcolor={0,0,127}));
-    connect(divide.y, V) annotation (points=[71,6.10623e-16; 87.5,6.10623e-16;
+    connect(divide.y, V) annotation (points=[71,6.10623e-16; 87.5,6.10623e-16; 
           87.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(gain.y, divide.u1) annotation (points=[21,6; 27.75,6; 27.75,6; 34.5,
           6; 34.5,6; 48,6],
@@ -191,6 +216,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     import Thermo.K;
     import Thermo.mw;
     import Thermo.rho;
+    import Units.F;
     
     outer parameter Temperature T_env = 298.15 "Environment temperature";
     
@@ -200,7 +226,16 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
           style(color=3, rgbcolor={0,0,255}),
-          string="V = f(I,c,T)")));
+          string="V = f(I,c,T)")), 
+      Documentation(info="<html>
+<p>This feedforward controller takes current, concentration and degasser
+temperature and returns the appropriate volumetric flow rate of methanol from
+the fuel tank.</p>
+<p>The provided concentration value is supposed to be the one
+in the anodic bulk, usually assumed to be the outlet one.</p>
+<p>Two parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
+to estimate the extent of cross-over current in the cell to compensate for.</p>
+</html>"));
     Flow.ConcentrationInput c "Concentration estimate" 
       annotation (extent=[-140,-20; -100,20]);
     Flow.CurrentInput I "Current measurement" 
@@ -211,7 +246,6 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
       annotation (extent=[-140,-80; -100,-40]);
     
   protected 
-    constant Modelica.SIunits.FaradayConstant F = 96485.3415;
     Real fM "Degasser loss factor";
     Real n_to_V "Conversion factor from methanol moles to volume";
     
@@ -223,7 +257,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     
   end FuelControl;
   
-  block WaterControl "Feedforward controller for the fuel flow" 
+  block WaterControl "Feedback controller for solution level" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
     import Modelica.Constants.R;
@@ -253,7 +287,36 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
         Text(
           extent=[-20,-22; 80,-62],
           style(color=8),
-          string="P")));
+          string="P")), 
+      Documentation(info="<html>
+<p>This controller takes the current hydrostatic pressure in the mixer,
+the current volumetric flow in the cathode and the condenser temperature
+to return a new reference for the condenser temperature, which is then
+cascaded to the condenser controller.</p>
+<p>The feedback part is in the measurement of the hydrostatic pressure,
+which is (roughly) proportional to mixer solution content. At simulation
+start, the controller memorises the initial value of this pressure and uses 
+this initial value as a set-point.</p>
+<p>The cathodic flow is not a measurement, but rather a value passed by the
+cathodic flow &lambda; controller.</p>
+<p>The condenser temperature is a relatively simple measurement, and is used
+to calculate the vapour pressure of water in the condenser, which may change
+significantly in the temperature range of interest.</p>
+<p>An available parameter is &tau;, which sets the desired response time: this
+should be set to at least 10 minutes (600 s), to allow the internal, cascaded
+cooler controller time to settle. It is also possible to set the nominal 
+target temperature and the mixer cross-sectional area, to convert hydrostatic
+pressure in a volumetric estimate.</p>
+<p>The controller is a P controller whose proportionality constant is obtained
+from Skogestad's tuning rules.</p>
+
+<h3>References</h3>
+<p>Zenith, Federico, and Krewer, Ulrike: <em>Dynamics and Control of a DMFC 
+System</em>, 7<sup>th</sup> Fuel Cell Science, Engineering and Technology 
+Conference, June 2009, Newport Beach, USA.</p>
+<p>Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
+tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
+</html>"));
   public 
     Flow.TemperatureInput T_cond "Condenser temperature" 
       annotation (extent=[-140,-80; -100,-40]);
@@ -297,8 +360,20 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
           style(color=8),
           string="PI+sat")),
       Documentation(info="<html>
+<p>This PID controller tries to make the fuel-cell temperature converge to a given
+set-point by manipulating the degasser reference temperature around a given nominal
+value.</p>
+<p>The effect of degasser temperature on fuel-cell temperature is assumed to be a unit-gain
+process with two lags. The unit gain is justified since most of the flow exiting the anodic
+side is the main heat input into the cell, so one degree more in the degasser will eventually
+translate to one degree more in the fuel cell (in reality it will be a bit less).
+The first lag is due to the solution in the mixer, which when
+assumed to be 5 ml of (mostly) water results in a lag of 60 seconds. The second lag
+is due to the material of the fuel-cell graphite plates, resulting in about 300 seconds.</p>
+<p>From these two lags, the PID parameters are calculated with the Skogestad rules.</p>
+
 <h3>References</h3>
-Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
+<p>Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
 tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
     

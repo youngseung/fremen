@@ -1,5 +1,3 @@
-import "DSS.mo";
-import "Units.mo";
 
 
 package Electrochemistry "Package containing electrochemical models" 
@@ -47,16 +45,16 @@ package Electrochemistry "Package containing electrochemical models"
     
   equation 
     connect(R.p, anode.n) 
-      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16; 
+      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16;
           -50,6.10623e-16],                style(color=3, rgbcolor={0,0,255}));
-    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16; 
+    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16;
           -96,0; -90,0; -90,-20; 80,-20; 80,6.10623e-16; 70,6.10623e-16],
                                                                       style(
           color=3, rgbcolor={0,0,255}));
-    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16; 
+    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16;
           35,6.10623e-16; 20,6.10623e-16; 20,6.10623e-16; -10,6.10623e-16],
         style(color=3, rgbcolor={0,0,255}));
-    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16; 
+    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16;
           -80,20; 10,20], style(color=3, rgbcolor={0,0,255}));
     connect(E.n, n) annotation (points=[30,20; 90,20; 90,5.55112e-16; 100,
           5.55112e-16], style(color=3, rgbcolor={0,0,255}));
@@ -82,10 +80,6 @@ package Electrochemistry "Package containing electrochemical models"
     Units.MolarFlow[size(Thermo.Molecules.All,1)] r 
       "Production of each species due to reaction";
     
-  protected 
-    constant Modelica.SIunits.FaradayConstant F = 96485.3415 
-      "Faraday's constant";
-    
   end Electrode;
   
   model KrewerAnode "Full model of Ulrike's DMFC anode" 
@@ -107,6 +101,7 @@ package Electrochemistry "Package containing electrochemical models"
     import Units.SurfaceConcentration;
     import Units.ArealReactionRate;
     import Units.CatalystCoverage;
+    import Units.F;
     
     parameter Boolean AllowFrozenEta = false 
       "Allows to handle open-circuit and low-current conditions";
@@ -251,6 +246,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Units.ArealCapacitance;
     import Units.ArealReactionRate;
     import Units.MolarFlux;
+    import Units.F;
     
     parameter ArealCapacitance C = 907 "The electrode's areal capacitance";
     parameter Real alpha = 0.18 "Charge transfer coefficient";
