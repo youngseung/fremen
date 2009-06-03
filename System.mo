@@ -1,4 +1,4 @@
-  /**
+    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 package System "DMFC systems" 
   partial model Reference "The reference DMFC system, no control applied" 
@@ -125,7 +126,8 @@ must be specialised in subclasses.</p>
   model Reference_NoControl "Sets manipulable variables with parameters" 
     extends Reference(
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82)),
+      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82, 
+          n=10)),
       redeclare Flow.DiscretisedCooler anodeCooler,
       redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(c(fixed=true),T(fixed=true),V(fixed=true)));
     
@@ -173,7 +175,7 @@ see what happens.</p>
       "Target concentration, mol/m^3" annotation (extent=[-100,52; -80,72]);
     Control.TemperatureControl K annotation (extent=[-10,-38; 2,-26]);
     annotation (experiment(StopTime=7200), experimentSetupOutput,
-      Diagram, 
+      Diagram,
       Documentation(info="<html>
 <p>This specialisation of the reference system implements a series of
 controllers. Note that controller connections are dotted and colour-coded.</p>
@@ -260,6 +262,5 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         rgbcolor={255,0,0},
         pattern=3));
   end Reference_Control;
-  
   
 end System;
