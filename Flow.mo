@@ -1,4 +1,4 @@
-  /**
+      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -916,7 +916,7 @@ perform algebraic manipulation.</p>
     "A heat exchanger made up of many discrete sections" 
     extends AbstractHeatExchanger;
     
-    parameter Integer n(min=3) = 5 "Number of discretisation units";
+    parameter Integer n(min=3) = 10 "Number of discretisation units";
     
   protected 
     DiscretisedHeatExchangerStep[n] steps(each A=A/n, each U=U) 
@@ -1182,7 +1182,7 @@ concentration, and the cathodic partial pressures of oxygen and water. Note that
 based on the <em>exiting</em> flow.</p>
  
 <p>In order to calculate the catalyst-layer methanol anodic concentration, the methanol diffusion 
-coefficient in water is required. It is assumed to vary linearly with temperature.</p>
+coefficient in water is required. It is assumed to vary exponentially with temperature.</p>
  
 <p>Parameters have been taken from Krewer et al., unless differently stated.</p>
  
@@ -1234,8 +1234,9 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       "Whether to activate checks for some non-negative quantities";
     
     // Parameters for N115 membrane.  
-    Real k_drag = 4 + 0.025*(T-303.15) "Drag factor for N115";
-    MassTransportCoefficient k_ad = 15.6E-6*T/333 "Mass transport coefficient";
+    Real k_drag = 4.2 + (T-303.15)/40 "Drag factor for N115";
+    MassTransportCoefficient k_ad = 15.6E-6*exp(2436*(1/T-1/333)) 
+      "Mass transport coefficient";
     
     Real a = 6*F*k_ad/(k_ad*d_M/D_M+1) 
       "Partial derivative of crossover current density wrt. methanol concentration";
@@ -1323,7 +1324,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[78,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
+    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.inlet)       annotation (points=[62,30; -40,
@@ -1331,13 +1332,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeOutletTC.outlet, anode_outlet) annotation (points=[78,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[62,-30;
+    connect(anodeOutletTC.inlet, nexus.inlet)    annotation (points=[62,-30; 
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
     connect(anodeInletTC.inlet, anode_inlet) annotation (points=[-72,-30; -100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-56,-30;
+    connect(anodeInletTC.outlet, nexus.inlet)    annotation (points=[-56,-30; 
           -46,-30; -46,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
