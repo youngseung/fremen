@@ -1,4 +1,4 @@
-    /**
+      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,11 +17,17 @@
 
 
 package System "DMFC systems" 
-  partial model Reference "The reference DMFC system, no control applied" 
+  partial model Reference "The reference DMFC system" 
+    
+    import Modelica.SIunits.Efficiency;
+    import Units.MolarFlow;
     
     inner parameter Modelica.SIunits.Pressure p_env = 101325;
     inner parameter Modelica.SIunits.Temperature T_env = 298.15;
     inner parameter Units.RelativeHumidity RH_env = 60;
+    
+    Efficiency eta_to_cell "Fraction of methanol consumed in the cell";
+    Efficiency eta_system "Overall system efficiency";
     
     Flow.Mixer mixer annotation (extent=[-10,-70; 10,-50]);
     Flow.Pump pump "The anodic-loop pump" 
@@ -59,7 +65,15 @@ must be specialised in subclasses.</p>
       annotation (extent=[-8,24; 8,40]);
     Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer 
       "Current in external circuit" annotation (extent=[-32,80; -12,100]);
+    
+  protected 
+    MolarFlow inCell = fuelCell.anode_inlet.n[1] - (-fuelCell.anode_outlet.n[1]) 
+      "Methanol consumed in the cell";
+    MolarFlow inDeg =  -degasser.gasOutlet.n[1] "Methanol lost in the degasser";
+    
   equation 
+    eta_to_cell = inCell / (inCell + inDeg);
+    eta_system = eta_to_cell * fuelCell.eta_total;
     connect(pump.inlet, mixer.outlet) 
       annotation (points=[-36,-60; -8,-60],    style(color=62, rgbcolor={0,127,
             127}));
@@ -123,10 +137,10 @@ must be specialised in subclasses.</p>
           -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
   end Reference;
   
-  model Reference_NoControl "Sets manipulable variables with parameters" 
+  model Reference_NoControl "The reference system with manual control" 
     extends Reference(
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82, 
+      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82,
           n=10)),
       redeclare Flow.DiscretisedCooler anodeCooler,
       redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(c(fixed=true),T(fixed=true),V(fixed=true)));
@@ -171,7 +185,7 @@ see what happens.</p>
     Control.WaterControl K_cond annotation (extent=[26,8; 38,16], rotation=0);
     Control.AnodeLambdaControl K_an(lambda=5) 
                                     annotation (extent=[-70,-64; -60,-56]);
-    Modelica.Blocks.Sources.RealExpression C(y=1000) 
+    Modelica.Blocks.Sources.RealExpression c_ref(y=1000) 
       "Target concentration, mol/m^3" annotation (extent=[-100,52; -80,72]);
     Control.TemperatureControl K annotation (extent=[-10,-38; 2,-26]);
     annotation (experiment(StopTime=7200), experimentSetupOutput,
@@ -226,18 +240,21 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color=3,
         rgbcolor={0,0,255},
         pattern=3));
-    connect(C.y, K_cath.c) annotation (points=[-79,62; -76,62; -76,48; -72.4,48;
+    connect(c_ref.y, K_cath.c) 
+                           annotation (points=[-79,62; -76,62; -76,48; -72.4,48;
           -72.4,35],
                    style(
         color=62,
         rgbcolor={0,127,127},
         pattern=3));
-    connect(C.y, K_an.c) annotation (points=[-79,62; -76,62; -76,-62.4; -71,
+    connect(c_ref.y, K_an.c) 
+                         annotation (points=[-79,62; -76,62; -76,-62.4; -71,
           -62.4], style(
         color=62,
         rgbcolor={0,127,127},
         pattern=3));
-    connect(C.y, K_fuel.c) annotation (points=[-79,62; -76,62; -76,-90; -17.2,
+    connect(c_ref.y, K_fuel.c) 
+                           annotation (points=[-79,62; -76,62; -76,-90; -17.2,
           -90], style(
         color=62,
         rgbcolor={0,127,127},
@@ -263,4 +280,131 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         pattern=3));
   end Reference_Control;
   
+  partial model Mingled "A DMFC system with outlet mingling" 
+    
+    import Modelica.SIunits.Efficiency;
+    import Units.MolarFlow;
+    
+    inner parameter Modelica.SIunits.Pressure p_env = 101325;
+    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+    inner parameter Units.RelativeHumidity RH_env = 60;
+    
+    Efficiency eta_to_cell "Fraction of methanol consumed in the cell";
+    Efficiency eta_system "Overall system efficiency";
+    
+    Flow.Mixer mixer annotation (extent=[-10,-70; 10,-50]);
+    Flow.Pump pump "The anodic-loop pump" 
+              annotation (extent=[-30,-66; -42,-54]);
+    annotation (Diagram, Documentation(info="<html>
+<p>This is a generic reference system, with no process integration
+whatsoever. Some components, such as the fuel cell, are abstract and
+must be specialised in subclasses.</p>
+</html>"));
+    replaceable Flow.AbstractCooler cooler "The system cooler" 
+                  annotation (extent=[14,-4; 32,14]);
+    Flow.PureMethanolSource pureMethanolSource 
+      "A substitute for an actual tank"   annotation (extent=[30,-96; 42,-84]);
+    Flow.Pump fuelPump "The smaller fuel pump" 
+                  annotation (extent=[20,-96; 8,-84]);
+    Flow.Separator separator "The loop separator" 
+                        annotation (extent=[48,-6; 68,16]);
+    Flow.SinkPort co2sink "The gas outlet of the degasser" 
+                      annotation (extent=[84,16; 92,24]);
+    replaceable Flow.FuelCell fuelCell 
+                      annotation (extent=[-50,-12; -14,22]);
+    Flow.EnvironmentPort environment "The air from the environment" 
+      annotation (extent=[-100,0; -80,20]);
+    Flow.GasFlowController blower "The mass-flow controller" 
+      annotation (extent=[-76,16; -64,4], rotation=270);
+    replaceable Modelica.Electrical.Analog.Interfaces.OnePort load 
+      "Load connected to the cell"       annotation (extent=[-52,84; -40,96]);
+    Modelica.Electrical.Analog.Basic.Ground ground 
+      annotation (extent=[-8,24; 8,40]);
+    Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer 
+      "Current in external circuit" annotation (extent=[-32,80; -12,100]);
+  protected 
+    MolarFlow inCell = fuelCell.anode_inlet.n[1] - (-fuelCell.anode_outlet.n[1]) 
+      "Methanol consumed in the cell";
+    MolarFlow inDeg =  -separator.gasOutlet.n[1] 
+      "Methanol lost in the separator";
+    
+  equation 
+    eta_to_cell = inCell / (inCell + inDeg);
+    eta_system = eta_to_cell * fuelCell.eta_total;
+    
+    connect(pump.inlet, mixer.outlet) 
+      annotation (points=[-36,-60; -8,-60],    style(color=62, rgbcolor={0,127,
+            127}));
+    connect(pureMethanolSource.outlet, fuelPump.inlet) 
+      annotation (points=[36,-90; 14,-90],    style(color=62, rgbcolor={0,127,
+            127}));
+    connect(environment.outlet, blower.inlet) 
+                                         annotation (points=[-81,10; -70,10],
+                              style(color=62, rgbcolor={0,127,127}));
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10; 
+          -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
+    connect(fuelPump.outlet, mixer.fuelInlet) 
+      annotation (points=[14,-84; 0,-84; 0,-68; 6.10623e-16,-68],
+                style(color=62, rgbcolor={0,127,127}));
+    connect(cooler.outlet, separator.inlet) 
+                                           annotation (points=[31.46,5; 48,5],
+                                                     style(color=62, rgbcolor={
+            0,127,127}));
+    connect(separator.gasOutlet, co2sink.inlet)   annotation (points=[65,9.4; 
+          66,9.4; 66,20; 84.4,20],
+        style(color=62, rgbcolor={0,127,127}));
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
+          -14,0; 0,0; 0,5; 14.54,5],  style(
+        color=62,
+        rgbcolor={0,127,127},
+        fillColor=62,
+        rgbfillColor={0,127,127},
+        fillPattern=1));
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+          -50,0; -60,0; -60,-54; -36,-54],
+                              style(
+        color=62,
+        rgbcolor={0,127,127},
+        fillColor=62,
+        rgbfillColor={0,127,127},
+        fillPattern=1));
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
+          2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
+    connect(amperometer.p, load.n) 
+      annotation (points=[-32,90; -40,90], style(color=3, rgbcolor={0,0,255}));
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
+          -21.2,40; 0,40; 0,90; -12,90], style(color=3, rgbcolor={0,0,255}));
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
+          -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
+    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5; 
+          0,5; 0,10.1; -14,10.1], style(color=62, rgbcolor={0,127,127}));
+    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,
+          0.6; 65,-60; 8,-60], style(color=62, rgbcolor={0,127,127}));
+  end Mingled;
+
+  model Mingled_NoControl "The mingled system with manual control" 
+    extends Mingled(
+      redeclare Flow.TheveninFuelCell fuelCell, 
+      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5), 
+      redeclare Flow.DiscretisedCooler cooler, 
+      mixer(
+        c(fixed=true), 
+        T(fixed=true), 
+        V(fixed=true)));
+    
+    import Modelica.SIunits.VolumeFlowRate;
+    
+    parameter VolumeFlowRate V_fuel = 5E-8/60;
+    parameter VolumeFlowRate V_anode = 10E-6/60;
+    parameter VolumeFlowRate V_cathode = 500E-6/60;
+    parameter VolumeFlowRate V_cooler = 10E-3/60;
+    
+  equation 
+    V_fuel = fuelPump.V;
+    V_anode = pump.V;
+    V_cathode = blower.V;
+    V_cooler = cooler.mfc.V;
+    
+    annotation (Diagram, experiment(StopTime=7200));
+  end Mingled_NoControl;
 end System;
