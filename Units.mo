@@ -1,4 +1,4 @@
-  /**
+    /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package Units "Collection of additional units"
+
+package Units "Collection of additional units" 
   
   annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
 <p>This package is a list of unit types that are useful in various parts
@@ -36,6 +37,8 @@ of our modelling effort. Some constants are also included.</p>
     "How fast a liquid-vapour equilibrium is attained";
   type DynamicViscosity = Real (final quantity="Dynamic viscosity", final unit="kg/ms", min=0) 
     "Property of fluids";
+  constant Modelica.SIunits.FaradayConstant F = 96485.3415 
+    "The Faraday constant";
   type HeatTransferCoefficient = Real(final quantity="Heat transfer coefficient",
                                       final unit="W/(m2.K)", min=0) 
     "Simplification of heat transfer processes";
@@ -48,8 +51,12 @@ of our modelling effort. Some constants are also included.</p>
     "Flow of substance";
   type MolarFlux = Real(final quantity="Molar flux", final unit="mol/(m2.s)") 
     "Flow per unit of cross-sectional area";
+  type Molecule = Integer (final quantity="Molecule identifier", final min=1, final max=5) 
+    "Identifier for various types of molecules";
   type Permeability = Real (final quantity="Permeability", final unit="m2", min=0) 
     "Parameter for fluid flow through porous media";
+  type Phase = Integer (final quantity="Phase identifier", final min=1001, final max=1002) 
+    "Identifier for phases";
   type Porosity = Real (final quantity="Porosity", final unit="", min=0, max=1) 
     "Fraction of pores in a medium";
   type ReactionRate = Real(final quantity="Reaction rate", final unit="mol/(m3.s)") 
@@ -62,12 +69,7 @@ of our modelling effort. Some constants are also included.</p>
                                     final unit="mol/m2") 
     "Used to express catalyst concentration";
   
-  type Molecule = Integer (final quantity="Molecule identifier", final min=1, final max=5) 
-    "Identifier for various types of molecules";
-  type Phase = Integer (final quantity="Phase identifier", final min=1001, final max=1002) 
-    "Identifier for phases";
-  
-  constant Modelica.SIunits.FaradayConstant F = 96485.3415 
-    "The Faraday constant";
+  type Temperature = Modelica.SIunits.Temperature(nominal=298.15, start=298.15) 
+    "Temperature, with nominal and start values";
   
 end Units;

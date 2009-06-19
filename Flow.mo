@@ -1,4 +1,4 @@
-        /**
+            /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ package Flow
         type SignalType = Modelica.SIunits.Pressure) 
                                                    annotation(defaultComponentName="p");
   connector TemperatureInput =  Modelica.Blocks.Interfaces.RealInput(redeclare 
-        type SignalType = Modelica.SIunits.Temperature, start=298.15) annotation(defaultComponentName="T");
+        type SignalType = Units.Temperature, start=298.15) annotation(defaultComponentName="T");
   connector VolumeFlowRateInput=Modelica.Blocks.Interfaces.RealInput(redeclare 
         type SignalType = Modelica.SIunits.VolumeFlowRate) 
                                                    annotation(defaultComponentName="V");
@@ -36,7 +36,7 @@ package Flow
         type SignalType = Modelica.SIunits.Pressure) 
                                                    annotation(defaultComponentName="p");
   connector TemperatureOutput = Modelica.Blocks.Interfaces.RealOutput(redeclare 
-        type SignalType = Modelica.SIunits.Temperature, start=298.15) annotation(defaultComponentName="T");
+        type SignalType = Units.Temperature, start=298.15) annotation(defaultComponentName="T");
   
   connector VolumeFlowRateOutput = 
                                 Modelica.Blocks.Interfaces.RealOutput(redeclare 
@@ -81,7 +81,7 @@ easy to model chemical reactions.</p>
     import Thermo.Molecules.Methanol;
     import Thermo.Phases.Gas;
     import Thermo.Phases.Liquid;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.Concentration;
     
@@ -129,7 +129,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     import Thermo.Phases.Liquid;
     import Thermo.mw;
     import Thermo.rho;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.AmountOfSubstance;
     import Modelica.SIunits.Mass;
     import Modelica.SIunits.Volume;
@@ -176,7 +176,7 @@ released in terms of moles, mass and volume.</p>
     import Thermo.Phases.Liquid;
     import Units.MolarEnthalpy;
     import Units.RelativeHumidity;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.MoleFraction;
     
@@ -343,7 +343,7 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     import Thermo.Molecules.All;
     import Thermo.Phases.Gas;
     import Modelica.SIunits.VolumeFlowRate;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     
     annotation (defaultComponentName="mfc", Icon,     Documentation(info="<html>
 <p>This class implements a mass flow controller with volumetric units (\"field units\").
@@ -376,7 +376,7 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
     import Thermo.Phases.Liquid;
     import Thermo.Molecules.Condensable;
     import Modelica.SIunits.VolumeFlowRate;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     
     annotation (Icon,        Documentation(info="<html>
 <p>This class implements a liquid pump with field volumetric units.</p>
@@ -400,7 +400,7 @@ in liquid phase; it takes their density from the Thermo library.</p>
       extends Modelica.Icons.RotationalSensor;
     
       import Modelica.SIunits.MoleFraction;
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Thermo.Molecules.All;
       import Thermo.Molecules.Incondensable;
       import Thermo.Molecules.Condensable;
@@ -448,7 +448,9 @@ equilibrium.</p>
       // Liquid and vapour sum to overall flow
       liquid + vapour       = inlet.n;
       // Condensable species are present in both phases
-      vapour[Condensable]   = {inlet.n[i]*beta*K(T,i) / (1 + beta*(K(T,i) -1)) for i in Condensable};
+      for i in Condensable loop
+        vapour[i] * (1 + beta*(K(T,i) -1)) = inlet.n[i]*beta*K(T,i);
+      end for;
       // Incondensable species are only in gas phase
       liquid[Incondensable] = zeros(size(Incondensable,1));
     
@@ -471,7 +473,7 @@ equilibrium.</p>
       end if;
     
       connect(inlet, outlet) 
-                          annotation (points=[-80,5.55112e-16; 0,-4.87687e-22;
+                          annotation (points=[-80,5.55112e-16; 0,-4.87687e-22; 
           0,5.55112e-16; 80,5.55112e-16],  style(color=62, rgbcolor={0,127,127}));
     end FlowTemperature;
   
@@ -503,7 +505,7 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
     
     import g = Modelica.Constants.g_n;
     import Modelica.SIunits.Area;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.AmountOfSubstance;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Volume;
@@ -615,7 +617,7 @@ by default it is 1 M.</p>
   end Mixer;
   
   model Separator "Splits a flow in two parts" 
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Thermo.Molecules.Condensable;
     import Thermo.Phases.Liquid;
     import Thermo.h;
@@ -692,7 +694,7 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
   partial model AbstractHeatExchanger "An abstract heat exchanger" 
     import Modelica.SIunits.HeatFlowRate;
     import Modelica.SIunits.Area;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Units.HeatTransferCoefficient;
     
     FlowPort hot_1 "Port for hot flow on side 1" 
@@ -787,7 +789,7 @@ connections of the flows to the two sides.</p>
   model LMTDHeatExchanger "A heat exchanger based on the LMTD" 
     extends AbstractHeatExchanger;
     
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.Constants.eps;
     import Modelica.Math.log;
     
@@ -858,7 +860,7 @@ condensation is very important there.</p>
     "A step in a larger, discretised heat exchanger" 
     extends AbstractHeatExchanger;
     
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     
     Temperature T_hot =  (hot_1_T.T  + hot_2_T.T)/2 
       "Average hot-side temperature";
@@ -964,7 +966,7 @@ used only for condensing flows where LMTD theory is not valid.</p>
   
   partial model AbstractCooler "An abstract cooler for a process stream" 
     
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.VolumeFlowRate;
     
     VolumeFlowRate V_air = mfc.V "Coolant flow rate";
@@ -1111,7 +1113,7 @@ cathode-loop cooler (condenser).</p>
     import Modelica.SIunits.PartialPressure;
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.StoichiometricNumber;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.Voltage;
     import Modelica.Constants.eps;
     import Modelica.Constants.R;
@@ -1250,7 +1252,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     Voltage V_rev "Reversible voltage";
     Efficiency eta_thermo = V/V_rev "Electrochemical efficiency";
     Efficiency eta_use = i / (i+6*F*N_x) 
-      "Fraction of methanol actually reacting";
+      "Fraction of lost methanol reacting on anode";
     Efficiency eta_total = eta_thermo*eta_use "Overall cell efficiency";
     
     Current I = -plus.i "Cell current (generator convention)";
@@ -1339,7 +1341,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[78,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
+    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.inlet)       annotation (points=[62,30; -40,
@@ -1347,13 +1349,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeTC.outlet, anode_outlet)       annotation (points=[78,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30; 
+    connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30;
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
     connect(T, cathodeT.T) annotation (points=[110,2; 70,2; 70,22],
         style(color=3, rgbcolor={0,0,255}));
-    connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30; 
+    connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30;
           -46,4.44089e-16; -31,4.44089e-16], style(color=62, rgbcolor={0,127,
             127}));
   end FuelCell;
@@ -1403,14 +1405,16 @@ current.</p>
       replaceable FlowTemperature measurement 
                                       annotation (extent=[-20,0; 0,20]);
       annotation (Diagram);
+    protected 
       EnvironmentPort env "Atmospheric air" 
                                       annotation (extent=[-92,20; -72,40]);
       SinkPort sink "Dumpster" 
                         annotation (extent=[40,6; 48,14]);
+    public 
       MethanolSolution solution "Source of methanol solution" 
                                         annotation (extent=[-80,-10; -68,2]);
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Units.Temperature T_env = 298.15;
       inner Units.RelativeHumidity RH_env = time;
       
     equation 
@@ -1436,7 +1440,7 @@ current.</p>
     
     model MixerTest "Test for the mixer unit" 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Units.Temperature T_env = 298.15;
       inner parameter Units.RelativeHumidity RH_env = 60;
       
       Mixer mixer(
@@ -1488,7 +1492,7 @@ current.</p>
       MethanolSolution solution         annotation (extent=[-78,8; -68,18]);
     public 
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Units.Temperature T_env = 298.15;
       inner parameter Units.RelativeHumidity RH_env = 60;
       
     equation 
@@ -1512,7 +1516,7 @@ current.</p>
       import Modelica.SIunits.VolumeFlowRate;
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Units.Temperature T_env = 298.15;
       inner parameter Units.RelativeHumidity RH_env = 60;
       
     protected 
@@ -1575,10 +1579,10 @@ current.</p>
     partial model AbstractCoolerTest "Generic test for air coolers" 
       
       import Modelica.SIunits.VolumeFlowRate;
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+      inner parameter Units.Temperature T_env = 298.15;
       inner parameter Units.RelativeHumidity RH_env = 60;
       
     protected 
@@ -1623,8 +1627,7 @@ current.</p>
       
       inner parameter Modelica.SIunits.Pressure p_env = 101325 
         "Environment pressure";
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15 
-        "Enviroment temperature";
+      inner parameter Units.Temperature T_env = 298.15 "Enviroment temperature";
       inner parameter Units.RelativeHumidity RH_env = 60 
         "Environment relative humidity";
       
@@ -1632,7 +1635,7 @@ current.</p>
         "Anodic volumetric flow rate";
       parameter Modelica.SIunits.VolumeFlowRate cathodeFlow = 30E-5/60 
         "Cathodic volumetric flow rate";
-      parameter Modelica.SIunits.Temperature anodeInletTemperature = 330 
+      parameter Units.Temperature anodeInletTemperature = 330 
         "Anodic inlet temperature";
       
       replaceable FuelCell fuelCell 
@@ -1655,7 +1658,7 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42;
             -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-51,38; -36,38],
@@ -1671,7 +1674,7 @@ current.</p>
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
             34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18; 
+      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18;
             -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
     end CellTest;
     

@@ -114,7 +114,7 @@ some particular units, such as coolers.</p>
     
     import Modelica.Constants.R;
     import Modelica.SIunits.MoleFraction;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.Pressure;
     import Units.F;
     
@@ -226,7 +226,7 @@ for.</p>
   block FuelControl "Feedforward controller for the fuel flow" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Thermo.Molecules.Methanol;
     import Thermo.Molecules.Water;
     import Thermo.Phases.Liquid;
@@ -281,7 +281,7 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
     import g = Modelica.Constants.g_n;
     import Modelica.SIunits.Area;
     import Modelica.SIunits.Pressure;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.Time;
     import Thermo.dp_h2o_dt;
     import Thermo.mw;
@@ -361,7 +361,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     
     import Modelica.SIunits.Time;
     import Modelica.SIunits.VolumeFlowRate;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     
     annotation (defaultComponentName="K",Diagram,
       Icon(

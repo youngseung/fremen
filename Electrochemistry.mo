@@ -102,7 +102,7 @@ package Electrochemistry "Package containing electrochemical models"
     extends Electrode;
     
     import Modelica.SIunits.Velocity;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.Voltage;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.CurrentDensity;
@@ -247,7 +247,7 @@ r<sub>c</sub>.<p>
 design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.</p>
 </html>"));
     import Modelica.SIunits.Velocity;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.Voltage;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.CurrentDensity;
@@ -308,7 +308,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     import Modelica.SIunits.MolarMass;
     import Modelica.SIunits.SurfaceTension;
     import Modelica.SIunits.Angle;
-    import Modelica.SIunits.Temperature;
+    import Units.Temperature;
     import Modelica.SIunits.PartialPressure;
     import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.Velocity;
@@ -484,7 +484,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       Modelica.Electrical.Analog.Basic.Ground ground 
         annotation (extent=[50,-20; 70,0]);
       annotation (Diagram);
-      parameter Modelica.SIunits.Temperature T = 343 "Electrode temperature";
+      parameter Units.Temperature T = 343 "Electrode temperature";
       parameter Modelica.SIunits.Concentration c = 500 "Methanol concentration";
       
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
@@ -506,7 +506,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     
     model KrewerCathodeTest 
       
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Modelica.SIunits.MoleFraction;
       import Units.MolarFlux;
       KrewerCathode cathode 
@@ -541,7 +541,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     
     model KrewerModelTest 
       
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Modelica.SIunits.MoleFraction;
       import Modelica.SIunits.Concentration;
       import Units.MolarFlux;

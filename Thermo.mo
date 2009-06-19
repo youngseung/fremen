@@ -1,4 +1,4 @@
-  /**
+    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 encapsulated package Thermo "Thermodynamic library" 
   import Modelica;
   
-  import Modelica.SIunits.Temperature;
+  import Units.Temperature;
   import Modelica.SIunits.Pressure;
   import Modelica.SIunits.MolarInternalEnergy;
   import Modelica.SIunits.MolarHeatCapacity;
@@ -857,7 +857,7 @@ Quaternary Systems</em>, Industrial and Engineering Chemistry Research 32(7), 15
     C_methanol := K(T, Molecules.Methanol) - 1;
     C_water    := K(T, Molecules.Water) - 1;
     
-    assert( C_methanol > C_water, "==> Water is more volatile than methanol at temperature T="+String(T)+": this should not be possible.");
+    assert( C_methanol > C_water, "==> Water is more volatile than methanol at temperature T="+String(T)+" K: this should not be possible.");
     
     a := C_methanol*C_water;
     b := C_methanol*z_methanol + C_water*z_water + (C_methanol + C_water)*(1.0 - z_methanol - z_water);
@@ -1021,7 +1021,7 @@ public
   package Test 
     
   model Test_h "test case for specific enthalpy" 
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Units.MolarEnthalpy;
       import Modelica.SIunits.Time;
       import Thermo.Molecules.Methanol;
@@ -1060,7 +1060,7 @@ public
   end Test_h;
     
   model Test_cp "test case for specific enthalpy" 
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Units.MolarEnthalpy;
       import Modelica.SIunits.MolarHeatCapacity;
       import Modelica.SIunits.Time;
@@ -1103,7 +1103,7 @@ public
   end Test_cp;
     
   model Test_p_vap "test case for species equilibrum constant" 
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Modelica.SIunits.PartialPressure;
       import Modelica.SIunits.Time;
       import Thermo.Molecules.Methanol;
@@ -1127,7 +1127,7 @@ public
   end Test_p_vap;
     
   model Test_K "test case for species equilibrum constant" 
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Modelica.SIunits.Time;
       import Thermo.Molecules.Methanol;
       import Thermo.Molecules.Water;
@@ -1150,7 +1150,7 @@ public
   end Test_K;
     
   model Test_rho "test case for specific enthalpy" 
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Modelica.SIunits.Time;
       import Modelica.SIunits.Density;
       import Thermo.Molecules.Methanol;
@@ -1189,7 +1189,7 @@ public
   end Test_rho;
     
     model TestRR 
-      import Modelica.SIunits.Temperature;
+      import Units.Temperature;
       import Modelica.SIunits.MoleFraction;
       import Modelica.SIunits.Time;
       
