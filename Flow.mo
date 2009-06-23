@@ -1,4 +1,4 @@
-            /**
+              /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -967,11 +967,6 @@ used only for condensing flows where LMTD theory is not valid.</p>
   partial model AbstractCooler "An abstract cooler for a process stream" 
     
     import Units.Temperature;
-    import Modelica.SIunits.VolumeFlowRate;
-    
-    VolumeFlowRate V_air = mfc.V "Coolant flow rate";
-    Temperature T_coolant_in =  exchanger.T_cold_2 "Coolant inlet temperature";
-    Temperature T_coolant_out = exchanger.T_cold_1 "Coolant outlet temperature";
     
     FlowPort inlet "Inlet to the cooler" 
                    annotation (extent=[-100,-6; -88,6]);
@@ -1032,22 +1027,96 @@ used only for condensing flows where LMTD theory is not valid.</p>
             fillPattern=1),
           string="%name")),
       Documentation(info="<html>
-<p>This is the interface for a generic air cooler, whose heat-exchange model is 
-left unspecified. It includes an internal PI controller that sets the process'
-outlet temperature by manipulating the coolant flow. The coolant itself enters
-at environment temperature.</p>
+<p>This is the most generic interface for an air cooler, whose heat-exchange model 
+is left completely unspecified.</p><p>The cooler provides two flow ports and two temperature
+outputs, which will output the temperature of the associate flow; the temperature
+input is going to be used by some (yet unspecified) internal system to set the outlet
+temperature.</p>
 </html>"));
     TemperatureOutput T_process_in "Process inlet temperature" annotation (extent=[-88,-20;
           -100,-8]);
     TemperatureOutput T_process_out "Process outlet temperature" annotation (extent=[88,-20;
           100,-8]);
+    TemperatureInput T_ref "Reference temperature for the process outlet" 
+      annotation (extent=[10,-40; -10,-20],rotation=90);
+  end AbstractCooler;
+
+  model SimpleCooler "A simple cooler implementation" 
+    extends AbstractCooler;
+  protected 
+    SinkPort sink "Makes up for lost heat" annotation (extent=[0,80; 20,100]);
+    annotation (Diagram);
+    FlowTemperature T_out "Outlet temperature measurement"
+      annotation (extent=[40,60; 60,80]);
+    FlowTemperature T_in "Inlet temperature measurement"
+      annotation (extent=[-70,60; -50,80]);
+    Modelica.Blocks.Continuous.FirstOrder lag(T=600, initType=Modelica.Blocks.
+          Types.Init.SteadyState) 
+      "A lag representing the inner control algorithm setting the outlet temperature"
+      annotation (extent=[-40,0; -20,20], rotation=0);
+    Modelica.Blocks.Nonlinear.VariableLimiter limiter 
+      "Keeps requested temperature within reason"
+      annotation (extent=[20,0; 40,20]);
+    Modelica.Blocks.Sources.RealExpression env(y=T_env) 
+      "Environment temperature" annotation (extent=[-8,-6; 8,10]);
+    
+  public 
+    inner parameter Units.Temperature T_env = 298.15;
+    Modelica.SIunits.HeatFlowRate Q = sink.inlet.H "Cooling duty";
+    
+  equation 
+    // No material loss
+    sink.inlet.n = 0*sink.inlet.n;
+    
+    // Set the two variables to be equal
+    // NOTE must do it here, these are both output variables.
+    T_process_out = limiter.y;
+    
+    connect(T_in.inlet, inlet) annotation (points=[-68,70; -80,70; -80,
+          -2.22045e-16; -94,-2.22045e-16], style(color=62, rgbcolor={0,127,127}));
+    connect(T_in.T, T_process_in) annotation (points=[-60,62; -60,-14; -94,-14], 
+        style(color=3, rgbcolor={0,0,255}));
+    connect(T_out.T, T_process_out) annotation (points=[50,62; 50,-14; 94,-14], 
+        style(color=3, rgbcolor={0,0,255}));
+    connect(T_out.outlet, outlet) annotation (points=[58,70; 76,70; 76,
+          -2.22045e-16; 94,-2.22045e-16], style(color=62, rgbcolor={0,127,127}));
+    connect(sink.inlet, T_in.outlet)
+      annotation (points=[1,90; -20,90; -20,70; -52,70], style(pattern=0));
+    connect(T_out.inlet, T_in.outlet)
+      annotation (points=[42,70; -52,70], style(pattern=0));
+    connect(lag.u, T_ref) annotation (points=[-42,10; -50,10; -50,-10; 0,-10; 0,
+          -30; -5.55112e-16,-30], style(color=74, rgbcolor={0,0,127}));
+    connect(limiter.u, lag.y)
+      annotation (points=[18,10; -19,10], style(color=74, rgbcolor={0,0,127}));
+    connect(limiter.limit1, T_in.T) annotation (points=[18,18; 0,18; 0,40; -60,
+          40; -60,62], style(color=74, rgbcolor={0,0,127}));
+    connect(limiter.limit2, env.y) annotation (points=[18,2; 13.4,2; 13.4,2; 
+          8.8,2], style(color=74, rgbcolor={0,0,127}));
+  end SimpleCooler;
+  
+  partial model AbstractExchangerCooler 
+    "An abstract exchanger-based cooler for a process stream" 
+    
+    extends AbstractCooler;
+    
+    import Units.Temperature;
+    import Modelica.SIunits.VolumeFlowRate;
+    
+    VolumeFlowRate V_air = mfc.V "Coolant flow rate";
+    Temperature T_coolant_in =  exchanger.T_cold_2 "Coolant inlet temperature";
+    Temperature T_coolant_out = exchanger.T_cold_1 "Coolant outlet temperature";
+    
+      annotation (defaultComponentName="cooler", Documentation(info="<html>
+<p>This is the interface for an air cooler based on a detailed but not specified heat-exchanger
+model. It includes an internal PI controller that sets the process' outlet temperature by 
+manipulating the coolant flow. The coolant itself enters at environment temperature.</p>
+</html>"));
+    
     replaceable AbstractHeatExchanger exchanger 
       "The heat exchanger implementing the cooler" 
       annotation (extent=[-64,28; 16,108]);
     GasFlowController mfc "Mass flow controller for cooling air" 
       annotation (extent=[60,46; 40,66], rotation=270);
-    TemperatureInput T_ref "Reference temperature for the process outlet" 
-      annotation (extent=[10,-40; -10,-20],rotation=90);
   protected 
     EnvironmentPort env "Environmental air source" 
       annotation (extent=[100,46; 80,66], rotation=0);
@@ -1072,17 +1141,17 @@ at environment temperature.</p>
           48; -70,-14; 94,-14], style(color=3, rgbcolor={0,0,255}));
     connect(K.V, mfc.V) annotation (points=[29.6,12; 50,12; 50,46], style(color=
            3, rgbcolor={0,0,255}));
-    connect(K.T_r, T_ref) annotation (points=[10.4,12; 0,12; 0,-30;
+    connect(K.T_r, T_ref) annotation (points=[10.4,12; 0,12; 0,-30; 
           -5.55112e-16,-30], style(
         color=3,
         rgbcolor={0,0,255},
         pattern=3));
     connect(exchanger.T_hot_2, K.T_m) annotation (points=[-60,48; -70,48; -70,
           -14; 20,-14; 20,2.4], style(color=3, rgbcolor={0,0,255}));
-  end AbstractCooler;
-  
+  end AbstractExchangerCooler;
+
   model LMTDCooler "A cooler implemented with a LMTD heat exchanger" 
-    extends AbstractCooler(redeclare LMTDHeatExchanger exchanger);
+    extends AbstractExchangerCooler(redeclare LMTDHeatExchanger exchanger);
     annotation (Diagram, Documentation(info="<html>
 <p>A cooler using a LMTD implementation. It can for instance be applied as the
 anode-loop cooler or as a recuperating heat exchanger on the anode side.</p>
@@ -1092,7 +1161,8 @@ anode-loop cooler or as a recuperating heat exchanger on the anode side.</p>
   
   model DiscretisedCooler 
     "A cooler implemented with a discretised heat exchanger" 
-    extends AbstractCooler(redeclare DiscretisedHeatExchanger exchanger);
+    extends AbstractExchangerCooler(redeclare DiscretisedHeatExchanger 
+        exchanger);
     annotation (Documentation(info="<html>
 <p>A cooler using a discretised implementation. It can for instance be applied as the
 cathode-loop cooler (condenser).</p>
@@ -1546,15 +1616,15 @@ current.</p>
       mfc.V = 0.01*air+0.99*air*time;
       pump.V = sol;
       
-      connect(hotSink.inlet, exchanger.hot_2) annotation (points=[-27.6,-48;
+      connect(hotSink.inlet, exchanger.hot_2) annotation (points=[-27.6,-48; 
             -36,-48; -36,8], style(color=62, rgbcolor={0,127,127}));
       connect(exchanger.cold_1, coldSink.inlet) annotation (points=[36,32; 49.2,
             32; 49.2,32; 62.4,32], style(color=62, rgbcolor={0,127,127}));
       connect(env.outlet, mfc.inlet) annotation (points=[81,-50; 62,-50; 62,-32],
           style(color=62, rgbcolor={0,127,127}));
-      connect(mfc.outlet, exchanger.cold_2) annotation (points=[62,-22; 62,8;
+      connect(mfc.outlet, exchanger.cold_2) annotation (points=[62,-22; 62,8; 
             36,8], style(color=62, rgbcolor={0,127,127}));
-      connect(pump.outlet, exchanger.hot_1) annotation (points=[-70,20; -70,32;
+      connect(pump.outlet, exchanger.hot_1) annotation (points=[-70,20; -70,32; 
             -36,32], style(color=62, rgbcolor={0,127,127}));
       connect(methanolSolution.outlet, pump.inlet) annotation (points=[-70,-30;
             -70,10], style(color=62, rgbcolor={0,127,127}));
@@ -1601,15 +1671,20 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
           style(color=62, rgbcolor={0,127,127}));
     end AbstractCoolerTest;
+
+    model SimpleCoolerTest 
+      extends AbstractCoolerTest(redeclare SimpleCooler cooler);
+      annotation (experiment(StopTime=3600));
+    end SimpleCoolerTest;
     
     model LMTDCoolerTest "Test for the LMTD-based air cooler" 
       extends AbstractCoolerTest(redeclare LMTDCooler cooler);

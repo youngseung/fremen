@@ -1,4 +1,4 @@
-            /**
+              /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -140,25 +140,25 @@ must be specialised in subclasses.</p>
   model Reference_NoControl "The reference system with manual control" 
     extends Reference(
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82,
-          n=10)),
-      redeclare Flow.DiscretisedCooler anodeCooler,
+      redeclare Flow.SimpleCooler cathodeCooler,
+      redeclare Flow.SimpleCooler anodeCooler,
       redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(c(fixed=true),T(fixed=true),V(fixed=true)));
     
     import Modelica.SIunits.VolumeFlowRate;
+    import Modelica.SIunits.Temperature;
     
     parameter VolumeFlowRate V_fuel = 5E-8/60;
     parameter VolumeFlowRate V_anode = 10E-6/60;
     parameter VolumeFlowRate V_cathode = 500E-6/60;
-    parameter VolumeFlowRate V_cooler = 10E-3/60;
-    parameter VolumeFlowRate V_condenser = 2E-3/60;
+    parameter Temperature T_cooler = 310;
+    parameter Temperature T_condenser = 320;
     
   equation 
     V_fuel = fuelPump.V;
     V_anode = pump.V;
     V_cathode = blower.V;
-    V_cooler = anodeCooler.mfc.V;
-    V_condenser = cathodeCooler.mfc.V;
+    T_cooler = anodeCooler.T_ref;
+    T_condenser = cathodeCooler.T_ref;
     
     annotation (Documentation(info="<html>
 <p>This simple specialisation of the generic reference-system model
@@ -175,8 +175,8 @@ see what happens.</p>
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
     extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(V(fixed=true),c(fixed=true),T(fixed=true)),
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.DiscretisedCooler cathodeCooler(exchanger(A=3.46E-2, U=82)),
-      redeclare Flow.DiscretisedCooler anodeCooler(exchanger(n=5)));
+      redeclare Flow.SimpleCooler cathodeCooler,
+      redeclare Flow.SimpleCooler anodeCooler);
     
   public 
     Control.CathodeLambdaControl K_cath "Cathode lambda controller" 
@@ -343,7 +343,7 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-81,10; -70,10],
                               style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10;
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-84; 0,-84; 0,-68; 6.10623e-16,-68],
@@ -355,14 +355,14 @@ must be specialised in subclasses.</p>
     connect(separator.gasOutlet, co2sink.inlet)   annotation (points=[65,9.4;
           66,9.4; 66,20; 84.4,20],
         style(color=62, rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
           -14,0; 0,0; 0,5; 14.54,5],  style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
           -50,0; -60,0; -60,-54; -36,-54],
                               style(
         color=62,
@@ -370,25 +370,25 @@ must be specialised in subclasses.</p>
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40;
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
           2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
     connect(amperometer.p, load.n) 
       annotation (points=[-32,90; -40,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2;
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
           -21.2,40; 0,40; 0,90; -12,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40;
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
           -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
-    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5;
+    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5; 
           0,5; 0,10.1; -14,10.1], style(color=62, rgbcolor={0,127,127}));
-    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,
-          0.6; 65,-60; 8,-60], style(color=62, rgbcolor={0,127,127}));
+    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6; 
+          65,-60; 8,-60],      style(color=62, rgbcolor={0,127,127}));
   end Mingled;
   
   model Mingled_NoControl "The mingled system with manual control" 
     extends Mingled(
       redeclare Flow.TheveninFuelCell fuelCell,
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.DiscretisedCooler cooler,
+      redeclare Flow.SimpleCooler cooler,
       mixer(
         c(fixed=true),
         T(fixed=true),
