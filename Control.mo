@@ -1,4 +1,4 @@
-  /**
+      /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package Control "Controllers for the DMFC system"
+
+package Control "Controllers for the DMFC system" 
   block CoolerControl "PI controller with saturation" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
@@ -94,15 +95,15 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     connect(difference.u1, T_r) annotation (points=[-58,6.66134e-16; -62,
           6.66134e-16; -62,1.11022e-15; -120,1.11022e-15], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16; 
+    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16;
           83.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(PI.u, signChange.y) annotation (points=[18,6.66134e-16; 12,
           6.66134e-16; 12,6.10623e-16; 1,6.10623e-16], style(color=74, rgbcolor=
            {0,0,127}));
-    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16; 
+    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16;
           -24,6.66134e-16; -24,6.10623e-16; -41,6.10623e-16], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16; 
+    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16;
           50,6.10623e-16; 41,6.10623e-16], style(color=74, rgbcolor={0,0,127}));
   end CoolerControl;
   annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
@@ -114,22 +115,27 @@ some particular units, such as coolers.</p>
     
     import Modelica.Constants.R;
     import Modelica.SIunits.MoleFraction;
-    import Units.Temperature;
+    import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Pressure;
+    import Units.Temperature;
     import Units.F;
     
     parameter Real lambda = 2 "Reactant excess ratio";
+    parameter Concentration c_est = 1500 
+      "Worst-case (highest) anodic concentration";
     
-    parameter Real aA = 5E-3 "Partial derivative of I_x wrt. c";
-    parameter Real b = 0.21 "Partial derivative of I_x wrt. I";
+    parameter Real aA = 8.5E-9 "Partial derivative of n_x wrt. c";
+    parameter Real b = 0.21 "Partial derivative of n_x wrt. n_H";
     
     outer parameter Pressure p_env = 101325 "Environment pressure";
     outer parameter Temperature T_env = 298.15 "Environment temperature";
     
+    constant MoleFraction x_O2_env = 0.2 "Oxygen molar fraction in air";
+    
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
           style(color=3, rgbcolor={0,0,255}),
-          string="V = f(I,c)")), 
+          string="V = f(I)")),
       Documentation(info="<html>
 <p>This feedforward controller uses the current and the anodic 
 methanol concentration (either a measurement or a value) to set
@@ -141,45 +147,51 @@ parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
 to estimate the extent of cross-over current in the cell to compensate
 for.</p>
 </html>"));
-    Flow.ConcentrationInput c "Concentration target" 
-      annotation (extent=[-140,-80; -100,-40]);
     Flow.CurrentInput I "Current measurement" 
-      annotation (extent=[-140,40; -100,80]);
+      annotation (extent=[-140,-20; -100,20]);
     Flow.VolumeFlowRateOutput V "Air flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
-    constant MoleFraction x_O2_env = 0.2 "Oxygen molar fraction in air";
-    
-    Modelica.Blocks.Math.Add add(k1=(1 - b), k2=aA) 
+    Modelica.Blocks.Math.Add getO2Consumption(k1=(1 - b)/(4*F), k2=(3/2)*aA) 
       "Sums the measurement with the appropriate weights" 
-      annotation (extent=[-20,-10; 0,10]);
-    Modelica.Blocks.Math.Gain gain(k=lambda/(4*F)/x_O2_env*(R*T_env/p_env)) 
-      annotation (extent=[40,-10; 60,10]);
+      annotation (extent=[-20,-20; 20,20]);
+    Modelica.Blocks.Math.Gain convertToFlow(k=lambda/x_O2_env*(R*T_env/p_env)) 
+      "Obtains air volumetric flow to feed" 
+      annotation (extent=[50,-10; 70,10]);
+    Modelica.Blocks.Sources.RealExpression c(y=c_est) "Concentration estimate" 
+      annotation (extent=[-70,-24; -50,0]);
   equation 
-    connect(add.y, gain.u) annotation (points=[1,6.10623e-16; 6.5,6.10623e-16; 
-          6.5,6.66134e-16; 38,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
-    connect(gain.y, V) annotation (points=[61,6.10623e-16; 73.5,6.10623e-16; 
+    connect(getO2Consumption.y, convertToFlow.u) 
+                           annotation (points=[22,1.22125e-15; 6.5,1.22125e-15; 
+          6.5,6.66134e-16; 48,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
+    connect(convertToFlow.y, V) 
+                       annotation (points=[71,6.10623e-16; 73.5,6.10623e-16; 
           73.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
-    connect(add.u1, I) annotation (points=[-22,6; -60,6; -60,60; -120,60],
+    connect(getO2Consumption.u1, I) 
+                       annotation (points=[-24,12; -80,12; -80,1.11022e-15; 
+          -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.u2, c) annotation (points=[-22,-6; -60,-6; -60,-60; -120,-60],
+    connect(c.y, getO2Consumption.u2) annotation (points=[-49,-12; -24,-12],
         style(color=74, rgbcolor={0,0,127}));
   end CathodeLambdaControl;
   
   block AnodeLambdaControl "Feedforward controller for the anodic flow" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
+    import Modelica.SIunits.Concentration;
     import Units.F;
     
-    parameter Real lambda = 2 "Reactant excess ratio";
+    parameter Real lambda = 5 "Reactant excess ratio";
+    parameter Concentration c_est = 750 
+      "Worst-case (lowest) anodic concentration";
     
-    parameter Real aA = 5E-3 "Partial derivative of I_x wrt. c";
-    parameter Real b = 0.21 "Partial derivative of I_x wrt. I";
+    parameter Real aA = 8.5E-9 "Partial derivative of n_x wrt. c";
+    parameter Real b = 0.21 "Partial derivative of n_x wrt. n_H";
     
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
           style(color=3, rgbcolor={0,0,255}),
-          string="V = f(I,c)")), 
+          string="V = f(I)")),
       Documentation(info="<html>
 <p>This feedforward controller uses the current and the anodic 
 methanol concentration (either a measurement or a value) to set
@@ -191,41 +203,44 @@ parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
 to estimate the extent of cross-over current in the cell to compensate
 for.</p>
 </html>"));
-    Flow.ConcentrationInput c "Concentration estimate" 
-      annotation (extent=[-140,-80; -100,-40]);
     Flow.CurrentInput I "Current measurement" 
-      annotation (extent=[-140,40; -100,80]);
+      annotation (extent=[-140,-20; -100,20]);
     Flow.VolumeFlowRateOutput V "Solution flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
-    Modelica.Blocks.Math.Add add(k1=(1 - b), k2=aA) 
+    Modelica.Blocks.Math.Add add(            k2=aA, k1=(1 - b)/(6*F)) 
       "Sums the measurement with the appropriate weights" 
-      annotation (extent=[-40,-4; -20,16]);
-    Modelica.Blocks.Math.Gain gain(k=lambda/(6*F)) "Multiplies by excess ratio"
-      annotation (extent=[0,-4; 20,16]);
+      annotation (extent=[-40,-14; 0,26]);
+    Modelica.Blocks.Math.Gain excessRatio(k=lambda) 
+      "Multiplies by excess ratio" 
+      annotation (extent=[20,-4; 40,16]);
     Modelica.Blocks.Math.Division divide 
       "Divides methanol molar flow with concentration" 
-      annotation (extent=[50,-10; 70,10]);
+      annotation (extent=[60,-10; 80,10]);
+    Modelica.Blocks.Sources.RealExpression c(y=c_est) "Concentration estimate" 
+      annotation (extent=[-90,-52; -70,-28]);
   equation 
-    connect(add.y, gain.u) annotation (points=[-19,6; -14.75,6; -14.75,6; -10.5,
-          6; -10.5,6; -2,6],                style(color=74, rgbcolor={0,0,127}));
-    connect(add.u1, I) annotation (points=[-42,12; -60,12; -60,60; -120,60],
+    connect(add.u1, I) annotation (points=[-44,18; -60,18; -60,1.11022e-15; 
+          -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.u2, c) annotation (points=[-42,5.55112e-16; -60,5.55112e-16; 
-          -60,-60; -120,-60],
-        style(color=74, rgbcolor={0,0,127}));
-    connect(divide.y, V) annotation (points=[71,6.10623e-16; 87.5,6.10623e-16; 
+    connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16; 
           87.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
-    connect(gain.y, divide.u1) annotation (points=[21,6; 27.75,6; 27.75,6; 34.5,
-          6; 34.5,6; 48,6],
+    connect(excessRatio.y, divide.u1) 
+                               annotation (points=[41,6; 45.25,6; 45.25,6; 49.5,
+          6; 49.5,6; 58,6],
                          style(color=74, rgbcolor={0,0,127}));
-    connect(divide.u2, c) annotation (points=[48,-6; 36,-6; 36,-60; -120,-60],
+    connect(c.y, add.u2) annotation (points=[-69,-40; -60,-40; -60,-6; -44,-6],
         style(color=74, rgbcolor={0,0,127}));
+    connect(c.y, divide.u2) annotation (points=[-69,-40; 50,-40; 50,-6; 58,-6],
+        style(color=74, rgbcolor={0,0,127}));
+    connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6; 
+          18,6], style(color=74, rgbcolor={0,0,127}));
   end AnodeLambdaControl;
   
   block FuelControl "Feedforward controller for the fuel flow" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
+    import Modelica.SIunits.Concentration;
     import Units.Temperature;
     import Thermo.Molecules.Methanol;
     import Thermo.Molecules.Water;
@@ -237,13 +252,15 @@ for.</p>
     
     outer parameter Temperature T_env = 298.15 "Environment temperature";
     
-    parameter Real aA = 5E-3 "Partial derivative of I_x wrt. c";
+    parameter Concentration c_ref = 1000 "Concentration set point";
+    
+    parameter Real aA = 8.5E-9 "Partial derivative of I_x wrt. c";
     parameter Real b = 0.21 "Partial derivative of I_x wrt. I";
     
     annotation (defaultComponentName="K", Diagram, Icon(Text(
           extent=[100,100; -100,-100],
           style(color=3, rgbcolor={0,0,255}),
-          string="V = f(I,c,T)")), 
+          string="V = f(I,T)")),
       Documentation(info="<html>
 <p>This feedforward controller takes current, concentration and degasser
 temperature and returns the appropriate volumetric flow rate of methanol from
@@ -253,8 +270,6 @@ in the anodic bulk, usually assumed to be the outlet one.</p>
 <p>Two parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
 to estimate the extent of cross-over current in the cell to compensate for.</p>
 </html>"));
-    Flow.ConcentrationInput c "Concentration estimate" 
-      annotation (extent=[-140,-20; -100,20]);
     Flow.CurrentInput I "Current measurement" 
       annotation (extent=[-140,40; -100,80]);
     Flow.VolumeFlowRateOutput V "Solution flow" 
@@ -270,7 +285,7 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
     fM = K(T_deg, Methanol)*mw(Water)/rho(T_deg, Water, Liquid)/(6*F)/(1-K(T_deg,Water));
     n_to_V = mw(Methanol)/rho(T_env, Methanol, Liquid);
     
-    V = n_to_V * (((1-b)*I + aA*c)/(6*F) + fM*I*c);
+    V = n_to_V * ((1-b)/6/F*I + aA*c_ref + fM*I*c_ref);
     
   end FuelControl;
   
@@ -304,7 +319,7 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
         Text(
           extent=[-20,-22; 80,-62],
           style(color=8),
-          string="P")), 
+          string="P")),
       Documentation(info="<html>
 <p>This controller takes the current hydrostatic pressure in the mixer,
 the current volumetric flow in the cathode and the condenser temperature

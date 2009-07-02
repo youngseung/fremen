@@ -1,4 +1,4 @@
-              /**
+                      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -173,22 +173,20 @@ see what happens.</p>
   
   model Reference_Control 
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(V(fixed=true),c(fixed=true),T(fixed=true)),
+    extends Reference(redeclare Flow.TheveninFuelCell fuelCell,
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
       redeclare Flow.SimpleCooler cathodeCooler,
-      redeclare Flow.SimpleCooler anodeCooler);
+      redeclare Flow.SimpleCooler anodeCooler,
+      mixer(T(fixed=true), c(fixed=true)));
     
   public 
     Control.CathodeLambdaControl K_cath "Cathode lambda controller" 
       annotation (extent=[-74,24; -66,34], rotation=270);
     Control.FuelControl K_fuel annotation (extent=[-16,-94; -4,-86]);
     Control.WaterControl K_cond annotation (extent=[26,8; 38,18], rotation=0);
-    Control.AnodeLambdaControl K_an(lambda=5) 
-                                    annotation (extent=[-70,-64; -60,-56]);
-    Modelica.Blocks.Sources.RealExpression c_ref(y=1000) 
-      "Target concentration, mol/m^3" annotation (extent=[-100,52; -80,72]);
+    Control.AnodeLambdaControl K_an annotation (extent=[-70,-64; -60,-56]);
     Control.TemperatureControl K_deg 
-                                 annotation (extent=[-10,-38; 2,-26]);
+                                 annotation (extent=[-16,-34; -4,-22]);
     annotation (experiment(StopTime=7200), experimentSetupOutput,
       Diagram,
       Documentation(info="<html>
@@ -196,14 +194,13 @@ see what happens.</p>
 controllers. Note that controller connections are dotted and colour-coded.</p>
 </html>"));
   equation 
-    connect(amperometer.i, K_cath.I) annotation (points=[-22,80; -22,76; -67.6,
-          76; -67.6,35],
-                   style(
+    connect(amperometer.i, K_cath.I) annotation (points=[-22,80; -22,76; -70,76;
+          -70,35], style(
         color=3,
         rgbcolor={0,0,255},
         pattern=3));
     connect(K_fuel.I, amperometer.i) annotation (points=[-17.2,-87.6; -18,-88;
-          -90,-88; -90,40; -68,40; -68,76; -22,76; -22,80], style(
+          -90,-88; -90,40; -70,40; -70,76; -22,76; -22,80], style(
         color=3,
         rgbcolor={0,0,255},
         pattern=3));
@@ -216,8 +213,9 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color=1,
         rgbcolor={255,0,0},
         pattern=3));
-    connect(K_cond.p_mix, mixer.p) annotation (points=[24.8,16; 18,16; 18,-74; 
-          -4.7,-74; -4.7,-66.9], style(
+    connect(K_cond.p_mix, mixer.p) annotation (points=[24.8,16; 18,16; 18,8; 4,
+          8; 4,-44; 16,-44; 16,-74; -4.7,-74; -4.7,-66.9],
+                                 style(
         color=78,
         rgbcolor={127,0,127},
         pattern=3));
@@ -230,29 +228,10 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color=2,
         rgbcolor={0,255,0},
         pattern=3));
-    connect(K_an.I, amperometer.i) annotation (points=[-71,-57.6; -90,-58; -90,
-          40; -68,40; -68,76; -22,76; -22,80],     style(
+    connect(K_an.I, amperometer.i) annotation (points=[-71,-60; -90,-60; -90,40;
+          -70,40; -70,76; -22,76; -22,80],         style(
         color=3,
         rgbcolor={0,0,255},
-        pattern=3));
-    connect(c_ref.y, K_cath.c) 
-                           annotation (points=[-79,62; -76,62; -76,48; -72.4,48;
-          -72.4,35],
-                   style(
-        color=62,
-        rgbcolor={0,127,127},
-        pattern=3));
-    connect(c_ref.y, K_an.c) 
-                         annotation (points=[-79,62; -76,62; -76,-62.4; -71,
-          -62.4], style(
-        color=62,
-        rgbcolor={0,127,127},
-        pattern=3));
-    connect(c_ref.y, K_fuel.c) 
-                           annotation (points=[-79,62; -76,62; -76,-90; -17.2,
-          -90], style(
-        color=62,
-        rgbcolor={0,127,127},
         pattern=3));
     connect(K_cath.V, K_cond.V_cath) annotation (points=[-70,23; -70,18; 16,18;
           16,13; 24.8,13], style(
@@ -264,14 +243,14 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         rgbcolor={0,255,0},
         pattern=3));
     connect(K_deg.T_m, fuelCell.T) 
-                               annotation (points=[-11.2,-32; -20,-32; -20,-20; 
-          -8,-20; -8,5.34; -12.2,5.34], style(
+                               annotation (points=[-17.2,-28; -20,-28; -20,-16; 
+          -8,-16; -8,5.34; -12.2,5.34], style(
         color=1,
         rgbcolor={255,0,0},
         pattern=3));
     connect(anodeCooler.T_ref, K_deg.T_deg_ref) 
-                                            annotation (points=[20,-23; 20,-32; 
-          3.2,-32], style(
+                                            annotation (points=[20,-23; 20,-28; 
+          -2.8,-28],style(
         color=1,
         rgbcolor={255,0,0},
         pattern=3));
@@ -343,7 +322,7 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-81,10; -70,10],
                               style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10; 
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10;
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-84; 0,-84; 0,-68; 6.10623e-16,-68],
@@ -355,14 +334,14 @@ must be specialised in subclasses.</p>
     connect(separator.gasOutlet, co2sink.inlet)   annotation (points=[65,9.4;
           66,9.4; 66,20; 84.4,20],
         style(color=62, rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
           -14,0; 0,0; 0,5; 14.54,5],  style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
           -50,0; -60,0; -60,-54; -36,-54],
                               style(
         color=62,
@@ -370,17 +349,17 @@ must be specialised in subclasses.</p>
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40;
           2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
     connect(amperometer.p, load.n) 
       annotation (points=[-32,90; -40,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2;
           -21.2,40; 0,40; 0,90; -12,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40;
           -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
-    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5; 
+    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5;
           0,5; 0,10.1; -14,10.1], style(color=62, rgbcolor={0,127,127}));
-    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6; 
+    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6;
           65,-60; 8,-60],      style(color=62, rgbcolor={0,127,127}));
   end Mingled;
   
@@ -395,17 +374,18 @@ must be specialised in subclasses.</p>
         V(fixed=true)));
     
     import Modelica.SIunits.VolumeFlowRate;
+    import Modelica.SIunits.Temperature;
     
     parameter VolumeFlowRate V_fuel = 5E-8/60;
     parameter VolumeFlowRate V_anode = 10E-6/60;
     parameter VolumeFlowRate V_cathode = 500E-6/60;
-    parameter VolumeFlowRate V_cooler = 10E-3/60;
+    parameter Temperature T_cooler = 320;
     
   equation 
     V_fuel = fuelPump.V;
     V_anode = pump.V;
     V_cathode = blower.V;
-    V_cooler = cooler.mfc.V;
+    T_cooler = cooler.T_ref;
     
     annotation (Diagram, experiment(StopTime=7200));
   end Mingled_NoControl;
