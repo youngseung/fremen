@@ -1,4 +1,4 @@
-                  /**
+                      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -616,6 +616,82 @@ by default it is 1 M.</p>
     
   end Mixer;
   
+  model Burner "An adiabatic combustor" 
+    
+    import Units.MolarFlow;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Molecules.Water;
+    import Thermo.Molecules.Oxygen;
+    import Thermo.Molecules.CarbonDioxide;
+    import Thermo.Molecules.Nitrogen;
+    
+    FlowPort inlet "Burner inlet" annotation (extent=[-108,-10; -88,10]);
+    FlowPort outlet "Burner outlet" annotation (extent=[92,-10; 112,10]);
+    annotation (
+      Diagram, 
+      Icon(
+        Ellipse(extent=[-100,40; -20,-40], style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            thickness=2, 
+            fillColor=7, 
+            rgbfillColor={255,255,255})), 
+        Ellipse(extent=[20,40; 100,-40], style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            thickness=2, 
+            fillColor=7, 
+            rgbfillColor={255,255,255})), 
+        Rectangle(extent=[-60,40; 60,-40], style(
+            color=7, 
+            rgbcolor={255,255,255}, 
+            thickness=2, 
+            fillColor=7, 
+            rgbfillColor={255,255,255}, 
+            fillPattern=1)), 
+        Rectangle(extent=[-40,40; 40,-40], style(
+            pattern=0, 
+            thickness=2, 
+            fillColor=45, 
+            rgbfillColor={255,128,0}, 
+            fillPattern=10)), 
+        Line(points=[-60,40; 60,40; 60,40], style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            thickness=2, 
+            fillColor=7, 
+            rgbfillColor={255,255,255}, 
+            fillPattern=1)), 
+        Line(points=[-60,-40; 60,-40; 60,-40], style(
+            color=0, 
+            rgbcolor={0,0,0}, 
+            thickness=2, 
+            fillColor=7, 
+            rgbfillColor={255,255,255}, 
+            fillPattern=1))), 
+      Documentation(info="<html>
+<p>This unit is a simple reactor that converts all available methanol and oxygen to water
+and carbon dioxide. It is smart enough to figure out which of the reactants is limiting,
+but not much else.</p>
+<p>In particular, no technology is assumed: it could be an actual flame burner, or a
+catalytic-bed converter.</p>
+</html>"));
+    
+  protected 
+    MolarFlow reaction "Reaction rate for CH3OH+3/2O2 -> 2H2O+CO2";
+    
+  equation 
+    inlet.H + outlet.H = 0;
+    inlet.n[Methanol] + outlet.n[Methanol] - reaction = 0;
+    inlet.n[Water] + outlet.n[Water] + 2*reaction = 0;
+    inlet.n[Oxygen] + outlet.n[Oxygen] - 1.5*reaction = 0;
+    inlet.n[CarbonDioxide] + outlet.n[CarbonDioxide] + reaction = 0;
+    inlet.n[Nitrogen] + outlet.n[Nitrogen] = 0;
+    
+    reaction = min( inlet.n[Methanol], inlet.n[Oxygen]/1.5);
+    
+  end Burner;
+
   model Separator "Splits a flow in two parts" 
     import Units.Temperature;
     import Thermo.Molecules.Condensable;
@@ -1045,7 +1121,16 @@ temperature.</p>
     extends AbstractCooler;
   protected 
     SinkPort sink "Makes up for lost heat" annotation (extent=[0,80; 20,100]);
-    annotation (Diagram);
+    annotation (Diagram, Icon,
+      Documentation(info="<html>
+<p>This is a straightforward implementation of the abstract cooler that sets the
+cooler's outlet temperature according to a given reference. There is a build-in,
+customisable lag after which the outlet temperature will reach the reference value.</p>
+<p>The outlet temperature can reach only values between inlet and environment
+temperature; if the reference is outside these limits, the boolean output 
+<tt>isSaturated</tt> will allow an external control algorithm to notice this and avoid
+a wind-up situation.</p>
+</html>"));
     FlowTemperature T_out "Outlet temperature measurement" 
       annotation (extent=[40,60; 60,80]);
     FlowTemperature T_in "Inlet temperature measurement" 
@@ -1053,24 +1138,28 @@ temperature.</p>
     Modelica.Blocks.Continuous.FirstOrder lag(T=600, initType=Modelica.Blocks.
           Types.Init.SteadyState) 
       "A lag representing the inner control algorithm setting the outlet temperature"
-      annotation (extent=[-40,0; -20,20], rotation=0);
+      annotation (extent=[20,0; 40,20],   rotation=0);
     Modelica.Blocks.Nonlinear.VariableLimiter limiter 
       "Keeps requested temperature within reason" 
-      annotation (extent=[20,0; 40,20]);
+      annotation (extent=[-20,0; 0,20]);
     Modelica.Blocks.Sources.RealExpression env(y=T_env) 
-      "Environment temperature" annotation (extent=[-8,-6; 8,10]);
-    
+      "Environment temperature" annotation (extent=[-48,-6; -32,10]);
   public 
+    Modelica.Blocks.Interfaces.BooleanOutput isSaturated 
+      "Whether the current set point is saturated" 
+      annotation (extent=[20,-40; 40,-20], rotation=270);
     inner parameter Units.Temperature T_env = 298.15;
     Modelica.SIunits.HeatFlowRate Q = sink.inlet.H "Cooling duty";
     
   equation 
+    isSaturated = T_ref < T_env or T_ref > T_process_in;
+    
     // No material loss
     sink.inlet.n = 0*sink.inlet.n;
     
     // Set the two variables to be equal
     // NOTE must do it here, these are both output variables.
-    T_process_out = limiter.y;
+    T_process_out = lag.y;
     
     connect(T_in.inlet, inlet) annotation (points=[-68,70; -80,70; -80,
           -2.22045e-16; -94,-2.22045e-16], style(color=62, rgbcolor={0,127,127}));
@@ -1081,17 +1170,20 @@ temperature.</p>
     connect(T_out.outlet, outlet) annotation (points=[58,70; 76,70; 76,
           -2.22045e-16; 94,-2.22045e-16], style(color=62, rgbcolor={0,127,127}));
     connect(sink.inlet, T_in.outlet) 
-      annotation (points=[1,90; -20,90; -20,70; -52,70], style(pattern=0));
+      annotation (points=[1,90; -20,90; -20,70; -52,70], style(color=62,
+          rgbcolor={0,127,127}));
     connect(T_out.inlet, T_in.outlet) 
-      annotation (points=[42,70; -52,70], style(pattern=0));
-    connect(lag.u, T_ref) annotation (points=[-42,10; -50,10; -50,-10; 0,-10; 0,
-          -30; -5.55112e-16,-30], style(color=74, rgbcolor={0,0,127}));
-    connect(limiter.u, lag.y) 
-      annotation (points=[18,10; -19,10], style(color=74, rgbcolor={0,0,127}));
-    connect(limiter.limit1, T_in.T) annotation (points=[18,18; 0,18; 0,40; -60,
-          40; -60,62], style(color=74, rgbcolor={0,0,127}));
-    connect(limiter.limit2, env.y) annotation (points=[18,2; 13.4,2; 13.4,2;
-          8.8,2], style(color=74, rgbcolor={0,0,127}));
+      annotation (points=[42,70; -52,70], style(color=62, rgbcolor={0,127,127}));
+    connect(limiter.limit1, T_in.T) annotation (points=[-22,18; -40,18; -40,40;
+          -60,40; -60,62],
+                       style(color=74, rgbcolor={0,0,127}));
+    connect(limiter.limit2, env.y) annotation (points=[-22,2; -26.6,2; -26.6,2; 
+          -31.2,2],
+                  style(color=74, rgbcolor={0,0,127}));
+    connect(limiter.u, T_ref) annotation (points=[-22,10; -56,10; -56,-16; 0,
+          -16; 0,-30; -5.55112e-16,-30], style(color=74, rgbcolor={0,0,127}));
+    connect(lag.u, limiter.y) 
+      annotation (points=[18,10; 1,10], style(color=74, rgbcolor={0,0,127}));
   end SimpleCooler;
   
   partial model AbstractExchangerCooler 
@@ -1411,7 +1503,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
     
     connect(cathodeT.outlet, cathode_outlet) 
       annotation (points=[78,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
+    connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
           -46,0; -31,0; -31,4.44089e-16],
                                       style(color=62, rgbcolor={0,127,127}));
     connect(cathodeT.inlet, nexus.inlet)       annotation (points=[62,30; -40,
@@ -1419,13 +1511,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                              style(color=62, rgbcolor={0,127,127}));
     connect(anodeTC.outlet, anode_outlet)       annotation (points=[78,-30; 100,
           -30], style(color=62, rgbcolor={0,127,127}));
-    connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30; 
+    connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30;
           -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                   style(color=62, rgbcolor={0,127,
             127}));
     connect(T, cathodeT.T) annotation (points=[110,2; 70,2; 70,22],
         style(color=3, rgbcolor={0,0,255}));
-    connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30; 
+    connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30;
           -46,4.44089e-16; -31,4.44089e-16], style(color=62, rgbcolor={0,127,
             127}));
   end FuelCell;
@@ -1671,10 +1763,10 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
@@ -1733,7 +1825,7 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42; 
             -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-51,38; -36,38],
@@ -1749,7 +1841,7 @@ current.</p>
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
             34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18;
+      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18; 
             -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
     end CellTest;
     
@@ -1769,6 +1861,82 @@ should either be a complete or an abstract model, so that checking Flow.Test wit
 is a quick check that the library is Ok; obviously this is not a final check, but
 can help catch regressions induced in other classes by some change.</p>
 </html>"));
+    model TestBurner 
+      
+      import Modelica.SIunits.VolumeFlowRate;
+      
+      inner parameter Modelica.SIunits.Pressure p_env = 101325 
+        "Environment pressure";
+      inner parameter Units.Temperature T_env = 298.15 "Enviroment temperature";
+      inner parameter Units.RelativeHumidity RH_env = 60 
+        "Environment relative humidity";
+      
+      parameter VolumeFlowRate solution = 10E-6/60; // 10 ml/min
+      parameter VolumeFlowRate air =      1E-3/60; // 1  l/min
+      
+      Burner burner annotation (extent=[-2,-20; 38,20]);
+      MethanolSolution methanolSolution annotation (extent=[-100,20; -80,40]);
+      Pump pump annotation (extent=[-60,40; -40,20]);
+      annotation (Diagram, Documentation(info="<html>
+</html>"));
+      EnvironmentPort env annotation (extent=[-100,-20; -80,0]);
+      GasFlowController mfc annotation (extent=[-60,-20; -40,0]);
+      SinkPort sinkPort annotation (extent=[80,-10; 100,10]);
+      FlowTemperature T_out annotation (extent=[50,-10; 70,10]);
+      FlowTemperature T_in annotation (extent=[-30,-10; -10,10]);
+    equation 
+      pump.V = solution;
+      mfc.V = air;
+      connect(pump.inlet, methanolSolution.outlet) annotation (points=[-50,30; 
+            -90,30], style(
+          color=62, 
+          rgbcolor={0,127,127}, 
+          fillColor=45, 
+          rgbfillColor={255,128,0}, 
+          fillPattern=10));
+      connect(mfc.inlet, env.outlet) annotation (points=[-50,-10; -81,-10], 
+          style(
+          color=62, 
+          rgbcolor={0,127,127}, 
+          fillColor=45, 
+          rgbfillColor={255,128,0}, 
+          fillPattern=10));
+      connect(T_out.outlet, sinkPort.inlet) annotation (points=[68,6.10623e-16; 
+            70,6.10623e-16; 70,4.44089e-16; 81,4.44089e-16], style(
+          color=62, 
+          rgbcolor={0,127,127}, 
+          fillColor=45, 
+          rgbfillColor={255,128,0}, 
+          fillPattern=10));
+      connect(T_out.inlet, burner.outlet) annotation (points=[52,6.10623e-16; 
+            32,6.10623e-16; 32,1.22125e-15; 38.4,1.22125e-15], style(
+          color=62, 
+          rgbcolor={0,127,127}, 
+          fillColor=45, 
+          rgbfillColor={255,128,0}, 
+          fillPattern=10));
+      connect(T_in.outlet, burner.inlet) annotation (points=[-12,6.10623e-16; 
+            -7,6.10623e-16; -7,1.22125e-15; -1.6,1.22125e-15], style(
+          color=62, 
+          rgbcolor={0,127,127}, 
+          fillColor=45, 
+          rgbfillColor={255,128,0}, 
+          fillPattern=10));
+      connect(T_in.inlet, pump.outlet) annotation (points=[-28,6.10623e-16; -40,
+            6.10623e-16; -40,20; -50,20], style(
+          color=62, 
+          rgbcolor={0,127,127}, 
+          fillColor=45, 
+          rgbfillColor={255,128,0}, 
+          fillPattern=10));
+      connect(T_in.inlet, mfc.outlet) annotation (points=[-28,6.10623e-16; -40,
+            6.10623e-16; -40,5.55112e-16; -50,5.55112e-16], style(
+          color=62, 
+          rgbcolor={0,127,127}, 
+          fillColor=45, 
+          rgbfillColor={255,128,0}, 
+          fillPattern=10));
+    end TestBurner;
   end Test;
   
 end Flow;
