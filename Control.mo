@@ -1,4 +1,4 @@
-      /**
+        /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -162,13 +162,13 @@ for.</p>
       annotation (extent=[-70,-24; -50,0]);
   equation 
     connect(getO2Consumption.y, convertToFlow.u) 
-                           annotation (points=[22,1.22125e-15; 6.5,1.22125e-15; 
+                           annotation (points=[22,1.22125e-15; 6.5,1.22125e-15;
           6.5,6.66134e-16; 48,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
     connect(convertToFlow.y, V) 
-                       annotation (points=[71,6.10623e-16; 73.5,6.10623e-16; 
+                       annotation (points=[71,6.10623e-16; 73.5,6.10623e-16;
           73.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(getO2Consumption.u1, I) 
-                       annotation (points=[-24,12; -80,12; -80,1.11022e-15; 
+                       annotation (points=[-24,12; -80,12; -80,1.11022e-15;
           -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
     connect(c.y, getO2Consumption.u2) annotation (points=[-49,-12; -24,-12],
@@ -220,10 +220,10 @@ for.</p>
     Modelica.Blocks.Sources.RealExpression c(y=c_est) "Concentration estimate" 
       annotation (extent=[-90,-52; -70,-28]);
   equation 
-    connect(add.u1, I) annotation (points=[-44,18; -60,18; -60,1.11022e-15; 
+    connect(add.u1, I) annotation (points=[-44,18; -60,18; -60,1.11022e-15;
           -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
-    connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16; 
+    connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16;
           87.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(excessRatio.y, divide.u1) 
                                annotation (points=[41,6; 45.25,6; 45.25,6; 49.5,
@@ -233,7 +233,7 @@ for.</p>
         style(color=74, rgbcolor={0,0,127}));
     connect(c.y, divide.u2) annotation (points=[-69,-40; 50,-40; 50,-6; 58,-6],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6; 
+    connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6;
           18,6], style(color=74, rgbcolor={0,0,127}));
   end AnodeLambdaControl;
   
@@ -386,11 +386,11 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
         Line(points=[-90,-82; 82,-82],   style(color=8)),
         Polygon(points=[90,-82; 68,-74; 68,-90; 90,-82],     style(color=8,
                fillColor=8)),
-        Line(points=[-80,-82; -80,-22; -80,-22; 30,58; 80,58]),
+        Line(points=[-80,-82; -80,32; -80,-20; 30,58; 80,58]),
         Text(
           extent=[-20,-22; 80,-62],
-          style(color=8),
-          string="PI+sat")),
+          style(color=8), 
+          string="PID+sat")),
       Documentation(info="<html>
 <p>This PID controller tries to make the fuel-cell temperature converge to a given
 set-point by manipulating the degasser reference temperature around a given nominal
@@ -403,7 +403,9 @@ The first lag is due to the solution in the mixer, which when
 assumed to be 5 ml of (mostly) water results in a lag of 60 seconds. The second lag
 is due to the material of the fuel-cell graphite plates, resulting in about 300 seconds.</p>
 <p>From these two lags, the PID parameters are calculated with the Skogestad rules.</p>
-
+<p>Note that this controller implements a simple anti-windup strategy; if the manipulated
+variable is reported to be saturated (through <tt>isSaturated</tt>), the integrator is
+frozen.</p>
 <h3>References</h3>
 <p>Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
 tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
@@ -414,41 +416,26 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     parameter Time tau_I = 600 "Integral time";
     parameter Time tau_D = 30 "Derivative time";
     
-    parameter Temperature T_0 = 315 "Nominal degasser temperature";
+    parameter Temperature T_deg_0 = 315 "Nominal degasser temperature";
     parameter Temperature T_FC_ref = 333 
       "Set-point for the fuel cell's temperature";
     
     Flow.TemperatureInput T_m "Measurement" 
       annotation (extent=[-140,-20; -100,20]);
     Flow.TemperatureOutput T_deg_ref "Manipulable variable" 
-      annotation (extent=[100,-20; 140,20]);
+      annotation (extent=[100,0; 140,40]);
+    Modelica.Blocks.Interfaces.BooleanInput isSaturated 
+      "Whether input is saturated" annotation (extent=[140,0; 100,-40]);
+    
   protected 
-    Modelica.Blocks.Sources.RealExpression nominalTemperature(y=T_0) 
-      "The nominal temperature of the degasser" 
-      annotation (extent=[20,0; 40,20]);
-    Modelica.Blocks.Math.Add add annotation (extent=[60,-10; 80,10]);
-    Modelica.Blocks.Continuous.PID PID(
-      k=Kc,
-      Ti=tau_I,
-      Td=tau_D) annotation (extent=[20,-20; 40,0]);
-  protected 
-    Modelica.Blocks.Sources.RealExpression setPoint(y=T_FC_ref) 
-      "The set-point for the fuel-cell temperature" 
-      annotation (extent=[-80,10; -60,30]);
-    Modelica.Blocks.Math.Feedback feedback annotation (extent=[-50,10; -30,30]);
+    Real int "Integral of the error";
+    Temperature e = T_FC_ref -T_m "Measured error";
+    
   equation 
-    connect(add.y, T_deg_ref) annotation (points=[81,6.10623e-16; 82,
-          6.10623e-16; 82,1.11022e-15; 120,1.11022e-15], style(color=74,
-          rgbcolor={0,0,127}));
-    connect(nominalTemperature.y, add.u1) annotation (points=[41,10; 50,10; 50,
-          6; 58,6], style(color=74, rgbcolor={0,0,127}));
-    connect(PID.y, add.u2) annotation (points=[41,-10; 50,-10; 50,-6; 58,-6],
-        style(color=74, rgbcolor={0,0,127}));
-    connect(feedback.u1, setPoint.y) annotation (points=[-48,20; -59,20], style(
-          color=74, rgbcolor={0,0,127}));
-    connect(feedback.u2, T_m) annotation (points=[-40,12; -40,1.11022e-15; -120,
-          1.11022e-15], style(color=74, rgbcolor={0,0,127}));
-    connect(feedback.y, PID.u) annotation (points=[-31,20; -20,20; -20,-10; 18,
-          -10], style(color=74, rgbcolor={0,0,127}));
+    T_deg_ref = T_deg_0 + Kc * (e + int/tau_I + der(e)*tau_D);
+    
+    // Anti-windup in case of saturation
+    der(int) = if isSaturated then 0 else e;
+    
   end TemperatureControl;
 end Control;

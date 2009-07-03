@@ -1,4 +1,4 @@
-                      /**
+                          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -249,8 +249,9 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         rgbcolor={255,0,0},
         pattern=3));
     connect(anodeCooler.T_ref, K_deg.T_deg_ref) 
-                                            annotation (points=[20,-23; 20,-28; 
-          -2.8,-28],style(
+                                            annotation (points=[20,-23; 20,
+          -26.8; -2.8,-26.8],
+                    style(
         color=1,
         rgbcolor={255,0,0},
         pattern=3));
@@ -258,6 +259,11 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
           51.4,38.6; 60,38; 60,0; 20,0; 20,10; 24.8,10], style(
         color=1,
         rgbcolor={255,0,0},
+        pattern=3));
+    connect(K_deg.isSaturated, anodeCooler.isSaturated) annotation (points=[
+          -2.8,-29.2; 22,-29.2; 22,-24; 23,-23], style(
+        color=5, 
+        rgbcolor={255,0,255}, 
         pattern=3));
   end Reference_Control;
   
@@ -322,7 +328,7 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-81,10; -70,10],
                               style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10;
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-84; 0,-84; 0,-68; 6.10623e-16,-68],
@@ -334,14 +340,14 @@ must be specialised in subclasses.</p>
     connect(separator.gasOutlet, co2sink.inlet)   annotation (points=[65,9.4;
           66,9.4; 66,20; 84.4,20],
         style(color=62, rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
           -14,0; 0,0; 0,5; 14.54,5],  style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
           -50,0; -60,0; -60,-54; -36,-54],
                               style(
         color=62,
@@ -349,17 +355,17 @@ must be specialised in subclasses.</p>
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40;
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
           2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
     connect(amperometer.p, load.n) 
       annotation (points=[-32,90; -40,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2;
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
           -21.2,40; 0,40; 0,90; -12,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40;
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
           -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
-    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5;
+    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5; 
           0,5; 0,10.1; -14,10.1], style(color=62, rgbcolor={0,127,127}));
-    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6;
+    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6; 
           65,-60; 8,-60],      style(color=62, rgbcolor={0,127,127}));
   end Mingled;
   
