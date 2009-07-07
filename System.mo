@@ -1,4 +1,4 @@
-                          /**
+                              /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -29,33 +29,36 @@ package System "DMFC systems"
     Efficiency eta_to_cell "Fraction of methanol consumed in the cell";
     Efficiency eta_system "Overall system efficiency";
     
-    Flow.Mixer mixer annotation (extent=[-10,-70; 10,-50]);
-    Flow.Pump pump "The anodic-loop pump" 
+    Flow.UnitOperations.Mixer mixer 
+                     annotation (extent=[-10,-70; 10,-50]);
+    Flow.Measurements.Pump pump "The anodic-loop pump" 
               annotation (extent=[-30,-66; -42,-54]);
     annotation (Diagram, Documentation(info="<html>
 <p>This is a generic reference system, with no process integration
 whatsoever. Some components, such as the fuel cell, are abstract and
 must be specialised in subclasses.</p>
 </html>"));
-    replaceable Flow.AbstractCooler anodeCooler "The solution-loop cooler" 
+    replaceable Flow.UnitOperations.Coolers.Abstract anodeCooler 
+      "The solution-loop cooler" 
                   annotation (extent=[10,-30; 30,-10]);
-    Flow.PureMethanolSource pureMethanolSource 
-      "A substitute for an actual tank"   annotation (extent=[30,-96; 42,-84]);
-    Flow.Pump fuelPump "The smaller fuel pump" 
+    Flow.Sources.Methanol pureMethanolSource "A substitute for an actual tank" 
+                                          annotation (extent=[30,-96; 42,-84]);
+    Flow.Measurements.Pump fuelPump "The smaller fuel pump" 
                   annotation (extent=[20,-96; 8,-84]);
-    Flow.Separator degasser "The CO2-degasser" 
+    Flow.UnitOperations.Separator degasser "The CO2-degasser" 
                         annotation (extent=[38,-30; 58,-10]);
     Flow.SinkPort co2sink "The gas outlet of the degasser" 
                       annotation (extent=[68,-16; 76,-8]);
-    replaceable Flow.FuelCell fuelCell 
+    replaceable Flow.UnitOperations.FuelCells.Abstract fuelCell 
                       annotation (extent=[-50,-12; -14,22]);
-    Flow.EnvironmentPort environment "The air from the environment" 
+    Flow.Sources.Environment environment "The air from the environment" 
       annotation (extent=[-100,0; -80,20]);
-    Flow.GasFlowController blower "The mass-flow controller" 
+    Flow.Measurements.GasFlowController blower "The mass-flow controller" 
       annotation (extent=[-76,16; -64,4], rotation=270);
-    replaceable Flow.AbstractCooler cathodeCooler "The cathode-side cooler" 
+    replaceable Flow.UnitOperations.Coolers.Abstract cathodeCooler 
+      "The cathode-side cooler" 
                   annotation (extent=[32,30; 52,50]);
-    Flow.Separator condenser "The water-recuperating unit" 
+    Flow.UnitOperations.Separator condenser "The water-recuperating unit" 
                         annotation (extent=[68,30; 86,50]);
     Flow.SinkPort airSink "The gas outlet of the condenser" 
                       annotation (extent=[92,46; 100,54]);
@@ -83,7 +86,7 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-81,10; -70,10],
                               style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10; 
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10;
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(cathodeCooler.outlet, condenser.inlet) 
       annotation (points=[51.4,40; 68,40],  style(color=62, rgbcolor={0,127,127}));
@@ -104,11 +107,11 @@ must be specialised in subclasses.</p>
       annotation (points=[83.3,36; 88,36; 88,-60; 8,-60],
                                                         style(color=62,
           rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (points=[55,-24; 
+    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (points=[55,-24;
           60,-24; 60,-40; 0,-40; 0,-52; 6.10623e-16,-52],   style(color=62,
           rgbcolor={0,127,127}));
     connect(fuelCell.anode_outlet, anodeCooler.inlet) 
-                                                 annotation (points=[-14,-0.1; 
+                                                 annotation (points=[-14,-0.1;
           -14,0; -4,0; -4,-20; 10.6,-20],
                                       style(
         color=62,
@@ -116,7 +119,7 @@ must be specialised in subclasses.</p>
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
           -50,0; -60,0; -60,-54; -36,-54],
                               style(
         color=62,
@@ -124,25 +127,26 @@ must be specialised in subclasses.</p>
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[32.6,40; 
+    connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (points=[32.6,40;
           12,40; 12,14; -14,14; -14,10.1],    style(color=62, rgbcolor={0,127,
             127}));
-    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40;
           2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
     connect(amperometer.p, load.n) 
       annotation (points=[-32,90; -40,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2;
           -21.2,40; 0,40; 0,90; -12,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40;
           -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
   end Reference;
   
   model Reference_NoControl "The reference system with manual control" 
     extends Reference(
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.SimpleCooler cathodeCooler,
-      redeclare Flow.SimpleCooler anodeCooler,
-      redeclare Flow.ConstantVoltageFuelCell fuelCell,mixer(c(fixed=true),T(fixed=true),V(fixed=true)));
+      redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
+      redeclare Flow.UnitOperations.FuelCells.ConstantVoltage fuelCell,
+                                                                mixer(c(fixed=true),T(fixed=true),V(fixed=true)));
     
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
@@ -173,10 +177,10 @@ see what happens.</p>
   
   model Reference_Control 
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.TheveninFuelCell fuelCell,
+    extends Reference(redeclare Flow.UnitOperations.FuelCells.Thevenin fuelCell,
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.SimpleCooler cathodeCooler,
-      redeclare Flow.SimpleCooler anodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       mixer(T(fixed=true), c(fixed=true)));
     
   public 
@@ -243,7 +247,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         rgbcolor={0,255,0},
         pattern=3));
     connect(K_deg.T_m, fuelCell.T) 
-                               annotation (points=[-17.2,-28; -20,-28; -20,-16; 
+                               annotation (points=[-17.2,-28; -20,-28; -20,-16;
           -8,-16; -8,5.34; -12.2,5.34], style(
         color=1,
         rgbcolor={255,0,0},
@@ -260,10 +264,10 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color=1,
         rgbcolor={255,0,0},
         pattern=3));
-    connect(K_deg.isSaturated, anodeCooler.isSaturated) annotation (points=[
-          -2.8,-29.2; 22,-29.2; 22,-24; 23,-23], style(
-        color=5, 
-        rgbcolor={255,0,255}, 
+    connect(K_deg.isSaturated, anodeCooler.isSaturated) annotation (points=[-2.8,
+          -29.2; 22,-29.2; 22,-24; 23,-23],      style(
+        color=5,
+        rgbcolor={255,0,255},
         pattern=3));
   end Reference_Control;
   
@@ -279,29 +283,30 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
     Efficiency eta_to_cell "Fraction of methanol consumed in the cell";
     Efficiency eta_system "Overall system efficiency";
     
-    Flow.Mixer mixer annotation (extent=[-10,-70; 10,-50]);
-    Flow.Pump pump "The anodic-loop pump" 
+    Flow.UnitOperations.Mixer mixer 
+                     annotation (extent=[-10,-70; 10,-50]);
+    Flow.Measurements.Pump pump "The anodic-loop pump" 
               annotation (extent=[-30,-66; -42,-54]);
     annotation (Diagram, Documentation(info="<html>
 <p>This is a generic reference system, with no process integration
 whatsoever. Some components, such as the fuel cell, are abstract and
 must be specialised in subclasses.</p>
 </html>"));
-    replaceable Flow.AbstractCooler cooler "The system cooler" 
+    replaceable Flow.UnitOperations.Coolers.Abstract cooler "The system cooler"
                   annotation (extent=[14,-4; 32,14]);
-    Flow.PureMethanolSource pureMethanolSource 
-      "A substitute for an actual tank"   annotation (extent=[30,-96; 42,-84]);
-    Flow.Pump fuelPump "The smaller fuel pump" 
+    Flow.Sources.Methanol pureMethanolSource "A substitute for an actual tank" 
+                                          annotation (extent=[30,-96; 42,-84]);
+    Flow.Measurements.Pump fuelPump "The smaller fuel pump" 
                   annotation (extent=[20,-96; 8,-84]);
-    Flow.Separator separator "The loop separator" 
+    Flow.UnitOperations.Separator separator "The loop separator" 
                         annotation (extent=[48,-6; 68,16]);
     Flow.SinkPort co2sink "The gas outlet of the degasser" 
                       annotation (extent=[84,16; 92,24]);
-    replaceable Flow.FuelCell fuelCell 
+    replaceable Flow.UnitOperations.FuelCells.Abstract fuelCell 
                       annotation (extent=[-50,-12; -14,22]);
-    Flow.EnvironmentPort environment "The air from the environment" 
+    Flow.Sources.Environment environment "The air from the environment" 
       annotation (extent=[-100,0; -80,20]);
-    Flow.GasFlowController blower "The mass-flow controller" 
+    Flow.Measurements.GasFlowController blower "The mass-flow controller" 
       annotation (extent=[-76,16; -64,4], rotation=270);
     replaceable Modelica.Electrical.Analog.Interfaces.OnePort load 
       "Load connected to the cell"       annotation (extent=[-52,84; -40,96]);
@@ -328,7 +333,7 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-81,10; -70,10],
                               style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10; 
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10;
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-84; 0,-84; 0,-68; 6.10623e-16,-68],
@@ -340,14 +345,14 @@ must be specialised in subclasses.</p>
     connect(separator.gasOutlet, co2sink.inlet)   annotation (points=[65,9.4;
           66,9.4; 66,20; 84.4,20],
         style(color=62, rgbcolor={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
           -14,0; 0,0; 0,5; 14.54,5],  style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
           -50,0; -60,0; -60,-54; -36,-54],
                               style(
         color=62,
@@ -355,25 +360,25 @@ must be specialised in subclasses.</p>
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40;
           2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
     connect(amperometer.p, load.n) 
       annotation (points=[-32,90; -40,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2;
           -21.2,40; 0,40; 0,90; -12,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40;
           -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
-    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5; 
+    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5;
           0,5; 0,10.1; -14,10.1], style(color=62, rgbcolor={0,127,127}));
-    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6; 
+    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6;
           65,-60; 8,-60],      style(color=62, rgbcolor={0,127,127}));
   end Mingled;
   
   model Mingled_NoControl "The mingled system with manual control" 
     extends Mingled(
-      redeclare Flow.TheveninFuelCell fuelCell,
+      redeclare Flow.UnitOperations.FuelCells.Thevenin fuelCell,
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
-      redeclare Flow.SimpleCooler cooler,
+      redeclare Flow.UnitOperations.Coolers.Simple cooler,
       mixer(
         c(fixed=true),
         T(fixed=true),

@@ -1,4 +1,4 @@
-        /**
+          /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -79,11 +79,11 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     parameter VolumeFlowRate minFlow = 0.1E-3/60 "Minimum flow rate";
     parameter VolumeFlowRate maxFlow = 100E-3/60 "Maximum flow rate";
     
-    Flow.TemperatureInput T_r "Reference" 
+    Flow.IO.TemperatureInput T_r "Reference" 
       annotation (extent=[-140,-20; -100,20]);
-    Flow.TemperatureInput T_m "Measurement" 
+    Flow.IO.TemperatureInput T_m "Measurement" 
       annotation (extent=[-20,-140; 20,-100], rotation=90);
-    Flow.VolumeFlowRateOutput V "Manipulable variable" 
+    Flow.IO.VolumeFlowRateOutput V "Manipulable variable" 
       annotation (extent=[100,-20; 140,20]);
   protected 
     Modelica.Blocks.Math.Gain signChange(k=-1) 
@@ -95,15 +95,15 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     connect(difference.u1, T_r) annotation (points=[-58,6.66134e-16; -62,
           6.66134e-16; -62,1.11022e-15; -120,1.11022e-15], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16;
+    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16; 
           83.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(PI.u, signChange.y) annotation (points=[18,6.66134e-16; 12,
           6.66134e-16; 12,6.10623e-16; 1,6.10623e-16], style(color=74, rgbcolor=
            {0,0,127}));
-    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16;
+    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16; 
           -24,6.66134e-16; -24,6.10623e-16; -41,6.10623e-16], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16;
+    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16; 
           50,6.10623e-16; 41,6.10623e-16], style(color=74, rgbcolor={0,0,127}));
   end CoolerControl;
   annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
@@ -147,9 +147,9 @@ parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
 to estimate the extent of cross-over current in the cell to compensate
 for.</p>
 </html>"));
-    Flow.CurrentInput I "Current measurement" 
+    Flow.IO.CurrentInput I "Current measurement" 
       annotation (extent=[-140,-20; -100,20]);
-    Flow.VolumeFlowRateOutput V "Air flow" 
+    Flow.IO.VolumeFlowRateOutput V "Air flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
     Modelica.Blocks.Math.Add getO2Consumption(k1=(1 - b)/(4*F), k2=(3/2)*aA) 
@@ -162,13 +162,13 @@ for.</p>
       annotation (extent=[-70,-24; -50,0]);
   equation 
     connect(getO2Consumption.y, convertToFlow.u) 
-                           annotation (points=[22,1.22125e-15; 6.5,1.22125e-15;
+                           annotation (points=[22,1.22125e-15; 6.5,1.22125e-15; 
           6.5,6.66134e-16; 48,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
     connect(convertToFlow.y, V) 
-                       annotation (points=[71,6.10623e-16; 73.5,6.10623e-16;
+                       annotation (points=[71,6.10623e-16; 73.5,6.10623e-16; 
           73.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(getO2Consumption.u1, I) 
-                       annotation (points=[-24,12; -80,12; -80,1.11022e-15;
+                       annotation (points=[-24,12; -80,12; -80,1.11022e-15; 
           -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
     connect(c.y, getO2Consumption.u2) annotation (points=[-49,-12; -24,-12],
@@ -203,9 +203,9 @@ parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
 to estimate the extent of cross-over current in the cell to compensate
 for.</p>
 </html>"));
-    Flow.CurrentInput I "Current measurement" 
+    Flow.IO.CurrentInput I "Current measurement" 
       annotation (extent=[-140,-20; -100,20]);
-    Flow.VolumeFlowRateOutput V "Solution flow" 
+    Flow.IO.VolumeFlowRateOutput V "Solution flow" 
                                 annotation (extent=[100,-20; 140,20]);
   protected 
     Modelica.Blocks.Math.Add add(            k2=aA, k1=(1 - b)/(6*F)) 
@@ -220,10 +220,10 @@ for.</p>
     Modelica.Blocks.Sources.RealExpression c(y=c_est) "Concentration estimate" 
       annotation (extent=[-90,-52; -70,-28]);
   equation 
-    connect(add.u1, I) annotation (points=[-44,18; -60,18; -60,1.11022e-15;
+    connect(add.u1, I) annotation (points=[-44,18; -60,18; -60,1.11022e-15; 
           -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
-    connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16;
+    connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16; 
           87.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(excessRatio.y, divide.u1) 
                                annotation (points=[41,6; 45.25,6; 45.25,6; 49.5,
@@ -233,7 +233,7 @@ for.</p>
         style(color=74, rgbcolor={0,0,127}));
     connect(c.y, divide.u2) annotation (points=[-69,-40; 50,-40; 50,-6; 58,-6],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6;
+    connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6; 
           18,6], style(color=74, rgbcolor={0,0,127}));
   end AnodeLambdaControl;
   
@@ -270,11 +270,11 @@ in the anodic bulk, usually assumed to be the outlet one.</p>
 <p>Two parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
 to estimate the extent of cross-over current in the cell to compensate for.</p>
 </html>"));
-    Flow.CurrentInput I "Current measurement" 
+    Flow.IO.CurrentInput I "Current measurement" 
       annotation (extent=[-140,40; -100,80]);
-    Flow.VolumeFlowRateOutput V "Solution flow" 
+    Flow.IO.VolumeFlowRateOutput V "Solution flow" 
                                 annotation (extent=[100,-20; 140,20]);
-    Flow.TemperatureInput T_deg "Degasser temperature" 
+    Flow.IO.TemperatureInput T_deg "Degasser temperature" 
       annotation (extent=[-140,-80; -100,-40]);
     
   protected 
@@ -350,13 +350,13 @@ Conference, June 2009, Newport Beach, USA.</p>
 tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
   public 
-    Flow.TemperatureInput T_cond "Condenser temperature" 
+    Flow.IO.TemperatureInput T_cond "Condenser temperature" 
       annotation (extent=[-140,-80; -100,-40]);
-    Flow.TemperatureOutput T_ref "Target condenser temperature" 
+    Flow.IO.TemperatureOutput T_ref "Target condenser temperature" 
       annotation (extent=[100,-20; 140,20]);
-    Flow.PressureInput p_mix "Hydrostatic level measurement" 
+    Flow.IO.PressureInput p_mix "Hydrostatic level measurement" 
       annotation (extent=[-140,40; -100,80]);
-    Flow.VolumeFlowRateInput V_cath "Cathodic volumetric flow" 
+    Flow.IO.VolumeFlowRateInput V_cath "Cathodic volumetric flow" 
       annotation (extent=[-140,-20; -100,20]);
   protected 
     discrete Pressure p_0 "Initial hydrostatic pressure";
@@ -389,7 +389,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
         Line(points=[-80,-82; -80,32; -80,-20; 30,58; 80,58]),
         Text(
           extent=[-20,-22; 80,-62],
-          style(color=8), 
+          style(color=8),
           string="PID+sat")),
       Documentation(info="<html>
 <p>This PID controller tries to make the fuel-cell temperature converge to a given
@@ -420,9 +420,9 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     parameter Temperature T_FC_ref = 333 
       "Set-point for the fuel cell's temperature";
     
-    Flow.TemperatureInput T_m "Measurement" 
+    Flow.IO.TemperatureInput T_m "Measurement" 
       annotation (extent=[-140,-20; -100,20]);
-    Flow.TemperatureOutput T_deg_ref "Manipulable variable" 
+    Flow.IO.TemperatureOutput T_deg_ref "Manipulable variable" 
       annotation (extent=[100,0; 140,40]);
     Modelica.Blocks.Interfaces.BooleanInput isSaturated 
       "Whether input is saturated" annotation (extent=[140,0; 100,-40]);
