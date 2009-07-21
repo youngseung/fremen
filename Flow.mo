@@ -1,4 +1,4 @@
-                                      /**
+                                          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -337,8 +337,8 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     m = sum({inlet.n[i] * mw(i) for i in All});
     F = sum(inlet.n);
       
-    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75; 
-            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16; 
+    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75;
+            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16;
             5.55112e-16,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
   end FlowController;
     
@@ -372,7 +372,7 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
     V = sum({inlet.n[i] * mw(i) / rho(T_ref, i, Gas) for i in All});
       
       connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,
-            75; 5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16; 
+            75; 5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16;
             5.55112e-16,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
   end GasFlowController;
     
@@ -426,8 +426,8 @@ are present and in liquid phase.</p>
 <p>With the appropriate degrees of freedom removed, it can work as a flow measurement as well.</p>
 </html>"),
       Diagram(Text(
-            extent=[-20,60; 20,40], 
-            string="Deactivated in code", 
+            extent=[-20,60; 20,40],
+            string="Deactivated in code",
             style(color=0, rgbcolor={0,0,0}))));
     FlowTemperature T annotation (extent=[-50,32; -30,52], rotation=90);
       
@@ -440,12 +440,12 @@ are present and in liquid phase.</p>
     V = sum(T.liquid[i]*mw(i)/rho(T.T,i,Liquid) for i in Condensable) +
         sum(T.vapour[i]*mw(i)/rho(T.T,i,Gas) for i in All);
       
-    connect(inlet, T.inlet) annotation (points=[5.55112e-16,5.55112e-16; -20,0; 
+    connect(inlet, T.inlet) annotation (points=[5.55112e-16,5.55112e-16; -20,0;
             -40,0; -40,34], style(color=62, rgbcolor={0,127,127}));
     connect(T.outlet, outlet) annotation (points=[-40,50; -40,100; 5.55112e-16,
             100], style(color=62, rgbcolor={0,127,127}));
   end PeristalticPump;
-
+    
     model FlowTemperature "Calculates a flow's temperature" 
       extends Modelica.Icons.RotationalSensor;
       
@@ -826,6 +826,7 @@ by default it is 1 M.</p>
       
       import Units.Temperature;
       import Units.MolarEnthalpy;
+      import Modelica.Constants.R;
       import Modelica.SIunits.MoleFraction;
       import Modelica.SIunits.AmountOfSubstance;
       import Modelica.SIunits.Concentration;
@@ -908,16 +909,12 @@ by default it is 1 M.</p>
       Sink gas "The gas outlet" annotation (extent=[-10,40; 10,60], rotation=90);
       Sink liquid "The liquid outlet" 
         annotation (extent=[40,40; 60,60], rotation=90);
+      outer parameter Modelica.SIunits.Pressure p_env = 101325;
       
-      parameter Volume V= 5E-6 "Anodic loop volume";
+      parameter Volume V = 5E-6 "Anodic loop volume";
       
-      Volume V_l = sum(n_l[i]*mw(i)/rho(T,i,Liquid) for i in Condensable) 
-        "Liquid volume";
-      Volume V_g = sum(n_g[i]*mw(i)/rho(T,i,Gas) for i in All) "Gaseous volume";
-      
-      AmountOfSubstance n[size(All,1)] = z*sum(n) "Molar holdup";
-      AmountOfSubstance n_l[size(All,1)] = x*n_l_tot "Moles in liquid phase";
-      AmountOfSubstance n_g[size(All,1)] = y*n_g_tot "Moles in gas phase";
+      Volume V_l(start=0.5*V,fixed=true) "Liquid volume";
+      Volume V_g "Gaseous volume";
       
       MolarEnthalpy h_tot = U/n_tot "Overall molar enthalpy in the tank";
       MolarEnthalpy h_g = sum(h(T,i,Gas)*y[i] for i in All) 
@@ -925,46 +922,48 @@ by default it is 1 M.</p>
       MolarEnthalpy h_l = sum(h(T,i,Liquid)*x[i] for i in Condensable) 
         "Molar enthalpy of the liquid phase";
       
+      AmountOfSubstance n[size(All,1)] "Molar holdup";
+      
+      InternalEnergy U = gasEnergy + liquidEnergy "Internal energy";
       InternalEnergy gasEnergy = h_g * n_g_tot "Internal energy in gas phase";
       InternalEnergy liquidEnergy = h_l * n_l_tot 
         "Internal energy in liquid phase";
-      InternalEnergy U = gasEnergy + liquidEnergy "Internal energy";
       
       AmountOfSubstance n_tot = sum(n) "Total number of moles";
       AmountOfSubstance n_l_tot "Total moles in liquid phase";
       AmountOfSubstance n_g_tot "Total moles in gas phase";
       
-      MoleFraction z[size(All,1)] "Overall molar fraction";
+      MoleFraction z[size(All,1)] = n/sum(n) "Overall molar fraction";
       MoleFraction x[size(All,1)] "Liquid molar fraction";
-      MoleFraction y[size(All,1)] "Vapour molar fraction";
-      
-      MoleFraction beta "Molar fraction of gas phase";
+      MoleFraction y[size(All,1)] "Gaseous molar fraction";
       
       Concentration c(start=1000,fixed=true) = n[Methanol] / V_l 
-        "Methanol concentration in liquid phase";
+        "Methanol concentration";
       
     protected 
       Sink acc "Accumulation sink" annotation (extent=[20,-40; 40,-20]);
     equation 
+      V_l = sum(n[i]*mw(i)/rho(T,i,Liquid) for i in Condensable);
+      V_g = n_g_tot * R*T/p_env;
+      
+      x[Methanol]      = n[Methanol]/sum(n[Condensable]);
+      x[Water]         = n[Water]/sum(n[Condensable]);
+      x[Incondensable] = zeros(size(Incondensable,1));
+      y[Methanol]      = Thermo.K(T,Methanol)*x[Methanol];
+      y[Water]         = Thermo.K(T,Water);
+      y[Incondensable] = n[Incondensable]/n_g_tot;
+      
+      n_g_tot = sum(n[Incondensable]) / (1-y[Methanol]-y[Water]);
+      n_l_tot = sum(n[Condensable]);
+      
       der(U) = acc.inlet.H;
       der(n) = acc.inlet.n;
       
-      if Thermo.K(T,Water) >= 1 or Thermo.rr(z[Methanol], z[Water], T) > 1 then
-        beta = 1;
-        n_g_tot = n_tot;
-        n_l_tot = 0;
-      else
-        beta = Thermo.rr(z[Methanol], z[Water], T);
-        n_g_tot = beta*n_tot;
-        n_l_tot = (1-beta)*n_tot;
-      end if;
-      
-      z = beta*y + (1-beta)*x;
-      y[Condensable] = {Thermo.K(T,i)*x[i] for i in Condensable};
-      x[Incondensable] = zeros(size(Incondensable,1));
-      
       // Volume consistency
       V_l + V_g = V;
+      
+      // Model assumptions are valid only when a liquid phase is present.
+      assert( V_l > 0, "==> No more liquid, model invalid.");
       
     // Specifying compositions and molar enthalpies
       // [air backflow composition and enthalpy is already given by Environment object]
@@ -979,13 +978,9 @@ by default it is 1 M.</p>
       outlet.H = sum(outlet.n) * h_tot;
       
       // FIXME temporary hack, assume only gas overflow
-      sum(gas.inlet.n) = 0;
+      sum(env.outlet.n) = 0;
       sum(liquid.inlet.n) = 0;
       
-    initial equation 
-      V_l = V;
-      
-    equation 
       connect(acc.inlet, fuelInlet) annotation (points=[21,-30; 0,-30; 0,-80; 
             5.55112e-16,-80], style(color=62, rgbcolor={0,127,127}));
       connect(acc.inlet, outlet) annotation (points=[21,-30; 0,-30; 0,
@@ -1814,7 +1809,7 @@ current.</p>
             -3.36456e-22; -16,6.10623e-16; 6.10623e-16,6.10623e-16], style(
             color=62, rgbcolor={0,127,127}));
       connect(T.inlet, source.outlet) annotation (points=[-38,6.10623e-16; -70,
-            6.10623e-16; -70,6.66134e-16; -90,6.66134e-16], style(color=62, 
+            6.10623e-16; -70,6.66134e-16; -90,6.66134e-16], style(color=62,
             rgbcolor={0,127,127}));
     end LiquidPumpTest;
     
@@ -1846,14 +1841,14 @@ current.</p>
       connect(pump.outlet, sink.inlet) annotation (points=[20,10; 33.2,10; 33.2,
             10; 46.4,10],        style(color=62, rgbcolor={0,127,127}));
       connect(T.outlet, pump.inlet) annotation (points=[-2,6.10623e-16; 4,
-            -3.36456e-22; 4,6.10623e-16; 20,6.10623e-16], style(color=62, 
+            -3.36456e-22; 4,6.10623e-16; 20,6.10623e-16], style(color=62,
             rgbcolor={0,127,127}));
       connect(T.inlet, source.outlet) annotation (points=[-18,6.10623e-16; -40,
             6.10623e-16; -40,-20; -70,-20], style(color=62, rgbcolor={0,127,127}));
       connect(env.outlet, T.inlet) annotation (points=[-61,20; -40,20; -40,
             6.10623e-16; -18,6.10623e-16], style(color=62, rgbcolor={0,127,127}));
     end PeristalticPumpTest;
-
+    
     model FlowTemperatureTest "A test case for the temperature sensor" 
       
       replaceable Measurements.FlowTemperature measurement 
@@ -2256,12 +2251,12 @@ can help catch regressions induced in other classes by some change.</p>
       inner parameter Units.Temperature T_env = 298.15;
       inner parameter Units.RelativeHumidity RH_env = 60;
       
-      parameter VolumeFlowRate airFlow = 1E-3;
-      parameter VolumeFlowRate solutionIn = 1E-3;
-      parameter VolumeFlowRate solutionOut = 2E-3;
-      parameter VolumeFlowRate fuel = 0.1E-3;
+      parameter VolumeFlowRate airFlow = 1E-6;
+      parameter VolumeFlowRate solutionIn = 1E-6;
+      parameter VolumeFlowRate solutionOut = 2E-6;
+      parameter VolumeFlowRate fuel = 0.1E-6;
       
-      Flow.UnitOperations.MagicBox mixer(V=1) 
+      Flow.UnitOperations.MagicBox mixer 
                   annotation (extent=[-20,0; 0,20]);
       Flow.Sources.Solution anodicLoop "Solution coming from the anodic loop" 
         annotation (extent=[40,24; 50,34]);
@@ -2287,7 +2282,7 @@ can help catch regressions induced in other classes by some change.</p>
       
       connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
             color=62, rgbcolor={0,127,127}));
-      connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,10;
+      connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,10; 
             -2,10], style(color=62, rgbcolor={0,127,127}));
       connect(pump_out.inlet, mixer.outlet) 
                                         annotation (points=[-34,10; -18,10],
@@ -2301,7 +2296,7 @@ can help catch regressions induced in other classes by some change.</p>
             10; -2,10], style(color=62, rgbcolor={0,127,127}));
       connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
             -30], style(color=62, rgbcolor={0,127,127}));
-      connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
+      connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
             -10,2], style(color=62, rgbcolor={0,127,127}));
     end MagicBoxTest;
   end Test;
