@@ -1,4 +1,4 @@
-          /**
+            /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -75,7 +75,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     
   public 
     parameter Real Kc = 6.6667E-5 "Proportionality constant";
-    parameter Time tau = 600 "Integral time";
+    parameter Time tau = 120 "Integral time";
     parameter VolumeFlowRate minFlow = 0.1E-3/60 "Minimum flow rate";
     parameter VolumeFlowRate maxFlow = 100E-3/60 "Maximum flow rate";
     
@@ -182,8 +182,10 @@ for.</p>
     import Units.F;
     
     parameter Real lambda = 5 "Reactant excess ratio";
-    parameter Concentration c_est = 750 
-      "Worst-case (lowest) anodic concentration";
+    parameter Concentration c_est_an = 1500 
+      "Worst-case (highest) anodic concentration";
+    parameter Concentration c_est_mix = 750 
+      "Worst-case (lowest) mixer concentration";
     
     parameter Real aA = 8.5E-9 "Partial derivative of n_x wrt. c";
     parameter Real b = 0.21 "Partial derivative of n_x wrt. n_H";
@@ -217,11 +219,15 @@ for.</p>
     Modelica.Blocks.Math.Division divide 
       "Divides methanol molar flow with concentration" 
       annotation (extent=[60,-10; 80,10]);
-    Modelica.Blocks.Sources.RealExpression c(y=c_est) "Concentration estimate" 
-      annotation (extent=[-90,-52; -70,-28]);
+    Modelica.Blocks.Sources.RealExpression c_mix(y=c_est_mix) 
+      "Concentration estimate in the mixer" 
+      annotation (extent=[20,-10; 40,-30]);
+    Modelica.Blocks.Sources.RealExpression c_an(y=c_est_an) 
+      "Concentration estimate in anode" 
+      annotation (extent=[-80,4; -60,-16]);
   equation 
-    connect(add.u1, I) annotation (points=[-44,18; -60,18; -60,1.11022e-15; 
-          -120,1.11022e-15],
+    connect(add.u1, I) annotation (points=[-44,18; -90,18; -90,0; -106,0; -106,
+          1.11022e-15; -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
     connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16; 
           87.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
@@ -229,12 +235,13 @@ for.</p>
                                annotation (points=[41,6; 45.25,6; 45.25,6; 49.5,
           6; 49.5,6; 58,6],
                          style(color=74, rgbcolor={0,0,127}));
-    connect(c.y, add.u2) annotation (points=[-69,-40; -60,-40; -60,-6; -44,-6],
-        style(color=74, rgbcolor={0,0,127}));
-    connect(c.y, divide.u2) annotation (points=[-69,-40; 50,-40; 50,-6; 58,-6],
+    connect(c_mix.y, divide.u2) 
+                            annotation (points=[41,-20; 50,-20; 50,-6; 58,-6],
         style(color=74, rgbcolor={0,0,127}));
     connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6; 
           18,6], style(color=74, rgbcolor={0,0,127}));
+    connect(c_an.y, add.u2) annotation (points=[-59,-6; -51.5,-6; -51.5,-6; -44,
+          -6], style(color=74, rgbcolor={0,0,127}));
   end AnodeLambdaControl;
   
   block FuelControl "Feedforward controller for the fuel flow" 
@@ -412,9 +419,9 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
     
   public 
-    parameter Real Kc = 0.5 "Proportionality constant";
-    parameter Time tau_I = 600 "Integral time";
-    parameter Time tau_D = 30 "Derivative time";
+    parameter Real Kc = 0.625 "Proportionality constant";
+    parameter Time tau_I = 75 "Integral time";
+    parameter Time tau_D = 60 "Derivative time";
     
     parameter Temperature T_deg_0 = 315 "Nominal degasser temperature";
     parameter Temperature T_FC_ref = 333 

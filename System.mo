@@ -1,4 +1,4 @@
-                                  /**
+                                    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -97,17 +97,17 @@ must be specialised in subclasses.</p>
                                            annotation (points=[29.4,-20; 38,-20],
                                                      style(color=62, rgbcolor={
             0,127,127}));
-    connect(degasser.gasOutlet, co2sink.inlet)    annotation (points=[53,-16; 
+    connect(degasser.gasOutlet, co2sink.inlet)    annotation (points=[55,-16; 
           62,-16; 62,-12; 68.4,-12],
         style(color=62, rgbcolor={0,127,127}));
     connect(condenser.gasOutlet, airSink.inlet) 
-      annotation (points=[81.5,44; 88,44; 88,50; 92.4,50],
+      annotation (points=[83.3,44; 88,44; 88,50; 92.4,50],
                                            style(color=62, rgbcolor={0,127,127}));
     connect(condenser.liquidOutlet, mixer.waterInlet) 
-      annotation (points=[81.5,36; 88,36; 88,-60; 8,-60],
+      annotation (points=[83.3,36; 88,36; 88,-60; 8,-60],
                                                         style(color=62,
           rgbcolor={0,127,127}));
-    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (points=[53,-24; 
+    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (points=[55,-24; 
           60,-24; 60,-40; 0,-40; 0,-52; 6.10623e-16,-52],   style(color=62,
           rgbcolor={0,127,127}));
     connect(fuelCell.anode_outlet, anodeCooler.inlet) 
@@ -333,7 +333,7 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (points=[-81,10; -70,10],
                               style(color=62, rgbcolor={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10;
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-64,10; 
           -50,10; -50,10.1],         style(color=62, rgbcolor={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (points=[14,-84; 0,-84; 0,-68; 6.10623e-16,-68],
@@ -342,14 +342,14 @@ must be specialised in subclasses.</p>
                                            annotation (points=[31.46,5; 48,5],
                                                      style(color=62, rgbcolor={
             0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1;
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (points=[-14,-0.1; 
           -14,0; 0,0; 0,5; 14.54,5],  style(
         color=62,
         rgbcolor={0,127,127},
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1;
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (points=[-50,-0.1; 
           -50,0; -60,0; -60,-54; -36,-54],
                               style(
         color=62,
@@ -357,17 +357,17 @@ must be specialised in subclasses.</p>
         fillColor=62,
         rgbfillColor={0,127,127},
         fillPattern=1));
-    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40;
+    connect(fuelCell.minus, ground.p) annotation (points=[-21.2,15.2; -21.2,40; 
           2.10942e-16,40], style(color=3, rgbcolor={0,0,255}));
     connect(amperometer.p, load.n) 
       annotation (points=[-32,90; -40,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2;
+    connect(fuelCell.minus, amperometer.n) annotation (points=[-21.2,15.2; 
           -21.2,40; 0,40; 0,90; -12,90], style(color=3, rgbcolor={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40;
+    connect(fuelCell.plus, load.p) annotation (points=[-42.8,15.2; -42.8,40; 
           -64,40; -64,90; -52,90], style(color=3, rgbcolor={0,0,255}));
-    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5;
+    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (points=[14.54,5; 
           0,5; 0,10.1; -14,10.1], style(color=62, rgbcolor={0,127,127}));
-    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6;
+    connect(separator.liquidOutlet, mixer.waterInlet) annotation (points=[65,0.6; 
           65,-60; 8,-60],      style(color=62, rgbcolor={0,127,127}));
     connect(separator.gasOutlet, co2sink.inlet) annotation (points=[65,9.4; 72,
           9.4; 72,20; 80.4,20], style(color=62, rgbcolor={0,127,127}));

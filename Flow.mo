@@ -1,4 +1,4 @@
-                                          /**
+                                            /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -981,15 +981,15 @@ by default it is 1 M.</p>
       sum(env.outlet.n) = 0;
       sum(liquid.inlet.n) = 0;
       
-      connect(acc.inlet, fuelInlet) annotation (points=[21,-30; 0,-30; 0,-80; 
+      connect(acc.inlet, fuelInlet) annotation (points=[21,-30; 0,-30; 0,-80;
             5.55112e-16,-80], style(color=62, rgbcolor={0,127,127}));
       connect(acc.inlet, outlet) annotation (points=[21,-30; 0,-30; 0,
             5.55112e-16; -80,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
-      connect(acc.inlet, inlet) annotation (points=[21,-30; 0,-30; 0,0; 80,0; 
+      connect(acc.inlet, inlet) annotation (points=[21,-30; 0,-30; 0,0; 80,0;
             80,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
       connect(acc.inlet, liquid.inlet) annotation (points=[21,-30; 0,-30; 0,20;
             50,20; 50,41], style(color=62, rgbcolor={0,127,127}));
-      connect(acc.inlet, gas.inlet) annotation (points=[21,-30; 0,-30; 0,41; 
+      connect(acc.inlet, gas.inlet) annotation (points=[21,-30; 0,-30; 0,41;
             1.15061e-16,41], style(color=62, rgbcolor={0,127,127}));
       connect(acc.inlet, env.outlet) annotation (points=[21,-30; 0,-30; 0,0;
             -20,0; -20,50; -41,50], style(color=62, rgbcolor={0,127,127}));
@@ -1322,7 +1322,7 @@ temperature.</p>
     model Simple "A simple cooler implementation" 
       extends Flow.UnitOperations.Coolers.Abstract;
         
-        import Flow.Measurements.FlowTemperature;
+      import Flow.Measurements.FlowTemperature;
         
       protected 
       Flow.Sink sink "Makes up for lost heat" 
@@ -1341,8 +1341,8 @@ a wind-up situation.</p>
         annotation (extent=[40,60; 60,80]);
       FlowTemperature T_in "Inlet temperature measurement" 
         annotation (extent=[-70,60; -50,80]);
-      Modelica.Blocks.Continuous.FirstOrder lag(T=600, initType=Modelica.Blocks.
-            Types.Init.SteadyState) 
+      Modelica.Blocks.Continuous.FirstOrder lag(       initType=Modelica.Blocks.
+            Types.Init.SteadyState, T=120) 
           "A lag representing the inner control algorithm setting the outlet temperature"
         annotation (extent=[20,0; 40,20],   rotation=0);
       Modelica.Blocks.Nonlinear.VariableLimiter limiter 
@@ -1358,16 +1358,15 @@ a wind-up situation.</p>
       inner parameter Units.Temperature T_env = 298.15;
       Modelica.SIunits.HeatFlowRate Q = sink.inlet.H "Cooling duty";
         
+      protected 
+      constant Real eps = 0.01;
     equation 
-      isSaturated = T_ref < T_env or T_ref > T_process_in;
-        
       // No material loss
       sink.inlet.n = 0*sink.inlet.n;
         
       // Set the two variables to be equal
       // NOTE must do it here, these are both output variables.
       T_process_out = lag.y;
-        
       connect(T_in.inlet, inlet) annotation (points=[-68,70; -80,70; -80,
               -2.22045e-16; -94,-2.22045e-16],
                                              style(color=62, rgbcolor={0,127,127}));
@@ -1394,6 +1393,14 @@ a wind-up situation.</p>
                                            style(color=74, rgbcolor={0,0,127}));
       connect(lag.u, limiter.y) 
         annotation (points=[18,10; 1,10], style(color=74, rgbcolor={0,0,127}));
+    algorithm 
+        
+      when T_ref < T_env-eps or T_ref > T_process_in+eps then
+        isSaturated := true;
+      elsewhen T_ref > T_env+eps and T_ref < T_process_in-eps then
+        isSaturated := false;
+      end when;
+        
     end Simple;
       
     partial model withAbstractExchanger 
@@ -1613,7 +1620,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
         
       parameter Length d = 142E-6 "Membrane thickness";
       parameter Area A = 26E-4 "Membrane active area";
-      parameter HeatCapacity Cp = 100 "Overall heat capacity of the stack";
+      parameter HeatCapacity Cp = 24.7 "Overall heat capacity of the stack";
       parameter DiffusionCoefficient D = 6E-10 
           "Methanol diffusion coefficient in the membrane";
       parameter Boolean enableSanityChecks = true 
@@ -1723,7 +1730,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
         
       connect(cathodeT.outlet, cathode_outlet) 
         annotation (points=[78,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-      connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
+      connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
               -46,0; -31,0; -31,4.44089e-16],
                                         style(color=62, rgbcolor={0,127,127}));
       connect(cathodeT.inlet, nexus.inlet)       annotation (points=[62,30; -40,
@@ -1731,13 +1738,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                                style(color=62, rgbcolor={0,127,127}));
       connect(anodeTC.outlet, anode_outlet)       annotation (points=[78,-30; 100,
             -30], style(color=62, rgbcolor={0,127,127}));
-      connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30;
+      connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30; 
               -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                     style(color=62, rgbcolor={0,127,
               127}));
       connect(T, cathodeT.T) annotation (points=[110,2; 70,2; 70,22],
           style(color=3, rgbcolor={0,0,255}));
-      connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30;
+      connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30; 
               -46,4.44089e-16; -31,4.44089e-16],
                                                style(color=62, rgbcolor={0,127,
               127}));
@@ -2061,10 +2068,10 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
@@ -2282,7 +2289,7 @@ can help catch regressions induced in other classes by some change.</p>
       
       connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
             color=62, rgbcolor={0,127,127}));
-      connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,10; 
+      connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,10;
             -2,10], style(color=62, rgbcolor={0,127,127}));
       connect(pump_out.inlet, mixer.outlet) 
                                         annotation (points=[-34,10; -18,10],
@@ -2296,7 +2303,7 @@ can help catch regressions induced in other classes by some change.</p>
             10; -2,10], style(color=62, rgbcolor={0,127,127}));
       connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
             -30], style(color=62, rgbcolor={0,127,127}));
-      connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
+      connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
             -10,2], style(color=62, rgbcolor={0,127,127}));
     end MagicBoxTest;
   end Test;
