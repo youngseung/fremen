@@ -1,4 +1,4 @@
-    /**
+      /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -69,7 +69,7 @@ of our modelling effort. Some constants are also included.</p>
                                     final unit="mol/m2") 
     "Used to express catalyst concentration";
   
-  type Temperature = Modelica.SIunits.Temperature(nominal=298.15, start=298.15) 
+  type Temperature = Modelica.SIunits.Temperature(nominal = 298.15) 
     "Temperature, with nominal and start values";
   
 end Units;
