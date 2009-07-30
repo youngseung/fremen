@@ -1,4 +1,4 @@
-                                            /**
+                                              /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1484,43 +1484,43 @@ cathode-loop cooler (condenser).</p>
     end Discretised;
     end Coolers;
     
-    package FuelCells "Models of fuel cells" 
+    package Stack "Models of fuel cells" 
       
-    partial model Abstract "A generic DMFC" 
+    partial model Abstract "A generic DMFC stack" 
         
-        import Modelica.SIunits.Area;
-        import Modelica.SIunits.Current;
-        import Modelica.SIunits.CurrentDensity;
-        import Modelica.SIunits.Concentration;
-        import Modelica.SIunits.DiffusionCoefficient;
-        import Modelica.SIunits.Efficiency;
-        import Modelica.SIunits.HeatCapacity;
-        import Modelica.SIunits.Length;
-        import Modelica.SIunits.MoleFraction;
-        import Modelica.SIunits.PartialPressure;
-        import Modelica.SIunits.Pressure;
-        import Modelica.SIunits.StoichiometricNumber;
-        import Units.Temperature;
-        import Modelica.SIunits.Voltage;
-        import Modelica.Constants.eps;
-        import Modelica.Constants.R;
-        import Modelica.Electrical.Analog.Interfaces.PositivePin;
-        import Modelica.Electrical.Analog.Interfaces.NegativePin;
+      import Modelica.SIunits.Area;
+      import Modelica.SIunits.Current;
+      import Modelica.SIunits.CurrentDensity;
+      import Modelica.SIunits.Concentration;
+      import Modelica.SIunits.DiffusionCoefficient;
+      import Modelica.SIunits.Efficiency;
+      import Modelica.SIunits.HeatCapacity;
+      import Modelica.SIunits.Length;
+      import Modelica.SIunits.MoleFraction;
+      import Modelica.SIunits.PartialPressure;
+      import Modelica.SIunits.Pressure;
+      import Modelica.SIunits.StoichiometricNumber;
+      import Units.Temperature;
+      import Modelica.SIunits.Voltage;
+      import Modelica.Constants.eps;
+      import Modelica.Constants.R;
+      import Modelica.Electrical.Analog.Interfaces.PositivePin;
+      import Modelica.Electrical.Analog.Interfaces.NegativePin;
         
-        import Thermo.mw;
-        import Thermo.rho;
-        import Thermo.Molecules.All;
-        import Thermo.Molecules.Incondensable;
-        import Thermo.Molecules.Methanol;
-        import Thermo.Molecules.Water;
-        import Thermo.Molecules.Oxygen;
-        import Thermo.moleculeName;
-        import Thermo.Phases.Liquid;
+      import Thermo.mw;
+      import Thermo.rho;
+      import Thermo.Molecules.All;
+      import Thermo.Molecules.Incondensable;
+      import Thermo.Molecules.Methanol;
+      import Thermo.Molecules.Water;
+      import Thermo.Molecules.Oxygen;
+      import Thermo.moleculeName;
+      import Thermo.Phases.Liquid;
         
-        import Units.MassTransportCoefficient;
-        import Units.MolarFlow;
-        import Units.MolarFlux;
-        import Units.F;
+      import Units.MassTransportCoefficient;
+      import Units.MolarFlow;
+      import Units.MolarFlux;
+      import Units.F;
         
       annotation (defaultComponentName="cell", Icon(Rectangle(extent=[-100,60; 100,0], style(
                 color=0,
@@ -1535,15 +1535,12 @@ cathode-loop cooler (condenser).</p>
                                             Diagram,
         DymolaStoredErrors,
         Documentation(info="<html>
-<p>This class implements a DMFC fuel cell from the point of view of reactant flows. A
+<p>This class implements a DMFC stack from the point of view of reactant flows. A
 modelling of the voltage is <em>not</em> included, and must be implemented by child classes.
 A temperature port and two ports for methanol concentration on the anode side (inlet and
 outlet) are featured.</p>
  
-<p>The two inlets and the two outlets are connected to the \"nexus\", an internal protected
-(i.e. invisible to the user) object, that accounts for components lost in reactions and
-energy that leaves as electric power (=I*V).</p>
- 
+<h3>Modelled Phenomena</h3>
 <p>There are fundamentally three ways by which components can appear or disappear in 
 streams:</p>
 <ul>
@@ -1576,6 +1573,11 @@ based on the <em>exiting</em> flow.</p>
 coefficient in water is required. It is assumed to vary exponentially with temperature.</p>
  
 <p>Parameters have been taken from Krewer et al., unless differently stated.</p>
+
+<h3>Implementation details</h3>
+<p>The two inlets and the two outlets are connected to the \"nexus\", an internal protected
+(i.e. invisible to the user) object, that accounts for components lost in reactions and
+energy that leaves as electric power (=I*V).</p>
  
 <h3>References</h3>
 <ul>
@@ -1618,6 +1620,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       outer parameter Pressure p_env = 101325 "Environment pressure";
       outer parameter Temperature T_env = 298.15 "Enviroment temperature";
         
+      parameter Integer cells = 1 "Number of cells";
       parameter Length d = 142E-6 "Membrane thickness";
       parameter Area A = 26E-4 "Membrane active area";
       parameter HeatCapacity Cp = 24.7 "Overall heat capacity of the stack";
@@ -1633,7 +1636,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
         
       Real a = k_m/(1+k_m*d/D) 
           "Partial derivative of crossover flux wrt. concentration";
-      Real aA = a*A "Partial derivative of crossover flow wrt. concentration";
+      Real aAn = a*A*cells 
+          "Partial derivative of crossover flow wrt. concentration";
       Real b = 1/(1+k_m*d/D) 
           "Opposite of partial derivative of crossover flux wrt. anodic reaction rate";
         
@@ -1647,12 +1651,12 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       Voltage V = plus.v - minus.v "Cell voltage";
       CurrentDensity i = I/A "Cell current density";
         
-      MolarFlow n_H = I/F "Proton flow through the membrane";
+      MolarFlow n_H = cells*I/F "Proton flow through the membrane";
       MolarFlow n_x "Crossover methanol flow";
-      MolarFlux N_H = n_H / A "Proton flux";
-      MolarFlux N_x = n_x / A "Crossover methanol flux";
+      MolarFlux N_H = n_H / A / cells "Proton flux";
+      MolarFlux N_x = n_x / A / cells "Crossover methanol flux";
       MolarFlow n_drag_h2o = n_H * k_d "Drag water flow";
-      MolarFlux N_drag_h2o = n_drag_h2o / A "Drag water flux";
+      MolarFlux N_drag_h2o = n_drag_h2o / A / cells "Drag water flux";
         
       // KEEP THE INITIAL VALUE, or initialisation will crash on assertion.
       Concentration c(start=1000) = anodeTC.c 
@@ -1702,8 +1706,9 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
    * - Standard reaction enthalpy, minus
    * - Temperature times Standard reaction entropy, minus
    * - Correction factor for oxygen activity = 0.2, 2.4142 = log(1/0.2^1.5)
+   * - All multiplied by the number of cells
    * Other activities are assumed unitary. */
-      V_rev = -(-726770 - T_env*(-81.105) + R*T_env*2.4142)/6/F;
+      V_rev = -(-726770 - T_env*(-81.105) + R*T_env*2.4142)/6/F * cells;
         
       // Setting the temperatures of cathode and anode to be equal
       /* NOTE: a connect() would prettier, but both these variables are outputs
@@ -1750,13 +1755,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
               127}));
     end Abstract;
       
-    model ConstantVoltage "A simplified DMFC with constant voltage" 
+    model ConstantVoltage "A simplified DMFC stack with constant voltage" 
       extends Abstract;
-        import Modelica.SIunits.Voltage;
+      import Modelica.SIunits.Voltage;
         
       annotation (Documentation(info="<html>
-<p>This trivial class inherits from the <tt>FuelCell</tt> class and allows to set a 
-constant voltage for the cell.</p>
+<p>This trivial class inherits from the <tt>Stack.Abstract</tt> class and allows to set a 
+constant voltage for the stack.</p>
 </html>"));
         
       parameter Voltage V0 = 0.5 "Cell voltage";
@@ -1766,21 +1771,17 @@ constant voltage for the cell.</p>
         
     end ConstantVoltage;
       
-    model Thevenin "A DMFC with Thevenin-like voltage" 
+    model Thevenin "A DMFC stack with Thevenin-like voltage" 
       extends Abstract;
-        import Modelica.SIunits.Voltage;
-        import Modelica.SIunits.Resistance;
+      import Modelica.SIunits.Voltage;
+      import Modelica.SIunits.Resistance;
         
       parameter Voltage V0 = 0.7 "Open-circuit voltage";
       parameter Resistance R = 0.005 "Internal resistance";
         
       annotation (Documentation(info="<html>
 <p>This class implements a voltage model that emulates a Thevenin equivalent circuit. It is possible
-to set the open-circuit voltage and the specific resistance of the cell, from which resistivity and
-overall resistance will be calculated (it is trivial to modify the class so that resistivity or
-resistance can be set instead).</p>
-<p>The default value of the area-specific resistance, 13.3&times;10<sup>-6</sup>, is valid for a Nafion 
-N155 membrane.</p>
+to set the open-circuit voltage and the specific resistance of the stack.</p>
 <p>Note that the open-circuit value to set is not the one measured on the actual cell, but the one 
 that would result by extrapolating the characteristic of the ohmic region to the value of no 
 current.</p>
@@ -1788,7 +1789,7 @@ current.</p>
     equation 
       V = V0 - R*I;
     end Thevenin;
-    end FuelCells;
+    end Stack;
   end UnitOperations;
   
   package Test "Package of test cases" 
@@ -2068,10 +2069,10 @@ current.</p>
       pump.V = solution;
       cooler.T_ref = target;
       
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15; 
+      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
             39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
               62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16; 
+      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
             -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
               62, rgbcolor={0,127,127}));
       connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
@@ -2113,7 +2114,7 @@ current.</p>
       parameter Units.Temperature anodeInletTemperature = 330 
         "Anodic inlet temperature";
       
-      replaceable Flow.UnitOperations.FuelCells.Abstract fuelCell 
+      replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
                         annotation (extent=[6,0; 42,34]);
       Flow.Sources.Solution methanolSolution(   T=anodeInletTemperature) 
                                         annotation (extent=[-66,-30; -54,-18]);
@@ -2138,7 +2139,7 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42;
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42; 
             -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-51,38; -36,38],
@@ -2154,21 +2155,27 @@ current.</p>
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
             34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18;
+      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18; 
             -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
     end AbstractCellTest;
     
     model ConstantVoltageCellTest "Test for the constant-voltage model" 
       extends Flow.Test.AbstractCellTest(
-                       redeclare Flow.UnitOperations.FuelCells.ConstantVoltage 
-          fuelCell);
+                       redeclare Flow.UnitOperations.Stack.ConstantVoltage 
+          fuelCell,
+          anodeFlow = fuelCell.cells*30E-6/60,
+          cathodeFlow = fuelCell.cells*30E-5/60);
       annotation (Diagram);
     end ConstantVoltageCellTest;
     
     model TheveninCellTest "Test for the Thevenin-circuit model" 
       extends Flow.Test.AbstractCellTest(
-                       redeclare Flow.UnitOperations.FuelCells.Thevenin 
-          fuelCell);
+                       redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
+          cells=3,
+          V0=2.1,
+          R=0.015),
+          anodeFlow = fuelCell.cells*30E-6/60,
+          cathodeFlow = fuelCell.cells*30E-5/60);
     end TheveninCellTest;
     
     annotation (Documentation(info="<html>
@@ -2224,7 +2231,7 @@ can help catch regressions induced in other classes by some change.</p>
           fillColor=45,
           rgbfillColor={255,128,0},
           fillPattern=10));
-      connect(T_in.outlet, burner.inlet) annotation (points=[-12,6.10623e-16;
+      connect(T_in.outlet, burner.inlet) annotation (points=[-12,6.10623e-16; 
             -7,6.10623e-16; -7,1.22125e-15; -1.6,1.22125e-15], style(
           color=62,
           rgbcolor={0,127,127},

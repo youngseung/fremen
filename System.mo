@@ -1,4 +1,4 @@
-                                        /**
+                                          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ must be specialised in subclasses.</p>
                         annotation (extent=[38,-30; 58,-10]);
     Flow.Sink co2sink "The gas outlet of the degasser" 
                       annotation (extent=[68,-16; 76,-8]);
-    replaceable Flow.UnitOperations.FuelCells.Abstract fuelCell 
+    replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
                       annotation (extent=[-50,-12; -14,22]);
     Flow.Sources.Environment environment "The air from the environment" 
       annotation (extent=[-100,0; -80,20]);
@@ -145,7 +145,7 @@ must be specialised in subclasses.</p>
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
-      redeclare Flow.UnitOperations.FuelCells.ConstantVoltage fuelCell,
+      redeclare Flow.UnitOperations.Stack.ConstantVoltage fuelCell,
                                                                 mixer(c(fixed=true),T(fixed=true),V(fixed=true)));
     
     import Modelica.SIunits.VolumeFlowRate;
@@ -177,7 +177,7 @@ see what happens.</p>
   
   model Reference_Control 
     "The reference DMFC system derived from the one to be presented at ASME FC09" 
-    extends Reference(redeclare Flow.UnitOperations.FuelCells.Thevenin fuelCell,
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
@@ -303,7 +303,7 @@ must be specialised in subclasses.</p>
                         annotation (extent=[48,-6; 68,16]);
     Flow.Sink co2sink "The gas outlet of the degasser" 
                       annotation (extent=[80,16; 88,24]);
-    replaceable Flow.UnitOperations.FuelCells.Abstract fuelCell 
+    replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
                       annotation (extent=[-50,-12; -14,22]);
     Flow.Sources.Environment environment "The air from the environment" 
       annotation (extent=[-100,0; -80,20]);
@@ -376,7 +376,7 @@ must be specialised in subclasses.</p>
   
   model Mingled_NoControl "The mingled system with manual control" 
     extends Mingled(
-      redeclare Flow.UnitOperations.FuelCells.Thevenin fuelCell,
+      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
       redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
       redeclare Flow.UnitOperations.Coolers.Simple cooler,
       mixer(
