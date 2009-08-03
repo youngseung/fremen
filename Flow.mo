@@ -1,4 +1,4 @@
-                                              /**
+                                                  /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -826,6 +826,7 @@ by default it is 1 M.</p>
       
       import Units.Temperature;
       import Units.MolarEnthalpy;
+      import Units.MolarFlow;
       import Modelica.Constants.R;
       import Modelica.SIunits.MoleFraction;
       import Modelica.SIunits.AmountOfSubstance;
@@ -913,6 +914,12 @@ by default it is 1 M.</p>
       
       parameter Volume V = 5E-6 "Anodic loop volume";
       
+      Integer state(start = State.GasOut) "The current state of the unit";
+      
+      MolarFlow enteringAir = -sum(env.outlet.n);
+      MolarFlow exitingGas =   sum(gas.inlet.n);
+      MolarFlow exitingLiquid = sum(liquid.inlet.n);
+      
       Volume V_l(start=0.5*V,fixed=true) "Liquid volume";
       Volume V_g "Gaseous volume";
       
@@ -940,20 +947,35 @@ by default it is 1 M.</p>
       Concentration c(start=1000,fixed=true) = n[Methanol] / V_l 
         "Methanol concentration";
       
+      package State 
+        extends Modelica.Icons.Enumeration;
+        
+        constant Integer AirIn =        0 "Air is entering";
+        constant Integer GasOut =       1 "Gas phase is leaving";
+        constant Integer TwoOut = 2 "Gas and liquid phases leaving";
+        
+        annotation (Documentation(info="<html>
+<p>This enumeration indicates the current state of the unit: one possibility is that
+air is entering, another that excess gas is leaving, and finally that all the incoming
+gas plus some liquid are leaving.</p>
+</html>"));
+      end State;
+      
     protected 
       Sink acc "Accumulation sink" annotation (extent=[20,-40; 40,-20]);
     equation 
       V_l = sum(n[i]*mw(i)/rho(T,i,Liquid) for i in Condensable);
       V_g = n_g_tot * R*T/p_env;
       
-      x[Methanol]      = n[Methanol]/sum(n[Condensable]);
-      x[Water]         = n[Water]/sum(n[Condensable]);
+      x[Condensable]   = n[Condensable]/sum(n[Condensable]);
       x[Incondensable] = zeros(size(Incondensable,1));
       y[Methanol]      = Thermo.K(T,Methanol)*x[Methanol];
+      /* NOTE: cannot use K*y_H2O, otherwise it becomes a multicomponent equilibrium 
+   * problem, which has multiple solutions. For now use this fine approximation. */
       y[Water]         = Thermo.K(T,Water);
       y[Incondensable] = n[Incondensable]/n_g_tot;
       
-      n_g_tot = sum(n[Incondensable]) / (1-y[Methanol]-y[Water]);
+      n_g_tot = sum(n[Incondensable]) / (1-sum(y[Condensable]));
       n_l_tot = sum(n[Condensable]);
       
       der(U) = acc.inlet.H;
@@ -966,7 +988,7 @@ by default it is 1 M.</p>
       assert( V_l > 0, "==> No more liquid, model invalid.");
       
     // Specifying compositions and molar enthalpies
-      // [air backflow composition and enthalpy is already given by Environment object]
+    // NOTE: air backflow composition and enthalpy is already given by Environment object
       // Gas overflow composition and molar enthalpy is equal to gas phase
       gas.inlet.n[2:end] = sum(gas.inlet.n) * y[2:end];
       gas.inlet.H = sum(gas.inlet.n) * h_g;
@@ -977,22 +999,42 @@ by default it is 1 M.</p>
       outlet.n[2:end] = sum(outlet.n) * z[2:end];
       outlet.H = sum(outlet.n) * h_tot;
       
-      // FIXME temporary hack, assume only gas overflow
-      sum(env.outlet.n) = 0;
-      sum(liquid.inlet.n) = 0;
+      if state == State.AirIn then
+        exitingLiquid = 0;
+        exitingGas = 0;
+      elseif state == State.GasOut then
+        enteringAir = 0;
+        exitingLiquid = 0;
+      else
+        assert( state == State.TwoOut, "==> Unknown state: "+String(state));
+        enteringAir = 0;
+        exitingGas = sum(inlet.n[Incondensable]) / (1-sum(y[Condensable]));
+      end if;
       
-      connect(acc.inlet, fuelInlet) annotation (points=[21,-30; 0,-30; 0,-80;
+      connect(acc.inlet, fuelInlet) annotation (points=[21,-30; 0,-30; 0,-80; 
             5.55112e-16,-80], style(color=62, rgbcolor={0,127,127}));
       connect(acc.inlet, outlet) annotation (points=[21,-30; 0,-30; 0,
             5.55112e-16; -80,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
-      connect(acc.inlet, inlet) annotation (points=[21,-30; 0,-30; 0,0; 80,0;
+      connect(acc.inlet, inlet) annotation (points=[21,-30; 0,-30; 0,0; 80,0; 
             80,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
       connect(acc.inlet, liquid.inlet) annotation (points=[21,-30; 0,-30; 0,20;
             50,20; 50,41], style(color=62, rgbcolor={0,127,127}));
-      connect(acc.inlet, gas.inlet) annotation (points=[21,-30; 0,-30; 0,41;
+      connect(acc.inlet, gas.inlet) annotation (points=[21,-30; 0,-30; 0,41; 
             1.15061e-16,41], style(color=62, rgbcolor={0,127,127}));
       connect(acc.inlet, env.outlet) annotation (points=[21,-30; 0,-30; 0,0;
             -20,0; -20,50; -41,50], style(color=62, rgbcolor={0,127,127}));
+      
+    algorithm 
+      when enteringAir < 0 then // When air reverses and starts to exit
+        state := State.GasOut;
+      elsewhen exitingGas < 0 then // When gas reverses and starts to come back in
+        state := State.AirIn;
+      elsewhen V_g <= 0 then // When we run out of liquid phase. Can only happen from GasOut.
+        state := State.TwoOut;
+      elsewhen exitingLiquid < 0 then // When liquid reverses, meaning there is enough gas.
+        state := State.GasOut;
+      end when;
+      
     end MagicBox;
     
     package HeatExchangers "Various types of heat exchangers" 
@@ -1735,7 +1777,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
         
       connect(cathodeT.outlet, cathode_outlet) 
         annotation (points=[78,30; 100,30], style(color=62, rgbcolor={0,127,127}));
-      connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30; 
+      connect(cathode_inlet, nexus.inlet) annotation (points=[-100,30; -46,30;
               -46,0; -31,0; -31,4.44089e-16],
                                         style(color=62, rgbcolor={0,127,127}));
       connect(cathodeT.inlet, nexus.inlet)       annotation (points=[62,30; -40,
@@ -1743,13 +1785,13 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
                                                style(color=62, rgbcolor={0,127,127}));
       connect(anodeTC.outlet, anode_outlet)       annotation (points=[78,-30; 100,
             -30], style(color=62, rgbcolor={0,127,127}));
-      connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30; 
+      connect(anodeTC.inlet, nexus.inlet)          annotation (points=[62,-30;
               -40,-30; -40,4.44089e-16; -31,4.44089e-16],
                                                     style(color=62, rgbcolor={0,127,
               127}));
       connect(T, cathodeT.T) annotation (points=[110,2; 70,2; 70,22],
           style(color=3, rgbcolor={0,0,255}));
-      connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30; 
+      connect(anode_inlet, nexus.inlet) annotation (points=[-100,-30; -46,-30;
               -46,4.44089e-16; -31,4.44089e-16],
                                                style(color=62, rgbcolor={0,127,
               127}));
@@ -2139,7 +2181,7 @@ current.</p>
       connect(methanolSolution.outlet, pump.inlet) 
                                               annotation (points=[-60,-24; -36,
             -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42; 
+      connect(blower.outlet, fuelCell.cathode_inlet) annotation (points=[-36,42;
             -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
       connect(air.outlet, blower.inlet) 
                                    annotation (points=[-51,38; -36,38],
@@ -2155,7 +2197,7 @@ current.</p>
           style(color=3, rgbcolor={0,0,255}));
       connect(I_cell.n, fuelCell.minus) annotation (points=[34,60; 34.8,60;
             34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18; 
+      connect(pump.outlet, fuelCell.anode_inlet) annotation (points=[-36,-18;
             -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
     end AbstractCellTest;
     
@@ -2296,7 +2338,7 @@ can help catch regressions induced in other classes by some change.</p>
       
       connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
             color=62, rgbcolor={0,127,127}));
-      connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,10;
+      connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,10; 
             -2,10], style(color=62, rgbcolor={0,127,127}));
       connect(pump_out.inlet, mixer.outlet) 
                                         annotation (points=[-34,10; -18,10],
@@ -2310,7 +2352,7 @@ can help catch regressions induced in other classes by some change.</p>
             10; -2,10], style(color=62, rgbcolor={0,127,127}));
       connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
             -30], style(color=62, rgbcolor={0,127,127}));
-      connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
+      connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
             -10,2], style(color=62, rgbcolor={0,127,127}));
     end MagicBoxTest;
   end Test;
