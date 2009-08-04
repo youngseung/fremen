@@ -1,4 +1,4 @@
-                                                  /**
+                                                    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -337,8 +337,8 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     m = sum({inlet.n[i] * mw(i) for i in All});
     F = sum(inlet.n);
       
-    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75;
-            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16;
+    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75; 
+            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16; 
             5.55112e-16,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
   end FlowController;
     
@@ -828,6 +828,7 @@ by default it is 1 M.</p>
       import Units.MolarEnthalpy;
       import Units.MolarFlow;
       import Modelica.Constants.R;
+      import Modelica.Constants.eps;
       import Modelica.SIunits.MoleFraction;
       import Modelica.SIunits.AmountOfSubstance;
       import Modelica.SIunits.Concentration;
@@ -835,6 +836,9 @@ by default it is 1 M.</p>
       import Modelica.SIunits.Volume;
       import Thermo.Molecules.Methanol;
       import Thermo.Molecules.Water;
+      import Thermo.Molecules.Oxygen;
+      import Thermo.Molecules.CarbonDioxide;
+      import Thermo.Molecules.Nitrogen;
       import Thermo.Molecules.Incondensable;
       import Thermo.Molecules.Condensable;
       import Thermo.Molecules.All;
@@ -914,11 +918,14 @@ by default it is 1 M.</p>
       
       parameter Volume V = 5E-6 "Anodic loop volume";
       
-      Integer state(start = State.GasOut) "The current state of the unit";
+      MolarFlow enteringAir =  -sum(env.outlet.n) "Air entering the unit";
+      MolarFlow exitingGas =    sum(gas.inlet.n) "Gas leaving the unit";
+      MolarFlow exitingLiquid = sum(liquid.inlet.n) "Liquid leaving the unit";
       
-      MolarFlow enteringAir = -sum(env.outlet.n);
-      MolarFlow exitingGas =   sum(gas.inlet.n);
-      MolarFlow exitingLiquid = sum(liquid.inlet.n);
+      Boolean overflow = exitingGas + exitingLiquid - enteringAir > 0 
+        "Whether matter is leaving the system";
+      Boolean sustainableGas = exitingGas < maxGasOutSteady 
+        "Whether the exiting gas flow is sustainable at steady state";
       
       Volume V_l(start=0.5*V,fixed=true) "Liquid volume";
       Volume V_g "Gaseous volume";
@@ -947,21 +954,9 @@ by default it is 1 M.</p>
       Concentration c(start=1000,fixed=true) = n[Methanol] / V_l 
         "Methanol concentration";
       
-      package State 
-        extends Modelica.Icons.Enumeration;
-        
-        constant Integer AirIn =        0 "Air is entering";
-        constant Integer GasOut =       1 "Gas phase is leaving";
-        constant Integer TwoOut = 2 "Gas and liquid phases leaving";
-        
-        annotation (Documentation(info="<html>
-<p>This enumeration indicates the current state of the unit: one possibility is that
-air is entering, another that excess gas is leaving, and finally that all the incoming
-gas plus some liquid are leaving.</p>
-</html>"));
-      end State;
-      
     protected 
+      MolarFlow maxGasOutSteady = sum(inlet.n[Incondensable]) / (1-sum(y[Condensable])) 
+        "Maximum gas outflow at steady state";
       Sink acc "Accumulation sink" annotation (extent=[20,-40; 40,-20]);
     equation 
       V_l = sum(n[i]*mw(i)/rho(T,i,Liquid) for i in Condensable);
@@ -973,7 +968,7 @@ gas plus some liquid are leaving.</p>
       /* NOTE: cannot use K*y_H2O, otherwise it becomes a multicomponent equilibrium 
    * problem, which has multiple solutions. For now use this fine approximation. */
       y[Water]         = Thermo.K(T,Water);
-      y[Incondensable] = n[Incondensable]/n_g_tot;
+      n_g_tot * y[Incondensable] = n[Incondensable];
       
       n_g_tot = sum(n[Incondensable]) / (1-sum(y[Condensable]));
       n_l_tot = sum(n[Condensable]);
@@ -981,35 +976,32 @@ gas plus some liquid are leaving.</p>
       der(U) = acc.inlet.H;
       der(n) = acc.inlet.n;
       
-      // Volume consistency
       V_l + V_g = V;
       
-      // Model assumptions are valid only when a liquid phase is present.
       assert( V_l > 0, "==> No more liquid, model invalid.");
       
-    // Specifying compositions and molar enthalpies
-    // NOTE: air backflow composition and enthalpy is already given by Environment object
-      // Gas overflow composition and molar enthalpy is equal to gas phase
       gas.inlet.n[2:end] = sum(gas.inlet.n) * y[2:end];
       gas.inlet.H = sum(gas.inlet.n) * h_g;
-      // Liquid overflow composition and molar enthalpy is equal to liquid phase
+      
       liquid.inlet.n[2:end] = sum(liquid.inlet.n) * x[2:end];
       liquid.inlet.H = sum(liquid.inlet.n) * h_l;
-      // Outlet to anodic loop uses average properties
+      
       outlet.n[2:end] = sum(outlet.n) * z[2:end];
       outlet.H = sum(outlet.n) * h_tot;
       
-      if state == State.AirIn then
+      if overflow then
+        enteringAir = 0;
+        if V_g > 0 or sustainableGas then
+          exitingLiquid = 0;
+        else
+          der(V_g) = 0;
+        end if;
+      else
         exitingLiquid = 0;
         exitingGas = 0;
-      elseif state == State.GasOut then
-        enteringAir = 0;
-        exitingLiquid = 0;
-      else
-        assert( state == State.TwoOut, "==> Unknown state: "+String(state));
-        enteringAir = 0;
-        exitingGas = sum(inlet.n[Incondensable]) / (1-sum(y[Condensable]));
       end if;
+      
+      assert( V_l > V/100, "==> Liquid phase ran out, invalidating hypotheses");
       
       connect(acc.inlet, fuelInlet) annotation (points=[21,-30; 0,-30; 0,-80; 
             5.55112e-16,-80], style(color=62, rgbcolor={0,127,127}));
@@ -1024,17 +1016,10 @@ gas plus some liquid are leaving.</p>
       connect(acc.inlet, env.outlet) annotation (points=[21,-30; 0,-30; 0,0;
             -20,0; -20,50; -41,50], style(color=62, rgbcolor={0,127,127}));
       
-    algorithm 
-      when enteringAir < 0 then // When air reverses and starts to exit
-        state := State.GasOut;
-      elsewhen exitingGas < 0 then // When gas reverses and starts to come back in
-        state := State.AirIn;
-      elsewhen V_g <= 0 then // When we run out of liquid phase. Can only happen from GasOut.
-        state := State.TwoOut;
-      elsewhen exitingLiquid < 0 then // When liquid reverses, meaning there is enough gas.
-        state := State.GasOut;
-      end when;
-      
+    initial equation 
+      // Initialise contents to atmospheric air
+      n[Oxygen] / 0.21 = n[Nitrogen] / 0.79;
+      n[CarbonDioxide] = 385E-6*(n[Oxygen]+n[Nitrogen]);
     end MagicBox;
     
     package HeatExchangers "Various types of heat exchangers" 
@@ -2309,7 +2294,7 @@ can help catch regressions induced in other classes by some change.</p>
       
       parameter VolumeFlowRate airFlow = 1E-6;
       parameter VolumeFlowRate solutionIn = 1E-6;
-      parameter VolumeFlowRate solutionOut = 2E-6;
+      parameter VolumeFlowRate solutionOut = 1E-6;
       parameter VolumeFlowRate fuel = 0.1E-6;
       
       Flow.UnitOperations.MagicBox mixer 
@@ -2332,9 +2317,9 @@ can help catch regressions induced in other classes by some change.</p>
                              annotation (extent=[-16,-36; -4,-24], rotation=0);
     equation 
       mfc.V = airFlow;
-      sum(pump_in.inlet.n) = solutionIn;
+      pump_in.V = solutionIn;
       pump_out.V = solutionOut;
-      sum(fuel_pump.inlet.n) = fuel;
+      fuel_pump.V = fuel;
       
       connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
             color=62, rgbcolor={0,127,127}));
