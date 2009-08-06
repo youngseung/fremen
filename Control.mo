@@ -1,4 +1,4 @@
-            /**
+              /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -117,7 +117,7 @@ some particular units, such as coolers.</p>
     import Modelica.SIunits.MoleFraction;
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Pressure;
-    import Units.Temperature;
+    import Modelica.SIunits.Temperature;
     import Units.F;
     
     parameter Real lambda = 2 "Reactant excess ratio";
@@ -127,8 +127,8 @@ some particular units, such as coolers.</p>
     parameter Real aA = 8.5E-9 "Partial derivative of n_x wrt. c";
     parameter Real b = 0.21 "Partial derivative of n_x wrt. n_H";
     
-    outer parameter Pressure p_env = 101325 "Environment pressure";
-    outer parameter Temperature T_env = 298.15 "Environment temperature";
+    outer Pressure p_env "Environment pressure";
+    outer Temperature T_env "Environment temperature";
     
     constant MoleFraction x_O2_env = 0.2 "Oxygen molar fraction in air";
     
@@ -248,7 +248,7 @@ for.</p>
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
     import Modelica.SIunits.Concentration;
-    import Units.Temperature;
+    import Modelica.SIunits.Temperature;
     import Thermo.Molecules.Methanol;
     import Thermo.Molecules.Water;
     import Thermo.Phases.Liquid;
@@ -257,7 +257,7 @@ for.</p>
     import Thermo.rho;
     import Units.F;
     
-    outer parameter Temperature T_env = 298.15 "Environment temperature";
+    outer Temperature T_env "Environment temperature";
     
     parameter Concentration c_ref = 1000 "Concentration set point";
     
@@ -303,13 +303,13 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
     import g = Modelica.Constants.g_n;
     import Modelica.SIunits.Area;
     import Modelica.SIunits.Pressure;
-    import Units.Temperature;
+    import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Time;
     import Thermo.dp_h2o_dt;
     import Thermo.mw;
     import Thermo.Molecules.Water;
     
-    outer parameter Temperature T_env = 298.15 "Environment temperature";
+    outer Temperature T_env "Environment temperature";
     
     parameter Area A = 50E-4 "Mixer cross-sectional area";
     parameter Temperature T_0 = 325 "Nominal condenser temperature";

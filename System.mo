@@ -1,4 +1,4 @@
-                                          /**
+                                            /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ package System "DMFC systems"
     import Units.MolarFlow;
     
     inner parameter Modelica.SIunits.Pressure p_env = 101325;
-    inner parameter Units.Temperature T_env = 298.15;
+    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
     inner parameter Units.RelativeHumidity RH_env = 60;
     
     Efficiency eta_to_cell "Fraction of methanol consumed in the cell";
@@ -278,7 +278,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
     import Units.MolarFlow;
     
     inner parameter Modelica.SIunits.Pressure p_env = 101325;
-    inner parameter Units.Temperature T_env = 298.15;
+    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
     inner parameter Units.RelativeHumidity RH_env = 60;
     
     Efficiency eta_to_cell "Fraction of methanol consumed in the cell";

@@ -1,4 +1,4 @@
-    /**
+      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1017,7 +1017,41 @@ page 2-370.</p>
 </html>"));
   end D;
   
+  model Air "An object calculating and providing air composition" 
+    extends Modelica.Icons.Record;
+    
+    import Units.RelativeHumidity;
+    import Units.Temperature;
+    import Units.MolarEnthalpy;
+    import Modelica.SIunits.MoleFraction;
+    
+    outer RelativeHumidity RH_env "Environment relative humidity";
+    outer Temperature T_env "Environment temperature";
+    
+    MoleFraction[size(Molecules.All,1)] y "Molar fractions";
+    MolarEnthalpy H "Molar enthalpy";
+    
+  equation 
+    sum(y) = 1;
+    
+    y[Molecules.Oxygen] / 0.21 = y[Molecules.Nitrogen] / 0.79;
+    
+    y[Molecules.CarbonDioxide] = 385E-6*sum(y[Molecules.Incondensable]);
+    
+    y[Molecules.Methanol] = 0;
+    
+    y[Molecules.Water] = RH_env/100 * K(T_env, Molecules.Water);
+    
+    H = sum( h(T_env, i, Phases.Gas) * y[i] for i in Molecules.All);
+    
+    annotation (Documentation(info="<html>
+<p>This object contains a vector of molar fractions in environment air and
+the corresponding molar enthalpy of air; the values are adapted to current
+values of <tt>T_env</tt> and <tt>RH_env</tt>.</p>
+</html>"));
+  end Air;
 public 
+
   package Test 
     
   model Test_h "test case for specific enthalpy" 
@@ -1215,5 +1249,26 @@ public
       annotation (experiment(NumberOfIntervals=5000),
                               experimentSetupOutput);
     end TestRR;
+
+    model TestAir 
+      
+      import Units.RelativeHumidity;
+      import Modelica.SIunits.Temperature;
+      
+      parameter RelativeHumidity RH_env_start = 30 "initial relative humidity";
+      parameter RelativeHumidity RH_env_stop = 60 "final relative humidity";
+      parameter Temperature T_env_start = 275 "initial temperature";
+      parameter Temperature T_env_stop = 350 "final temperature";
+      
+      inner Temperature T_env "Enviroment temperature";
+      inner RelativeHumidity RH_env "Environment relative humidity";
+      
+      Air air;
+      
+    equation 
+      T_env = T_env_start + (T_env_stop-T_env_start)*time;
+      RH_env = RH_env_start + (RH_env_stop-RH_env_start)*time;
+      
+    end TestAir;
   end Test;
 end Thermo;
