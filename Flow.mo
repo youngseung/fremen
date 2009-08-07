@@ -1,4 +1,4 @@
-                                                              /**
+                                                                /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -502,6 +502,114 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
       liquid[Methanol] = c * sum(liquid[i]*mw(i)/rho(T,i,Liquid) for i in Condensable);
       
     end FlowConcentration;
+
+    package Test 
+      model LiquidPumpTest 
+        
+        Sources.Solution source 
+          annotation (extent=[-100,-10; -80,10]);
+        Sink sink annotation (extent=[60,0; 80,20]);
+        Flow.Measurements.LiquidPump pump annotation (extent=[-10,-10; 10,10]);
+        Measurements.FlowTemperature T annotation (extent=[-40,-10; -20,10]);
+        annotation (Diagram);
+        
+        inner parameter Modelica.SIunits.Pressure p_env = 101325;
+        inner parameter Units.Temperature T_env = 298.15;
+        inner parameter Units.RelativeHumidity RH_env = 60;
+        
+        parameter Modelica.SIunits.VolumeFlowRate V = 1;
+        
+      equation 
+        pump.V = V;
+        
+        connect(pump.outlet, sink.inlet) annotation (points=[6.10623e-16,10; 
+              30.5,10; 30.5,10; 61,10],
+                                   style(color=62, rgbcolor={0,127,127}));
+        connect(T.outlet, pump.inlet) annotation (points=[-22,6.10623e-16; -16,
+              -3.36456e-22; -16,6.10623e-16; 6.10623e-16,6.10623e-16], style(
+              color=62, rgbcolor={0,127,127}));
+        connect(T.inlet, source.outlet) annotation (points=[-38,6.10623e-16; 
+              -70,6.10623e-16; -70,6.66134e-16; -90,6.66134e-16],
+                                                              style(color=62,
+              rgbcolor={0,127,127}));
+      end LiquidPumpTest;
+
+      model PeristalticPumpTest 
+        
+      protected 
+        Sources.Solution source(T=320) 
+          annotation (extent=[-80,-30; -60,-10]);
+        Sink sink annotation (extent=[46,6; 54,14]);
+      public 
+        Flow.Measurements.PeristalticPump pump 
+                                          annotation (extent=[10,-10; 30,10]);
+        Measurements.FlowTemperature T annotation (extent=[-20,-10; 0,10]);
+        annotation (Diagram);
+        
+        inner parameter Modelica.SIunits.Pressure p_env = 101325;
+        inner parameter Units.Temperature T_env = 298.15;
+        inner parameter Units.RelativeHumidity RH_env = 60;
+        
+        parameter Modelica.SIunits.VolumeFlowRate V = 0.01;
+        parameter Real l_to_g_molratio = 0.5;
+        
+      protected 
+        Sources.Environment env annotation (extent=[-80,10; -60,30]);
+      equation 
+        pump.V = V;
+        sum(source.outlet.n) / sum(env.outlet.n) = time;
+        
+        connect(pump.outlet, sink.inlet) annotation (points=[20,10; 33.2,10; 33.2,
+              10; 46.4,10],        style(color=62, rgbcolor={0,127,127}));
+        connect(T.outlet, pump.inlet) annotation (points=[-2,6.10623e-16; 4,
+              -3.36456e-22; 4,6.10623e-16; 20,6.10623e-16], style(color=62,
+              rgbcolor={0,127,127}));
+        connect(T.inlet, source.outlet) annotation (points=[-18,6.10623e-16; -40,
+              6.10623e-16; -40,-20; -70,-20], style(color=62, rgbcolor={0,127,127}));
+        connect(env.outlet, T.inlet) annotation (points=[-61,20; -40,20; -40,
+              6.10623e-16; -18,6.10623e-16], style(color=62, rgbcolor={0,127,127}));
+      end PeristalticPumpTest;
+
+      model FlowTemperatureTest "A test case for the temperature sensor" 
+        
+        replaceable Measurements.FlowTemperature measurement 
+                                        annotation (extent=[-20,0; 0,20]);
+        annotation (Diagram);
+      protected 
+        Flow.Sources.Environment env "Atmospheric air" 
+                                        annotation (extent=[-92,20; -72,40]);
+        Flow.Sink sink "Dumpster" 
+                          annotation (extent=[40,6; 48,14]);
+      public 
+        Flow.Sources.Solution solution "Source of methanol solution" 
+                                          annotation (extent=[-80,-10; -68,2]);
+        inner parameter Modelica.SIunits.Pressure p_env = 101325;
+        inner parameter Units.Temperature T_env = 298.15;
+        inner Units.RelativeHumidity RH_env = time;
+        
+      equation 
+        /* Running from time 0 to 1 will test negative flows and
+   * crossing of zero-flow condition. */
+        sum(env.outlet.n) = -10*(time-0.5);
+        sum(solution.outlet.n) = -(time-0.5);
+        
+        connect(sink.inlet, measurement.outlet) 
+          annotation (points=[40.4,10; -2,10],          style(color=62, rgbcolor=
+                {0,127,127}));
+        connect(env.outlet, measurement.inlet) 
+                                             annotation (points=[-73,30; -60,30;
+              -60,10; -18,10],   style(color=62, rgbcolor={0,127,127}));
+        connect(solution.outlet, measurement.inlet) annotation (points=[-74,-4;
+              -60,-4; -60,10; -18,10], style(color=62, rgbcolor={0,127,127}));
+      end FlowTemperatureTest;
+
+      model FlowConcentrationTest 
+        "Test case for the more detailed concentration sensor" 
+        extends Flow.Measurements.Test.FlowTemperatureTest(
+                                    redeclare Measurements.FlowConcentration 
+            measurement);
+      end FlowConcentrationTest;
+    end Test;
   end Measurements;
   
   package UnitOperations "Unit operations" 
@@ -1257,7 +1365,7 @@ by default it is 1 M.</p>
         end EquilibriumTest;
         
         model BalancesTest 
-          extends Flow.UnitOperations.Membrane.Balances;
+          extends Balances;
         end BalancesTest;
         
         model VolumeSumTest 
@@ -1265,7 +1373,7 @@ by default it is 1 M.</p>
           import Modelica.SIunits.Temperature;
           
           model MyVolumeBalance 
-            extends Flow.UnitOperations.Membrane.VolumeSum;
+            extends VolumeSum;
           end MyVolumeBalance;
           
           MyVolumeBalance eq;
@@ -1521,6 +1629,77 @@ used only for condensing flows where LMTD theory is not valid.</p>
             -30], style(color=62, rgbcolor={0,127,127}));
         
     end Discretised;
+
+      package Test 
+        partial model AbstractHeatExchangerTest 
+          "Generic test for heat exchangers" 
+          
+          import Modelica.SIunits.VolumeFlowRate;
+          
+          inner parameter Modelica.SIunits.Pressure p_env = 101325;
+          inner parameter Units.Temperature T_env = 298.15;
+          inner parameter Units.RelativeHumidity RH_env = 60;
+          
+        protected 
+          Sources.Environment env         annotation (extent=[100,-60; 80,-40]);
+          Sink coldSink "Sink for the cold flow" 
+                            annotation (extent=[62,28; 70,36]);
+          annotation (Diagram,
+            experiment(StopTime=80),
+            experimentSetupOutput);
+        public 
+          replaceable Abstract exchanger "The heat exchanger" 
+                                 annotation (extent=[-40,-20; 40,60]);
+        protected 
+          Sink hotSink "Sink for the hot flow" 
+                            annotation (extent=[-28,-52; -20,-44]);
+          Sources.Solution methanolSolution(   T=330) 
+            annotation (extent=[-80,-40; -60,-20]);
+          Measurements.LiquidPump pump 
+                    annotation (extent=[-80,0; -60,20]);
+        public 
+          Measurements.GasFlowController mfc 
+                                annotation (extent=[52,-42; 72,-22]);
+          
+        public 
+          parameter VolumeFlowRate air = 100E-3/60 "Full scale of cooling air";
+          parameter VolumeFlowRate sol = 10E-6/60 "Loop solution";
+          
+        equation 
+          mfc.V = 0.01*air+0.99*air*time;
+          pump.V = sol;
+          
+          connect(hotSink.inlet, exchanger.hot_2) annotation (points=[-27.6,-48; 
+                -36,-48; -36,8], style(color=62, rgbcolor={0,127,127}));
+          connect(exchanger.cold_1, coldSink.inlet) annotation (points=[36,32; 
+                49.2,32; 49.2,32; 62.4,32],
+                                       style(color=62, rgbcolor={0,127,127}));
+          connect(env.outlet, mfc.inlet) annotation (points=[81,-50; 62,-50; 62,-32],
+              style(color=62, rgbcolor={0,127,127}));
+          connect(mfc.outlet, exchanger.cold_2) annotation (points=[62,-22; 62,
+                8; 36,8],
+                       style(color=62, rgbcolor={0,127,127}));
+          connect(pump.outlet, exchanger.hot_1) annotation (points=[-70,20; -70,
+                32; -36,32],
+                         style(color=62, rgbcolor={0,127,127}));
+          connect(methanolSolution.outlet, pump.inlet) annotation (points=[-70,-30;
+                -70,10], style(color=62, rgbcolor={0,127,127}));
+        end AbstractHeatExchangerTest;
+
+        model LMTDHeatExchangerTest "Test for the LMTD-based heat exchanger" 
+          extends AbstractHeatExchangerTest(redeclare LMTD exchanger);
+        end LMTDHeatExchangerTest;
+
+        model DiscretisedHeatExchangerStepTest 
+          "Test for the single-step heat exchanger" 
+          extends AbstractHeatExchangerTest(redeclare DiscretisedStep exchanger);
+        end DiscretisedHeatExchangerStepTest;
+
+        model DiscretisedHeatExchangerTest 
+          "Test for the discretised heat exchanger" 
+          extends AbstractHeatExchangerTest(redeclare Discretised exchanger);
+        end DiscretisedHeatExchangerTest;
+      end Test;
     end HeatExchangers;
     
     package Coolers "Various types of coolers" 
@@ -1754,6 +1933,63 @@ anode-loop cooler or as a recuperating heat exchanger on the anode side.</p>
 cathode-loop cooler (condenser).</p>
 </html>"));
     end Discretised;
+
+      package Test 
+        partial model AbstractCoolerTest "Generic test for air coolers" 
+          
+          import Modelica.SIunits.VolumeFlowRate;
+          import Units.Temperature;
+          
+          inner parameter Modelica.SIunits.Pressure p_env = 101325;
+          inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+          inner parameter Units.RelativeHumidity RH_env = 60;
+          
+        protected 
+          Sink sink         annotation (extent=[60,-4; 68,4]);
+          annotation (Diagram,
+            experiment(StopTime=80),
+            experimentSetupOutput);
+          Sources.Solution sol(   T=330) 
+                                      annotation (extent=[-100,-20; -80,0]);
+        public 
+          replaceable Abstract cooler       annotation (extent=[-20,-20; 20,20]);
+          Measurements.LiquidPump pump 
+                    annotation (extent=[-60,-20; -40,0]);
+          parameter VolumeFlowRate solution = 10E-6/60; // 10 ml/min
+          parameter Temperature target = 315;
+          
+        equation 
+          pump.V = solution;
+          cooler.T_ref = target;
+          
+          connect(cooler.outlet, sink.inlet) annotation (points=[18.8,
+                1.06581e-15; 39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,
+                3.88578e-17],                                          style(color=
+                  62, rgbcolor={0,127,127}));
+          connect(pump.outlet, cooler.inlet) annotation (points=[-50,
+                5.55112e-16; -30,5.55112e-16; -30,1.06581e-15; -18.8,
+                1.06581e-15],                                         style(color=
+                  62, rgbcolor={0,127,127}));
+          connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
+              style(color=62, rgbcolor={0,127,127}));
+        end AbstractCoolerTest;
+
+        model SimpleCoolerTest 
+          extends AbstractCoolerTest(redeclare Simple cooler);
+          annotation (experiment(StopTime=3600));
+          
+        end SimpleCoolerTest;
+
+        model LMTDCoolerTest "Test for the LMTD-based air cooler" 
+          extends AbstractCoolerTest(redeclare LMTD cooler);
+          
+          annotation (experiment(StopTime=5000), experimentSetupOutput);
+        end LMTDCoolerTest;
+
+        model DiscretisedCoolerTest "Test for the discretised air cooler" 
+          extends AbstractCoolerTest(redeclare Discretised cooler);
+        end DiscretisedCoolerTest;
+      end Test;
     end Coolers;
     
     package Stack "Models of fuel cells" 
@@ -2061,533 +2297,293 @@ current.</p>
     equation 
       V = V0 - R*I;
     end Thevenin;
+
+      package Test 
+        partial model AbstractStackTest 
+          "Generic test suite for fuel-cell models" 
+          
+          import Modelica.Electrical.Analog.Sources.ConstantCurrent;
+          
+          inner parameter Modelica.SIunits.Pressure p_env = 101325 
+            "Environment pressure";
+          inner parameter Modelica.SIunits.Temperature T_env = 298.15 
+            "Enviroment temperature";
+          inner parameter Units.RelativeHumidity RH_env = 60 
+            "Environment relative humidity";
+          
+          parameter Modelica.SIunits.VolumeFlowRate anodeFlow = 30E-6/60 
+            "Anodic volumetric flow rate";
+          parameter Modelica.SIunits.VolumeFlowRate cathodeFlow = 30E-5/60 
+            "Cathodic volumetric flow rate";
+          parameter Units.Temperature anodeInletTemperature = 330 
+            "Anodic inlet temperature";
+          
+          replaceable Abstract stack 
+                            annotation (extent=[6,0; 42,34]);
+          Sources.Solution methanolSolution(   T=anodeInletTemperature) 
+                                            annotation (extent=[-66,-30; -54,-18]);
+          annotation (Diagram);
+          Measurements.LiquidPump pump "Pump for the anode flow" 
+                                              annotation (extent=[-42,-30; -30,-18]);
+          Sources.Environment air 
+                              annotation (extent=[-70,28; -50,48]);
+          Measurements.GasFlowController blower 
+                                   annotation (extent=[-40,34; -32,42]);
+          Sink anodeSink     annotation (extent=[62,10; 68,16]);
+          Sink cathodeSink     annotation (extent=[62,18; 68,24]);
+          ConstantCurrent I_cell(I=5) annotation (extent=[12,48; 34,72]);
+          Modelica.Electrical.Analog.Basic.Ground ground 
+            "Negative pole to zero voltage" annotation (extent=[38,40; 58,60]);
+        equation 
+          pump.V = anodeFlow;
+          blower.V = cathodeFlow;
+          
+          connect(methanolSolution.outlet, pump.inlet) 
+                                                  annotation (points=[-60,-24; -36,
+                -24],        style(color=62, rgbcolor={0,127,127}));
+          connect(blower.outlet, stack.cathode_inlet)    annotation (points=[-36,42; 
+                -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
+          connect(air.outlet, blower.inlet) 
+                                       annotation (points=[-51,38; -36,38],
+                                style(color=62, rgbcolor={0,127,127}));
+          connect(cathodeSink.inlet, stack.cathode_outlet)       annotation (points=[62.3,21;
+                52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
+          connect(anodeSink.inlet, stack.anode_outlet)       annotation (points=[62.3,13;
+                52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
+          connect(ground.p, I_cell.n) 
+            annotation (points=[48,60; 34,60], style(color=3, rgbcolor={0,0,255}));
+          connect(I_cell.p, stack.plus)    annotation (points=[12,60; 12,27.2; 
+                13.2,27.2],
+              style(color=3, rgbcolor={0,0,255}));
+          connect(I_cell.n, stack.minus)    annotation (points=[34,60; 34.8,60;
+                34.8,27.2], style(color=3, rgbcolor={0,0,255}));
+          connect(pump.outlet, stack.anode_inlet)    annotation (points=[-36,-18; 
+                -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
+        end AbstractStackTest;
+
+        model ConstantVoltageStackTest "Test for the constant-voltage model" 
+          extends AbstractStackTest(redeclare ConstantVoltage stack,
+              anodeFlow = stack.cells*30E-6/60,
+              cathodeFlow = stack.cells*30E-5/60);
+          annotation (Diagram);
+        end ConstantVoltageStackTest;
+
+        model TheveninStackTest "Test for the Thevenin-circuit model" 
+          extends AbstractStackTest(redeclare Thevenin stack(cells=3,V0=2.1,R=0.015),
+              anodeFlow = stack.cells*30E-6/60,
+              cathodeFlow = stack.cells*30E-5/60);
+        end TheveninStackTest;
+      end Test;
     end Stack;
+
+    package Test 
+      model SeparatorTest "Test case for the separator unit" 
+        
+        Separator separator annotation (extent=[-22,-12; 26,38]);
+      protected 
+        Flow.Sink liquidSink 
+                          annotation (extent=[46,-16; 54,-8]);
+        annotation (Diagram);
+        Sink gasSink       annotation (extent=[46,30; 54,38]);
+        Sources.Environment env         annotation (extent=[-54,22; -34,42]);
+        Sources.Solution solution         annotation (extent=[-78,8; -68,18]);
+      public 
+        inner parameter Modelica.SIunits.Pressure p_env = 101325;
+        inner parameter Units.Temperature T_env = 298.15;
+        inner parameter Units.RelativeHumidity RH_env = 60;
+        
+      equation 
+        sum(env.outlet.n) = -1;
+        sum(solution.outlet.n) = -2;
+        
+        connect(env.outlet, separator.inlet)        annotation (points=[-35,32;
+              -22,32; -22,13],             style(color=62, rgbcolor={0,127,127}));
+        connect(solution.outlet, separator.inlet) 
+          annotation (points=[-73,13; -22,13], style(color=62, rgbcolor={0,127,
+                127}));
+        connect(separator.liquidOutlet, liquidSink.inlet) 
+          annotation (points=[18.8,3; 18,3; 18,-12; 46.4,-12], style(color=62,
+              rgbcolor={0,127,127}));
+        connect(separator.gasOutlet, gasSink.inlet)    annotation (points=[18.8,23; 
+              18.4,23; 18.4,34; 46.4,34], style(color=62, rgbcolor={0,127,127}));
+      end SeparatorTest;
+
+      model BurnerTest 
+        
+        import Modelica.SIunits.VolumeFlowRate;
+        
+        inner parameter Modelica.SIunits.Pressure p_env = 101325 
+          "Environment pressure";
+        inner parameter Units.Temperature T_env = 298.15 
+          "Enviroment temperature";
+        inner parameter Units.RelativeHumidity RH_env = 60 
+          "Environment relative humidity";
+        
+        parameter VolumeFlowRate solution = 10E-6/60; // 10 ml/min
+        parameter VolumeFlowRate air =      1E-3/60; // 1  l/min
+        
+        Burner burner annotation (extent=[-2,-20; 38,20]);
+        Sources.Solution methanolSolution annotation (extent=[-100,20; -80,40]);
+        Measurements.LiquidPump pump 
+                  annotation (extent=[-60,40; -40,20]);
+        annotation (Diagram, Documentation(info="<html>
+</html>"));
+        Sources.Environment env 
+                            annotation (extent=[-100,-20; -80,0]);
+        Measurements.GasFlowController mfc 
+                              annotation (extent=[-60,-20; -40,0]);
+        Sink sinkPort     annotation (extent=[80,-10; 100,10]);
+        Measurements.FlowTemperature T_in 
+                             annotation (extent=[-30,-10; -10,10]);
+      equation 
+        pump.V = solution;
+        mfc.V = air;
+        connect(pump.inlet, methanolSolution.outlet) annotation (points=[-50,30;
+              -90,30], style(
+            color=62,
+            rgbcolor={0,127,127},
+            fillColor=45,
+            rgbfillColor={255,128,0},
+            fillPattern=10));
+        connect(mfc.inlet, env.outlet) annotation (points=[-50,-10; -81,-10],
+            style(
+            color=62,
+            rgbcolor={0,127,127},
+            fillColor=45,
+            rgbfillColor={255,128,0},
+            fillPattern=10));
+        connect(T_in.outlet, burner.inlet) annotation (points=[-12,6.10623e-16; 
+              -7,6.10623e-16; -7,1.22125e-15; -1.6,1.22125e-15], style(
+            color=62,
+            rgbcolor={0,127,127},
+            fillColor=45,
+            rgbfillColor={255,128,0},
+            fillPattern=10));
+        connect(T_in.inlet, pump.outlet) annotation (points=[-28,6.10623e-16; 
+              -40,6.10623e-16; -40,20; -50,20],
+                                            style(
+            color=62,
+            rgbcolor={0,127,127},
+            fillColor=45,
+            rgbfillColor={255,128,0},
+            fillPattern=10));
+        connect(T_in.inlet, mfc.outlet) annotation (points=[-28,6.10623e-16; 
+              -40,6.10623e-16; -40,5.55112e-16; -50,5.55112e-16],
+                                                              style(
+            color=62,
+            rgbcolor={0,127,127},
+            fillColor=45,
+            rgbfillColor={255,128,0},
+            fillPattern=10));
+        connect(burner.outlet, sinkPort.inlet) annotation (points=[38.4,
+              1.22125e-15; 60.2,1.22125e-15; 60.2,4.44089e-16; 81,4.44089e-16],
+            style(color=62, rgbcolor={0,127,127}));
+      end BurnerTest;
+
+      model MixerTest "Test for the mixer unit" 
+        inner parameter Modelica.SIunits.Pressure p_env = 101325;
+        inner parameter Units.Temperature T_env = 298.15;
+        inner parameter Units.RelativeHumidity RH_env = 60;
+        
+        Mixer mixer(
+          c(fixed=true),
+          T(fixed=true),
+          V(fixed=true, start=500E-6)) 
+                    annotation (extent=[-20,0; 0,20]);
+        Sources.Solution anodicLoop(   T=330) 
+          "Solution coming from the anodic loop" 
+          annotation (extent=[-20,40; 0,60]);
+        Sources.Methanol fuelTank "Methanol from the fuel tank" 
+          annotation (extent=[0,-40; 20,-20]);
+        Sources.Solution condenser(   C=0, T=310) 
+          "Water recovered from the cathode outlet" 
+          annotation (extent=[20,0; 40,20]);
+        Measurements.FlowTemperature flowTemperature 
+                                        annotation (extent=[-64,-26; -44,-6]);
+        Sink sinkPort     annotation (extent=[-28,-20; -20,-12]);
+      equation 
+        
+        annotation (Diagram);
+        sum(fuelTank.outlet.n) = -0.1;
+        sum(anodicLoop.outlet.n) = -1;
+        sum(condenser.outlet.n) = -0.4;
+        sum(mixer.outlet.n) = -1.5;
+        
+        connect(flowTemperature.outlet, sinkPort.inlet) 
+          annotation (points=[-46,-16; -27.6,-16], style(color=62, rgbcolor={0,
+                127,127}));
+        connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
+              -72,10; -72,-16; -62,-16], style(color=62, rgbcolor={0,127,127}));
+        connect(condenser.outlet, mixer.waterInlet) 
+          annotation (points=[30,10; -2,10], style(color=62, rgbcolor={0,127,127}));
+        connect(anodicLoop.outlet, mixer.loopInlet) 
+          annotation (points=[-10,50; -10,18], style(color=62, rgbcolor={0,127,
+                127}));
+        connect(mixer.fuelInlet, fuelTank.outlet) 
+          annotation (points=[-10,2; -10,-30; 10,-30], style(color=62, rgbcolor={
+                0,127,127}));
+      end MixerTest;
+
+      model MagicBoxTest "Test for the mixer unit" 
+        
+        import Modelica.SIunits.VolumeFlowRate;
+        
+        inner parameter Modelica.SIunits.Pressure p_env = 101325;
+        inner parameter Units.Temperature T_env = 298.15;
+        inner parameter Units.RelativeHumidity RH_env = 60;
+        
+        parameter VolumeFlowRate airFlow = 1E-6;
+        parameter VolumeFlowRate solutionIn = 1E-6;
+        parameter VolumeFlowRate solutionOut = 1E-6;
+        parameter VolumeFlowRate fuel = 0.1E-6;
+        
+        MagicBox mixer 
+                    annotation (extent=[-20,0; 0,20]);
+        Sources.Solution anodicLoop "Solution coming from the anodic loop" 
+          annotation (extent=[40,24; 50,34]);
+        Sources.Methanol fuelTank "Methanol from the fuel tank" 
+          annotation (extent=[4,-36; 16,-24]);
+        Sink sinkPort     annotation (extent=[-64,12; -56,20], rotation=180);
+        Sources.Environment env annotation (extent=[80,-20; 60,0]);
+        Measurements.GasFlowController mfc 
+          annotation (extent=[22,-16; 34,-4], rotation=0);
+        Measurements.LiquidPump pump_out 
+                               annotation (extent=[-40,4; -28,16]);
+        annotation (Diagram);
+        Measurements.LiquidPump pump_in 
+                               annotation (extent=[24,24; 34,34], rotation=180);
+        Measurements.LiquidPump fuel_pump 
+                               annotation (extent=[-16,-36; -4,-24], rotation=0);
+      equation 
+        mfc.V = airFlow;
+        pump_in.V = solutionIn;
+        pump_out.V = solutionOut;
+        fuel_pump.V = fuel;
+        
+        connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
+              color=62, rgbcolor={0,127,127}));
+        connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,
+              10; -2,10],
+                      style(color=62, rgbcolor={0,127,127}));
+        connect(pump_out.inlet, mixer.outlet) 
+                                          annotation (points=[-34,10; -18,10],
+            style(color=62, rgbcolor={0,127,127}));
+        connect(sinkPort.inlet, pump_out.outlet) 
+                                             annotation (points=[-56.4,16; -34,16],
+            style(color=62, rgbcolor={0,127,127}));
+        connect(pump_in.inlet, anodicLoop.outlet) annotation (points=[29,29; 45,
+              29], style(color=62, rgbcolor={0,127,127}));
+        connect(pump_in.outlet, mixer.inlet) annotation (points=[29,24; 14,24; 
+              14,10; -2,10],
+                          style(color=62, rgbcolor={0,127,127}));
+        connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
+              -30], style(color=62, rgbcolor={0,127,127}));
+        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
+              -10,2], style(color=62, rgbcolor={0,127,127}));
+      end MagicBoxTest;
+    end Test;
   end UnitOperations;
   
-  package Test "Package of test cases" 
-    model LiquidPumpTest 
-      
-      Sources.Solution source 
-        annotation (extent=[-100,-10; -80,10]);
-      Sink sink annotation (extent=[60,0; 80,20]);
-      Flow.Measurements.LiquidPump pump annotation (extent=[-10,-10; 10,10]);
-      Measurements.FlowTemperature T annotation (extent=[-40,-10; -20,10]);
-      annotation (Diagram);
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Units.Temperature T_env = 298.15;
-      inner parameter Units.RelativeHumidity RH_env = 60;
-      
-      parameter Modelica.SIunits.VolumeFlowRate V = 1;
-      
-    equation 
-      pump.V = V;
-      
-      connect(pump.outlet, sink.inlet) annotation (points=[6.10623e-16,10; 30.5,
-            10; 30.5,10; 61,10], style(color=62, rgbcolor={0,127,127}));
-      connect(T.outlet, pump.inlet) annotation (points=[-22,6.10623e-16; -16,
-            -3.36456e-22; -16,6.10623e-16; 6.10623e-16,6.10623e-16], style(
-            color=62, rgbcolor={0,127,127}));
-      connect(T.inlet, source.outlet) annotation (points=[-38,6.10623e-16; -70,
-            6.10623e-16; -70,6.66134e-16; -90,6.66134e-16], style(color=62,
-            rgbcolor={0,127,127}));
-    end LiquidPumpTest;
-    
-    model PeristalticPumpTest 
-      
-    protected 
-      Sources.Solution source(T=320) 
-        annotation (extent=[-80,-30; -60,-10]);
-      Sink sink annotation (extent=[46,6; 54,14]);
-    public 
-      Flow.Measurements.PeristalticPump pump 
-                                        annotation (extent=[10,-10; 30,10]);
-      Measurements.FlowTemperature T annotation (extent=[-20,-10; 0,10]);
-      annotation (Diagram);
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Units.Temperature T_env = 298.15;
-      inner parameter Units.RelativeHumidity RH_env = 60;
-      
-      parameter Modelica.SIunits.VolumeFlowRate V = 0.01;
-      parameter Real l_to_g_molratio = 0.5;
-      
-    protected 
-      Sources.Environment env annotation (extent=[-80,10; -60,30]);
-    equation 
-      pump.V = V;
-      sum(source.outlet.n) / sum(env.outlet.n) = time;
-      
-      connect(pump.outlet, sink.inlet) annotation (points=[20,10; 33.2,10; 33.2,
-            10; 46.4,10],        style(color=62, rgbcolor={0,127,127}));
-      connect(T.outlet, pump.inlet) annotation (points=[-2,6.10623e-16; 4,
-            -3.36456e-22; 4,6.10623e-16; 20,6.10623e-16], style(color=62,
-            rgbcolor={0,127,127}));
-      connect(T.inlet, source.outlet) annotation (points=[-18,6.10623e-16; -40,
-            6.10623e-16; -40,-20; -70,-20], style(color=62, rgbcolor={0,127,127}));
-      connect(env.outlet, T.inlet) annotation (points=[-61,20; -40,20; -40,
-            6.10623e-16; -18,6.10623e-16], style(color=62, rgbcolor={0,127,127}));
-    end PeristalticPumpTest;
-    
-    model FlowTemperatureTest "A test case for the temperature sensor" 
-      
-      replaceable Measurements.FlowTemperature measurement 
-                                      annotation (extent=[-20,0; 0,20]);
-      annotation (Diagram);
-    protected 
-      Flow.Sources.Environment env "Atmospheric air" 
-                                      annotation (extent=[-92,20; -72,40]);
-      Flow.Sink sink "Dumpster" 
-                        annotation (extent=[40,6; 48,14]);
-    public 
-      Flow.Sources.Solution solution "Source of methanol solution" 
-                                        annotation (extent=[-80,-10; -68,2]);
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Units.Temperature T_env = 298.15;
-      inner Units.RelativeHumidity RH_env = time;
-      
-    equation 
-      /* Running from time 0 to 1 will test negative flows and
-   * crossing of zero-flow condition. */
-      sum(env.outlet.n) = -10*(time-0.5);
-      sum(solution.outlet.n) = -(time-0.5);
-      
-      connect(sink.inlet, measurement.outlet) 
-        annotation (points=[40.4,10; -2,10],          style(color=62, rgbcolor=
-              {0,127,127}));
-      connect(env.outlet, measurement.inlet) 
-                                           annotation (points=[-73,30; -60,30;
-            -60,10; -18,10],   style(color=62, rgbcolor={0,127,127}));
-      connect(solution.outlet, measurement.inlet) annotation (points=[-74,-4;
-            -60,-4; -60,10; -18,10], style(color=62, rgbcolor={0,127,127}));
-    end FlowTemperatureTest;
-    
-    model FlowConcentrationTest 
-      "Test case for the more detailed concentration sensor" 
-      extends FlowTemperatureTest(redeclare Measurements.FlowConcentration 
-          measurement);
-    end FlowConcentrationTest;
-    
-    model SeparatorTest "Test case for the separator unit" 
-      
-      Flow.UnitOperations.Separator separator 
-                          annotation (extent=[-22,-12; 26,38]);
-    protected 
-      Flow.Sink liquidSink 
-                        annotation (extent=[46,-16; 54,-8]);
-      annotation (Diagram);
-      Flow.Sink gasSink  annotation (extent=[46,30; 54,38]);
-      Flow.Sources.Environment env    annotation (extent=[-54,22; -34,42]);
-      Flow.Sources.Solution solution    annotation (extent=[-78,8; -68,18]);
-    public 
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Units.Temperature T_env = 298.15;
-      inner parameter Units.RelativeHumidity RH_env = 60;
-      
-    equation 
-      sum(env.outlet.n) = -1;
-      sum(solution.outlet.n) = -2;
-      
-      connect(env.outlet, separator.inlet)        annotation (points=[-35,32;
-            -22,32; -22,13],             style(color=62, rgbcolor={0,127,127}));
-      connect(solution.outlet, separator.inlet) 
-        annotation (points=[-73,13; -22,13], style(color=62, rgbcolor={0,127,
-              127}));
-      connect(separator.liquidOutlet, liquidSink.inlet) 
-        annotation (points=[18.8,3; 18,3; 18,-12; 46.4,-12], style(color=62,
-            rgbcolor={0,127,127}));
-      connect(separator.gasOutlet, gasSink.inlet)    annotation (points=[18.8,23;
-            18.4,23; 18.4,34; 46.4,34], style(color=62, rgbcolor={0,127,127}));
-    end SeparatorTest;
-    
-    model BurnerTest 
-      
-      import Modelica.SIunits.VolumeFlowRate;
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325 
-        "Environment pressure";
-      inner parameter Units.Temperature T_env = 298.15 "Enviroment temperature";
-      inner parameter Units.RelativeHumidity RH_env = 60 
-        "Environment relative humidity";
-      
-      parameter VolumeFlowRate solution = 10E-6/60; // 10 ml/min
-      parameter VolumeFlowRate air =      1E-3/60; // 1  l/min
-      
-      Flow.UnitOperations.Burner burner 
-                    annotation (extent=[-2,-20; 38,20]);
-      Flow.Sources.Solution methanolSolution 
-                                        annotation (extent=[-100,20; -80,40]);
-      Flow.Measurements.LiquidPump pump 
-                annotation (extent=[-60,40; -40,20]);
-      annotation (Diagram, Documentation(info="<html>
-</html>"));
-      Flow.Sources.Environment env 
-                          annotation (extent=[-100,-20; -80,0]);
-      Measurements.GasFlowController mfc 
-                            annotation (extent=[-60,-20; -40,0]);
-      Flow.Sink sinkPort 
-                        annotation (extent=[80,-10; 100,10]);
-      Measurements.FlowTemperature T_in 
-                           annotation (extent=[-30,-10; -10,10]);
-    equation 
-      pump.V = solution;
-      mfc.V = air;
-      connect(pump.inlet, methanolSolution.outlet) annotation (points=[-50,30;
-            -90,30], style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=45,
-          rgbfillColor={255,128,0},
-          fillPattern=10));
-      connect(mfc.inlet, env.outlet) annotation (points=[-50,-10; -81,-10],
-          style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=45,
-          rgbfillColor={255,128,0},
-          fillPattern=10));
-      connect(T_in.outlet, burner.inlet) annotation (points=[-12,6.10623e-16;
-            -7,6.10623e-16; -7,1.22125e-15; -1.6,1.22125e-15], style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=45,
-          rgbfillColor={255,128,0},
-          fillPattern=10));
-      connect(T_in.inlet, pump.outlet) annotation (points=[-28,6.10623e-16; -40,
-            6.10623e-16; -40,20; -50,20], style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=45,
-          rgbfillColor={255,128,0},
-          fillPattern=10));
-      connect(T_in.inlet, mfc.outlet) annotation (points=[-28,6.10623e-16; -40,
-            6.10623e-16; -40,5.55112e-16; -50,5.55112e-16], style(
-          color=62,
-          rgbcolor={0,127,127},
-          fillColor=45,
-          rgbfillColor={255,128,0},
-          fillPattern=10));
-      connect(burner.outlet, sinkPort.inlet) annotation (points=[38.4,
-            1.22125e-15; 60.2,1.22125e-15; 60.2,4.44089e-16; 81,4.44089e-16],
-          style(color=62, rgbcolor={0,127,127}));
-    end BurnerTest;
-    
-    model MixerTest "Test for the mixer unit" 
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Units.Temperature T_env = 298.15;
-      inner parameter Units.RelativeHumidity RH_env = 60;
-      
-      Flow.UnitOperations.Mixer mixer(
-        c(fixed=true),
-        T(fixed=true),
-        V(fixed=true, start=500E-6)) 
-                  annotation (extent=[-20,0; 0,20]);
-      Flow.Sources.Solution anodicLoop(   T=330) 
-        "Solution coming from the anodic loop" 
-        annotation (extent=[-20,40; 0,60]);
-      Flow.Sources.Methanol fuelTank "Methanol from the fuel tank" 
-        annotation (extent=[0,-40; 20,-20]);
-      Flow.Sources.Solution condenser(   C=0, T=310) 
-        "Water recovered from the cathode outlet" 
-        annotation (extent=[20,0; 40,20]);
-      Measurements.FlowTemperature flowTemperature 
-                                      annotation (extent=[-64,-26; -44,-6]);
-      Flow.Sink sinkPort 
-                        annotation (extent=[-28,-20; -20,-12]);
-    equation 
-      
-      annotation (Diagram);
-      sum(fuelTank.outlet.n) = -0.1;
-      sum(anodicLoop.outlet.n) = -1;
-      sum(condenser.outlet.n) = -0.4;
-      sum(mixer.outlet.n) = -1.5;
-      
-      connect(flowTemperature.outlet, sinkPort.inlet) 
-        annotation (points=[-46,-16; -27.6,-16], style(color=62, rgbcolor={0,
-              127,127}));
-      connect(mixer.outlet, flowTemperature.inlet) annotation (points=[-18,10;
-            -72,10; -72,-16; -62,-16], style(color=62, rgbcolor={0,127,127}));
-      connect(condenser.outlet, mixer.waterInlet) 
-        annotation (points=[30,10; -2,10], style(color=62, rgbcolor={0,127,127}));
-      connect(anodicLoop.outlet, mixer.loopInlet) 
-        annotation (points=[-10,50; -10,18], style(color=62, rgbcolor={0,127,
-              127}));
-      connect(mixer.fuelInlet, fuelTank.outlet) 
-        annotation (points=[-10,2; -10,-30; 10,-30], style(color=62, rgbcolor={
-              0,127,127}));
-    end MixerTest;
-    
-    partial model AbstractHeatExchangerTest "Generic test for heat exchangers" 
-      
-      import Modelica.SIunits.VolumeFlowRate;
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Units.Temperature T_env = 298.15;
-      inner parameter Units.RelativeHumidity RH_env = 60;
-      
-    protected 
-      Flow.Sources.Environment env    annotation (extent=[100,-60; 80,-40]);
-      Flow.Sink coldSink "Sink for the cold flow" 
-                        annotation (extent=[62,28; 70,36]);
-      annotation (Diagram,
-        experiment(StopTime=80),
-        experimentSetupOutput);
-    public 
-      replaceable Flow.UnitOperations.HeatExchangers.Abstract exchanger 
-        "The heat exchanger" annotation (extent=[-40,-20; 40,60]);
-    protected 
-      Flow.Sink hotSink "Sink for the hot flow" 
-                        annotation (extent=[-28,-52; -20,-44]);
-      Flow.Sources.Solution methanolSolution(   T=330) 
-        annotation (extent=[-80,-40; -60,-20]);
-      Flow.Measurements.LiquidPump pump 
-                annotation (extent=[-80,0; -60,20]);
-    public 
-      Measurements.GasFlowController mfc 
-                            annotation (extent=[52,-42; 72,-22]);
-      
-    public 
-      parameter VolumeFlowRate air = 100E-3/60 "Full scale of cooling air";
-      parameter VolumeFlowRate sol = 10E-6/60 "Loop solution";
-      
-    equation 
-      mfc.V = 0.01*air+0.99*air*time;
-      pump.V = sol;
-      
-      connect(hotSink.inlet, exchanger.hot_2) annotation (points=[-27.6,-48;
-            -36,-48; -36,8], style(color=62, rgbcolor={0,127,127}));
-      connect(exchanger.cold_1, coldSink.inlet) annotation (points=[36,32; 49.2,
-            32; 49.2,32; 62.4,32], style(color=62, rgbcolor={0,127,127}));
-      connect(env.outlet, mfc.inlet) annotation (points=[81,-50; 62,-50; 62,-32],
-          style(color=62, rgbcolor={0,127,127}));
-      connect(mfc.outlet, exchanger.cold_2) annotation (points=[62,-22; 62,8;
-            36,8], style(color=62, rgbcolor={0,127,127}));
-      connect(pump.outlet, exchanger.hot_1) annotation (points=[-70,20; -70,32;
-            -36,32], style(color=62, rgbcolor={0,127,127}));
-      connect(methanolSolution.outlet, pump.inlet) annotation (points=[-70,-30;
-            -70,10], style(color=62, rgbcolor={0,127,127}));
-    end AbstractHeatExchangerTest;
-    
-    model LMTDHeatExchangerTest "Test for the LMTD-based heat exchanger" 
-      extends AbstractHeatExchangerTest(redeclare 
-          Flow.UnitOperations.HeatExchangers.LMTD exchanger);
-    end LMTDHeatExchangerTest;
-    
-    model DiscretisedHeatExchangerStepTest 
-      "Test for the single-step heat exchanger" 
-      extends AbstractHeatExchangerTest(redeclare 
-          Flow.UnitOperations.HeatExchangers.DiscretisedStep exchanger);
-    end DiscretisedHeatExchangerStepTest;
-    
-    model DiscretisedHeatExchangerTest 
-      "Test for the discretised heat exchanger" 
-      extends AbstractHeatExchangerTest(redeclare 
-          Flow.UnitOperations.HeatExchangers.Discretised exchanger);
-    end DiscretisedHeatExchangerTest;
-    
-    partial model AbstractCoolerTest "Generic test for air coolers" 
-      
-      import Modelica.SIunits.VolumeFlowRate;
-      import Units.Temperature;
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15;
-      inner parameter Units.RelativeHumidity RH_env = 60;
-      
-    protected 
-      Flow.Sink sink    annotation (extent=[60,-4; 68,4]);
-      annotation (Diagram,
-        experiment(StopTime=80),
-        experimentSetupOutput);
-      Flow.Sources.Solution sol(   T=330) 
-                                  annotation (extent=[-100,-20; -80,0]);
-    public 
-      replaceable Flow.UnitOperations.Coolers.Abstract cooler 
-                                        annotation (extent=[-20,-20; 20,20]);
-      Flow.Measurements.LiquidPump pump 
-                annotation (extent=[-60,-20; -40,0]);
-      parameter VolumeFlowRate solution = 10E-6/60; // 10 ml/min
-      parameter Temperature target = 315;
-      
-    equation 
-      pump.V = solution;
-      cooler.T_ref = target;
-      
-      connect(cooler.outlet, sink.inlet) annotation (points=[18.8,1.06581e-15;
-            39.4,1.06581e-15; 39.4,3.88578e-17; 60.4,3.88578e-17], style(color=
-              62, rgbcolor={0,127,127}));
-      connect(pump.outlet, cooler.inlet) annotation (points=[-50,5.55112e-16;
-            -30,5.55112e-16; -30,1.06581e-15; -18.8,1.06581e-15], style(color=
-              62, rgbcolor={0,127,127}));
-      connect(sol.outlet, pump.inlet) annotation (points=[-90,-10; -50,-10],
-          style(color=62, rgbcolor={0,127,127}));
-    end AbstractCoolerTest;
-    
-    model SimpleCoolerTest 
-      extends AbstractCoolerTest(redeclare Flow.UnitOperations.Coolers.Simple 
-          cooler);
-      annotation (experiment(StopTime=3600));
-      
-    end SimpleCoolerTest;
-    
-    model LMTDCoolerTest "Test for the LMTD-based air cooler" 
-      extends AbstractCoolerTest(redeclare Flow.UnitOperations.Coolers.LMTD 
-          cooler);
-      
-      annotation (experiment(StopTime=5000), experimentSetupOutput);
-    end LMTDCoolerTest;
-    
-    model DiscretisedCoolerTest "Test for the discretised air cooler" 
-      extends AbstractCoolerTest(redeclare 
-          Flow.UnitOperations.Coolers.Discretised cooler);
-    end DiscretisedCoolerTest;
-    
-    partial model AbstractStackTest "Generic test suite for fuel-cell models" 
-      
-      import Modelica.Electrical.Analog.Sources.ConstantCurrent;
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325 
-        "Environment pressure";
-      inner parameter Modelica.SIunits.Temperature T_env = 298.15 
-        "Enviroment temperature";
-      inner parameter Units.RelativeHumidity RH_env = 60 
-        "Environment relative humidity";
-      
-      parameter Modelica.SIunits.VolumeFlowRate anodeFlow = 30E-6/60 
-        "Anodic volumetric flow rate";
-      parameter Modelica.SIunits.VolumeFlowRate cathodeFlow = 30E-5/60 
-        "Cathodic volumetric flow rate";
-      parameter Units.Temperature anodeInletTemperature = 330 
-        "Anodic inlet temperature";
-      
-      replaceable Flow.UnitOperations.Stack.Abstract stack 
-                        annotation (extent=[6,0; 42,34]);
-      Flow.Sources.Solution methanolSolution(   T=anodeInletTemperature) 
-                                        annotation (extent=[-66,-30; -54,-18]);
-      annotation (Diagram);
-      Flow.Measurements.LiquidPump pump "Pump for the anode flow" 
-                                          annotation (extent=[-42,-30; -30,-18]);
-      Flow.Sources.Environment air 
-                          annotation (extent=[-70,28; -50,48]);
-      Measurements.GasFlowController blower 
-                               annotation (extent=[-40,34; -32,42]);
-      Flow.Sink anodeSink 
-                         annotation (extent=[62,10; 68,16]);
-      Flow.Sink cathodeSink 
-                           annotation (extent=[62,18; 68,24]);
-      ConstantCurrent I_cell(I=5) annotation (extent=[12,48; 34,72]);
-      Modelica.Electrical.Analog.Basic.Ground ground 
-        "Negative pole to zero voltage" annotation (extent=[38,40; 58,60]);
-    equation 
-      pump.V = anodeFlow;
-      blower.V = cathodeFlow;
-      
-      connect(methanolSolution.outlet, pump.inlet) 
-                                              annotation (points=[-60,-24; -36,
-            -24],        style(color=62, rgbcolor={0,127,127}));
-      connect(blower.outlet, stack.cathode_inlet)    annotation (points=[-36,42;
-            -18,42; -18,22.1; 6,22.1], style(color=62, rgbcolor={0,127,127}));
-      connect(air.outlet, blower.inlet) 
-                                   annotation (points=[-51,38; -36,38],
-                            style(color=62, rgbcolor={0,127,127}));
-      connect(cathodeSink.inlet, stack.cathode_outlet)       annotation (points=[62.3,21;
-            52.15,21; 52.15,22.1; 42,22.1], style(color=62, rgbcolor={0,127,127}));
-      connect(anodeSink.inlet, stack.anode_outlet)       annotation (points=[62.3,13;
-            52.15,13; 52.15,11.9; 42,11.9], style(color=62, rgbcolor={0,127,127}));
-      connect(ground.p, I_cell.n) 
-        annotation (points=[48,60; 34,60], style(color=3, rgbcolor={0,0,255}));
-      connect(I_cell.p, stack.plus)    annotation (points=[12,60; 12,27.2; 13.2,
-            27.2],
-          style(color=3, rgbcolor={0,0,255}));
-      connect(I_cell.n, stack.minus)    annotation (points=[34,60; 34.8,60;
-            34.8,27.2], style(color=3, rgbcolor={0,0,255}));
-      connect(pump.outlet, stack.anode_inlet)    annotation (points=[-36,-18;
-            -16,-18; -16,11.9; 6,11.9], style(color=62, rgbcolor={0,127,127}));
-    end AbstractStackTest;
-    
-    model ConstantVoltageStackTest "Test for the constant-voltage model" 
-      extends Flow.Test.AbstractStackTest(
-          redeclare Flow.UnitOperations.Stack.ConstantVoltage stack,
-          anodeFlow = stack.cells*30E-6/60,
-          cathodeFlow = stack.cells*30E-5/60);
-      annotation (Diagram);
-    end ConstantVoltageStackTest;
-    
-    model TheveninStackTest "Test for the Thevenin-circuit model" 
-      extends Flow.Test.AbstractStackTest(
-          redeclare Flow.UnitOperations.Stack.Thevenin stack(
-          cells=3,
-          V0=2.1,
-          R=0.015),
-          anodeFlow = stack.cells*30E-6/60,
-          cathodeFlow = stack.cells*30E-5/60);
-    end TheveninStackTest;
-    
-    annotation (Documentation(info="<html>
-<p>This is the package of test cases for the <tt>Flow</tt> library. Every class
-defined in Flow and meant for general use should have a test case. Each test case
-should either be a complete or an abstract model, so that checking Flow.Test with F8
-is a quick check that the library is Ok; obviously this is not a final check, but
-can help catch regressions induced in other classes by some change.</p>
-</html>"));
-    
-    model MagicBoxTest "Test for the mixer unit" 
-      
-      import Modelica.SIunits.VolumeFlowRate;
-      
-      inner parameter Modelica.SIunits.Pressure p_env = 101325;
-      inner parameter Units.Temperature T_env = 298.15;
-      inner parameter Units.RelativeHumidity RH_env = 60;
-      
-      parameter VolumeFlowRate airFlow = 1E-6;
-      parameter VolumeFlowRate solutionIn = 1E-6;
-      parameter VolumeFlowRate solutionOut = 1E-6;
-      parameter VolumeFlowRate fuel = 0.1E-6;
-      
-      Flow.UnitOperations.MagicBox mixer 
-                  annotation (extent=[-20,0; 0,20]);
-      Flow.Sources.Solution anodicLoop "Solution coming from the anodic loop" 
-        annotation (extent=[40,24; 50,34]);
-      Flow.Sources.Methanol fuelTank "Methanol from the fuel tank" 
-        annotation (extent=[4,-36; 16,-24]);
-      Flow.Sink sinkPort 
-                        annotation (extent=[-64,12; -56,20], rotation=180);
-      Sources.Environment env annotation (extent=[80,-20; 60,0]);
-      Measurements.GasFlowController mfc 
-        annotation (extent=[22,-16; 34,-4], rotation=0);
-      Flow.Measurements.LiquidPump pump_out 
-                             annotation (extent=[-40,4; -28,16]);
-      annotation (Diagram);
-      Flow.Measurements.LiquidPump pump_in 
-                             annotation (extent=[24,24; 34,34], rotation=180);
-      Flow.Measurements.LiquidPump fuel_pump 
-                             annotation (extent=[-16,-36; -4,-24], rotation=0);
-    equation 
-      mfc.V = airFlow;
-      pump_in.V = solutionIn;
-      pump_out.V = solutionOut;
-      fuel_pump.V = fuel;
-      
-      connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
-            color=62, rgbcolor={0,127,127}));
-      connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,10;
-            -2,10], style(color=62, rgbcolor={0,127,127}));
-      connect(pump_out.inlet, mixer.outlet) 
-                                        annotation (points=[-34,10; -18,10],
-          style(color=62, rgbcolor={0,127,127}));
-      connect(sinkPort.inlet, pump_out.outlet) 
-                                           annotation (points=[-56.4,16; -34,16],
-          style(color=62, rgbcolor={0,127,127}));
-      connect(pump_in.inlet, anodicLoop.outlet) annotation (points=[29,29; 45,
-            29], style(color=62, rgbcolor={0,127,127}));
-      connect(pump_in.outlet, mixer.inlet) annotation (points=[29,24; 14,24; 14,
-            10; -2,10], style(color=62, rgbcolor={0,127,127}));
-      connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
-            -30], style(color=62, rgbcolor={0,127,127}));
-      connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
-            -10,2], style(color=62, rgbcolor={0,127,127}));
-    end MagicBoxTest;
-  end Test;
   
 end Flow;
 
