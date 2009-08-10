@@ -1,4 +1,4 @@
-                                                                    /**
+                                                                      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -293,8 +293,8 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     m = sum({inlet.n[i] * mw(i) for i in All});
     F = sum(inlet.n);
       
-    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75; 
-            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16; 
+    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75;
+            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16;
             5.55112e-16,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
   end FlowController;
     
@@ -943,7 +943,7 @@ by default it is 1 M.</p>
         AmountOfSubstance n_tot = sum(n) "Total number of moles";
         MolarFlow F_env = sum(envPort.n) 
           "Mole exchange through the environment port";
-        MolarFlow L "Liquid exchanged with the environment";
+        MolarFlow L(start=0) "Liquid exchanged with the environment";
         
         FlowPort outlet "The mixer's outlet" 
                               annotation (extent=[-90,-10; -70,10]);
@@ -1055,18 +1055,18 @@ by default it is 1 M.</p>
         H_wet = - sum(Thermo.h(T,i,Gas)*inlet.n[i] for i in Incondensable)
                 + sum(Thermo.h(T,c,Gas)*y[c]*wetOut for c in Condensable);
         
-      /*  if overflow then
-    envPort.n[Incondensable] = -inlet.n[Incondensable];
-    envPort.n[Condensable]   = wetOut*y[Condensable] + L*x[Condensable];
-    envPort.H                = H_wet + L*h_l;
-  else
-    envPort.n[2:end] = semiLinear(F_env, air.y[2:end], y[2:end]);
-    envPort.H        = semiLinear(F_env, air.H,        h_g);
-    der(L) = 0;
-  end if;
-*/
+        if overflow then
+          envPort.n[Incondensable] = -inlet.n[Incondensable];
+          envPort.n[Condensable]   = wetOut*y[Condensable] + L*x[Condensable];
+          envPort.H                = H_wet + L*h_l;
+        else
+          envPort.n[2:end] = semiLinear(F_env, air.y[2:end], y[2:end]);
+          envPort.H        = semiLinear(F_env, air.H,        h_g);
+          der(L) = 0;
+        end if;
+        
       end EquilibriumAndBalances;
-
+      
       model Mixer "A unit mixing four molar flows." 
         extends EquilibriumAndBalances;
         extends VolumeSum;
@@ -1197,7 +1197,7 @@ by default it is 1 M.</p>
           sum(solution.outlet.n) = -1;
           
           connect(solution.outlet, bal.inlet) annotation (points=[70,
-                6.66134e-16; 44,6.66134e-16; 44,1.22125e-15; 16,1.22125e-15], 
+                6.66134e-16; 44,6.66134e-16; 44,1.22125e-15; 16,1.22125e-15],
               style(color=62, rgbcolor={0,127,127}));
           
         end BalancesTest;
@@ -1219,6 +1219,7 @@ by default it is 1 M.</p>
         
         model EquilibriumAndBalancesTest "Test for the mixer unit" 
           
+          import Units.MolarFlow;
           import Modelica.SIunits.VolumeFlowRate;
           import Thermo.Molecules.All;
           
@@ -1249,13 +1250,14 @@ by default it is 1 M.</p>
           Measurements.LiquidPump fuel_pump 
                                  annotation (extent=[-16,-36; -4,-24], rotation=0);
           MyEquilibriumAndBalances mixer annotation (extent=[-20,0; 0,20]);
-          Sink sinkPort     annotation (extent=[-70,12; -62,20], rotation=180);
-          Measurements.LiquidPump pump_out 
-                                 annotation (extent=[-46,4; -34,16]);
+          Sink sinkPort     annotation (extent=[-80,12; -72,20], rotation=180);
+          Sink sink annotation (extent=[-14,36; -6,44], rotation=90);
+          Measurements.PeristalticPump pump_out
+            annotation (extent=[-52,4; -40,16]);
         equation 
           
           mixer.overflow = false;
-          mixer.L = 0;
+          mixer.F_env = -1E-5;
           mixer.U = mixer.h_tot * sum(mixer.n);
           
           mfc.V = airFlow;
@@ -1273,20 +1275,21 @@ by default it is 1 M.</p>
                 14,24; 29,24], style(color=62, rgbcolor={0,127,127}));
           connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,
                 10; -2,10], style(color=62, rgbcolor={0,127,127}));
-          connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,
-                -24; -10,2], style(color=62, rgbcolor={0,127,127}));
-          connect(sinkPort.inlet,pump_out. outlet) 
-                                               annotation (points=[-62.4,16; 
-                -40,16],
-              style(color=62, rgbcolor={0,127,127}));
-          connect(mixer.outlet, pump_out.inlet) annotation (points=[-18,10; -40,
-                10], style(color=62, rgbcolor={0,127,127}));
+          connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
+                -10,2],      style(color=62, rgbcolor={0,127,127}));
+          connect(sink.inlet, mixer.envPort) annotation (points=[-10,36.4; -10,
+                18], style(color=62, rgbcolor={0,127,127}));
           
         initial equation 
           mixer.T = T_env;
           
+        equation 
+          connect(pump_out.inlet, mixer.outlet) annotation (points=[-46,10; -18,
+                10], style(color=62, rgbcolor={0,127,127}));
+          connect(pump_out.outlet, sinkPort.inlet) annotation (points=[-46,16; 
+                -72.4,16], style(color=62, rgbcolor={0,127,127}));
         end EquilibriumAndBalancesTest;
-
+        
         model MixerTest "Test for the mixer unit" 
           
           import Modelica.SIunits.VolumeFlowRate;
@@ -1310,7 +1313,7 @@ by default it is 1 M.</p>
           Sources.Environment env annotation (extent=[80,-20; 60,0]);
           Measurements.GasFlowController mfc 
             annotation (extent=[22,-16; 34,-4], rotation=0);
-          Measurements.LiquidPump pump_out 
+          Measurements.PeristalticPump pump_out 
                                  annotation (extent=[-40,4; -28,16]);
           annotation (Diagram, experiment(StopTime=6));
           Measurements.LiquidPump pump_in 
