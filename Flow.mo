@@ -1,4 +1,4 @@
-                                                                  /**
+                                                                    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -293,8 +293,8 @@ computationally onerous; see the child classes <tt>Pump</tt> and
     m = sum({inlet.n[i] * mw(i) for i in All});
     F = sum(inlet.n);
       
-    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75;
-            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16;
+    connect(outlet, inlet) annotation (points=[5.55112e-16,100; 5.55112e-16,75; 
+            5.55112e-16,75; 5.55112e-16,50; 5.55112e-16,5.55112e-16; 
             5.55112e-16,5.55112e-16], style(color=62, rgbcolor={0,127,127}));
   end FlowController;
     
@@ -883,9 +883,8 @@ by default it is 1 M.</p>
       
     end Mixer;
     
-    
     package Membrane 
-      partial model Equilibrium "A unit mixing four molar flows." 
+      partial model Equilibrium "Modelling of intensive properties" 
         
         import Units.MolarEnthalpy;
         import Modelica.SIunits.MoleFraction;
@@ -921,7 +920,7 @@ by default it is 1 M.</p>
         x[Incondensable] = zeros(size(Incondensable,1));
         
         y[Condensable]   = {K(T,i)*x[i] for i in Condensable};
-        y[Incondensable] * beta = z[Incondensable];
+        y[Incondensable] = if noEvent(beta > 0) then z[Incondensable]/beta else zeros(size(Incondensable,1));
         
         if K(T,Water) >= 1 or Thermo.rr(z[Methanol], z[Water], T) >= 1 then
           beta = 1;
@@ -931,18 +930,20 @@ by default it is 1 M.</p>
         
       end Equilibrium;
       
-      partial model Balances "A unit mixing four molar flows." 
+      partial model Balances "Modelling of mass and energy balances" 
         
         import Modelica.SIunits.AmountOfSubstance;
+        import Modelica.Constants.eps;
         import Thermo.Molecules.All;
         import Thermo.Molecules.Incondensable;
         import Units.MolarFlow;
         
         Modelica.SIunits.InternalEnergy U "Energy holdup";
-        AmountOfSubstance n[size(All,1)] "Molar holdup";
+        AmountOfSubstance n[size(All,1)](each start=sqrt(eps)) "Molar holdup";
         AmountOfSubstance n_tot = sum(n) "Total number of moles";
         MolarFlow F_env = sum(envPort.n) 
           "Mole exchange through the environment port";
+        MolarFlow L "Liquid exchanged with the environment";
         
         FlowPort outlet "The mixer's outlet" 
                               annotation (extent=[-90,-10; -70,10]);
@@ -990,7 +991,7 @@ by default it is 1 M.</p>
                                      style(color=62, rgbcolor={0,127,127}));
       end Balances;
       
-      partial model VolumeSum 
+      partial model VolumeSum "Modelling of volume balance" 
         import Modelica.SIunits.Volume;
         
         parameter Volume V = 5E-6 "Total physical volume";
@@ -1003,27 +1004,80 @@ by default it is 1 M.</p>
         
       end VolumeSum;
       
-      model Mixer "A unit mixing four molar flows." 
+      partial model EquilibriumAndBalances 
+        "Joining equilibrium and mass and energy balances" 
         extends Equilibrium;
         extends Balances;
-        extends VolumeSum;
         
         import Units.MolarFlow;
         import Modelica.Constants.eps;
         import Modelica.SIunits.AmountOfSubstance;
-        import Modelica.SIunits.Concentration;
         import Modelica.SIunits.EnthalpyFlowRate;
-        import Modelica.SIunits.VolumeFraction;
         import Thermo.Molecules.Methanol;
         import Thermo.Molecules.Water;
-        import Thermo.Molecules.Oxygen;
-        import Thermo.Molecules.CarbonDioxide;
-        import Thermo.Molecules.Nitrogen;
         import Thermo.Molecules.Incondensable;
         import Thermo.Molecules.Condensable;
-        import Thermo.Molecules.All;
         import Thermo.Phases.Liquid;
         import Thermo.Phases.Gas;
+        
+        annotation (Diagram, Icon(
+            Text(
+              extent=[-100,160; 100,100],
+              style(
+                color=0,
+                rgbcolor={0,0,0},
+                fillColor=43,
+                rgbfillColor={255,85,85},
+                fillPattern=1),
+              string="%name")));
+        
+        Boolean overflow "Whether tank is full and overflowing";
+        
+        AmountOfSubstance n_l_tot = (1-beta)*n_tot 
+          "Total moles in liquid phase";
+        AmountOfSubstance[:] n_l = x*n_l_tot "Moles in liquid phase";
+        
+        AmountOfSubstance n_g_tot = beta*n_tot "Total moles in gas phase";
+        AmountOfSubstance[:] n_g = y*n_g_tot "Moles in gas phase";
+        
+      protected 
+        Thermo.Air air "Environmental conditions";
+        MolarFlow wetOut = - dryIn/(1-sum(y[Condensable])) 
+          "Entering dry gases, exiting after humidification";
+        EnthalpyFlowRate H_wet "Enthalpy flow associated to wetOut";
+        
+      equation 
+        z = n / sum(n);
+        
+        outlet.n[2:end] = z[2:end] * sum(outlet.n);
+        outlet.H = h_tot * sum(outlet.n);
+        
+        H_wet = - sum(Thermo.h(T,i,Gas)*inlet.n[i] for i in Incondensable)
+                + sum(Thermo.h(T,c,Gas)*y[c]*wetOut for c in Condensable);
+        
+      /*  if overflow then
+    envPort.n[Incondensable] = -inlet.n[Incondensable];
+    envPort.n[Condensable]   = wetOut*y[Condensable] + L*x[Condensable];
+    envPort.H                = H_wet + L*h_l;
+  else
+    envPort.n[2:end] = semiLinear(F_env, air.y[2:end], y[2:end]);
+    envPort.H        = semiLinear(F_env, air.H,        h_g);
+    der(L) = 0;
+  end if;
+*/
+      end EquilibriumAndBalances;
+
+      model Mixer "A unit mixing four molar flows." 
+        extends EquilibriumAndBalances;
+        extends VolumeSum;
+        
+        import Modelica.SIunits.Concentration;
+        import Modelica.SIunits.VolumeFraction;
+        import Thermo.Molecules.Methanol;
+        import Thermo.Molecules.Condensable;
+        import Thermo.Molecules.All;
+        import Thermo.Phases.Gas;
+        import Thermo.Phases.Liquid;
         
         annotation (Diagram, Icon(
             Ellipse(extent=[-80,80; 80,-80], style(
@@ -1080,54 +1134,25 @@ by default it is 1 M.</p>
                 fillPattern=1),
               string="%name")));
         
-        parameter Concentration c_0 = 1000 "Initial concentration";
+        outer Modelica.SIunits.Pressure p_env "Environment pressure";
+        
         parameter VolumeFraction liquidFraction = 0.5 
           "Fraction of liquid volume";
         
-        AmountOfSubstance n_l_tot = (1-beta)*n_tot 
-          "Total moles in liquid phase";
-        AmountOfSubstance[:] n_l = x*n_l_tot "Moles in liquid phase";
-        
-        AmountOfSubstance n_g_tot = beta*n_tot "Total moles in gas phase";
-        AmountOfSubstance[:] n_g = y*n_g_tot "Moles in gas phase";
-        
-        Concentration c(start=c_0,fixed=true) "Methanol concentration";
-        
-      protected 
-        Thermo.Air air "Air composition and enthalpy";
-        
-        MolarFlow L "Solution flow exchanged with the environment";
-        MolarFlow wetOut = -dryIn/(1-sum(y[Condensable])) 
-          "Outflow of incoming dry gases, after humidification";
-        EnthalpyFlowRate H_wet = sum(Thermo.h(T, i, Gas)*(-inlet.n[i]) for i in Incondensable)
-                               + sum(Thermo.h(T, i, Gas)*y[i]*wetOut   for i in Condensable) 
-          "Enthalpy of the humidified dry inflow at unit temperature";
+        Concentration c(start=1000) = n_l[Methanol]/V_l 
+          "Methanol concentration";
         
       equation 
-        z = if noEvent( sum(n) > eps) then  n / sum(n) else 0*n;
-        c = if noEvent(V_l > eps) then n_l[Methanol] / V_l else 0;
+        V_g = sum(n_g[i]*Thermo.mw(i)/Thermo.rho(T,i,Gas) for i in All);
         
-        V_g = sum(n_g[i]*Thermo.mw(i)/Thermo.rho(T,i,Gas)    for i in All);
-        V_l = sum(n_l[i]*Thermo.mw(i)/Thermo.rho(T,i,Liquid) for i in Condensable);
+        // Bind internal energy to molar enthalpy (and thereby temperature, see Equilibrium class)
+        U + p_env*V = h_tot * sum(n);
         
-        // Setting main-outlet composition: set only n-1 components, the last is dependent
-        outlet.n[2:end] = sum(outlet.n) * z[2:end];
-        outlet.H = sum(outlet.n) * h_tot;
-        
-        if V_g > 0 or L > 0 then
-          envPort.n = semiLinear(F_env, air.y, y);
-          envPort.H = semiLinear(F_env, air.H, h_g);
-          der(L) = 0;
-        else
-          envPort.n[Incondensable] = -inlet.n[Incondensable];
-          envPort.n[Condensable] = y[Condensable]*wetOut + x[Condensable]*L;
-          envPort.H = H_wet + h_l*L;
-          der(V_g) = 0;
-        end if;
+        overflow = V_g <= 0 and L <= 0;  // FIXME or ?
         
       initial equation 
-        V_l = liquidFraction*V;
-        y[Incondensable] = air.y[Incondensable];
+      //  V_l = liquidFraction*V;
+      //  y[Incondensable] = air.y[Incondensable];
         
       end Mixer;
       
@@ -1157,7 +1182,24 @@ by default it is 1 M.</p>
         end EquilibriumTest;
         
         model BalancesTest 
-          extends Balances;
+          
+          model MyBalances 
+            extends Balances;
+          end MyBalances;
+          
+          MyBalances bal annotation (extent=[-20,-20; 20,20]);
+          Sources.Solution solution annotation (extent=[60,-10; 80,10]);
+          annotation (Diagram);
+        equation 
+          
+          bal.L = 0;
+          
+          sum(solution.outlet.n) = -1;
+          
+          connect(solution.outlet, bal.inlet) annotation (points=[70,
+                6.66134e-16; 44,6.66134e-16; 44,1.22125e-15; 16,1.22125e-15], 
+              style(color=62, rgbcolor={0,127,127}));
+          
         end BalancesTest;
         
         model VolumeSumTest 
@@ -1174,6 +1216,76 @@ by default it is 1 M.</p>
           eq.V_g = 0 + time*eq.V;
           
         end VolumeSumTest;
+        
+        model EquilibriumAndBalancesTest "Test for the mixer unit" 
+          
+          import Modelica.SIunits.VolumeFlowRate;
+          import Thermo.Molecules.All;
+          
+          inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+          inner parameter Units.RelativeHumidity RH_env = 60;
+          inner parameter Modelica.SIunits.Pressure p_env = 101325;
+          
+          parameter VolumeFlowRate airFlow = 1E-6;
+          parameter VolumeFlowRate solutionOut = 2E-6;
+          parameter VolumeFlowRate solutionIn = 1E-6;
+          parameter VolumeFlowRate fuel = 0.1E-6;
+          
+          model MyEquilibriumAndBalances 
+            extends EquilibriumAndBalances;
+          end MyEquilibriumAndBalances;
+          
+          Sources.Solution anodicLoop(C=700, T=330) 
+            "Solution coming from the anodic loop" 
+            annotation (extent=[40,24; 50,34]);
+          Sources.Methanol fuelTank "Methanol from the fuel tank" 
+            annotation (extent=[4,-36; 16,-24]);
+          Sources.Environment env annotation (extent=[80,-20; 60,0]);
+          Measurements.GasFlowController mfc 
+            annotation (extent=[22,-16; 34,-4], rotation=0);
+          annotation (Diagram, experiment(StopTime=0.001));
+          Measurements.LiquidPump pump_in 
+                                 annotation (extent=[24,24; 34,34], rotation=180);
+          Measurements.LiquidPump fuel_pump 
+                                 annotation (extent=[-16,-36; -4,-24], rotation=0);
+          MyEquilibriumAndBalances mixer annotation (extent=[-20,0; 0,20]);
+          Sink sinkPort     annotation (extent=[-70,12; -62,20], rotation=180);
+          Measurements.LiquidPump pump_out 
+                                 annotation (extent=[-46,4; -34,16]);
+        equation 
+          
+          mixer.overflow = false;
+          mixer.L = 0;
+          mixer.U = mixer.h_tot * sum(mixer.n);
+          
+          mfc.V = airFlow;
+          pump_in.V = solutionIn;
+          pump_out.V = solutionOut;
+          fuel_pump.V = fuel;
+          
+          connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
+                color=62, rgbcolor={0,127,127}));
+          connect(pump_in.inlet, anodicLoop.outlet) annotation (points=[29,29; 45,
+                29], style(color=62, rgbcolor={0,127,127}));
+          connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
+                -30], style(color=62, rgbcolor={0,127,127}));
+          connect(mixer.inlet, pump_in.outlet) annotation (points=[-2,10; 14,10; 
+                14,24; 29,24], style(color=62, rgbcolor={0,127,127}));
+          connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,
+                10; -2,10], style(color=62, rgbcolor={0,127,127}));
+          connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,
+                -24; -10,2], style(color=62, rgbcolor={0,127,127}));
+          connect(sinkPort.inlet,pump_out. outlet) 
+                                               annotation (points=[-62.4,16; 
+                -40,16],
+              style(color=62, rgbcolor={0,127,127}));
+          connect(mixer.outlet, pump_out.inlet) annotation (points=[-18,10; -40,
+                10], style(color=62, rgbcolor={0,127,127}));
+          
+        initial equation 
+          mixer.T = T_env;
+          
+        end EquilibriumAndBalancesTest;
 
         model MixerTest "Test for the mixer unit" 
           
@@ -1181,6 +1293,7 @@ by default it is 1 M.</p>
           
           inner parameter Modelica.SIunits.Temperature T_env = 298.15;
           inner parameter Units.RelativeHumidity RH_env = 60;
+          inner parameter Modelica.SIunits.Pressure p_env = 101325;
           
           parameter VolumeFlowRate airFlow = 1E-6;
           parameter VolumeFlowRate solutionIn = 1E-6;
@@ -1231,7 +1344,7 @@ by default it is 1 M.</p>
                 -30], style(color=62, rgbcolor={0,127,127}));
           connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
                 -10,2], style(color=62, rgbcolor={0,127,127}));
-          connect(mixer.envPort, Overflow.inlet) annotation (points=[-10,18; 
+          connect(mixer.envPort, Overflow.inlet) annotation (points=[-10,18;
                 -10,28.4], style(color=62, rgbcolor={0,127,127}));
         end MixerTest;
       end Test;
