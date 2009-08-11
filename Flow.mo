@@ -1,4 +1,4 @@
-                                                                      /**
+                                                                          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -138,7 +138,7 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
     parameter Temperature T = 298.15 "Temperature";
       
     MoleFraction x_ch3oh "Methanol molar fraction";
-    MoleFraction x_h2o "Water molar fraction";
+    MoleFraction x_h2o(start=0.9) "Water molar fraction";
       
   equation 
     assert(C >= 0, "==> Negative concentration given in MethanolSolution object.");
@@ -941,7 +941,7 @@ by default it is 1 M.</p>
         Modelica.SIunits.InternalEnergy U "Energy holdup";
         AmountOfSubstance n[size(All,1)](each start=sqrt(eps)) "Molar holdup";
         AmountOfSubstance n_tot = sum(n) "Total number of moles";
-        MolarFlow F_env = sum(envPort.n) 
+        MolarFlow F_env(start=0) = sum(envPort.n) 
           "Mole exchange through the environment port";
         MolarFlow L(start=0) "Liquid exchanged with the environment";
         
@@ -1072,12 +1072,17 @@ by default it is 1 M.</p>
         extends VolumeSum;
         
         import Modelica.SIunits.Concentration;
-        import Modelica.SIunits.VolumeFraction;
         import Thermo.Molecules.Methanol;
+        import Thermo.Molecules.Water;
+        import Thermo.Molecules.Oxygen;
+        import Thermo.Molecules.CarbonDioxide;
+        import Thermo.Molecules.Nitrogen;
         import Thermo.Molecules.Condensable;
         import Thermo.Molecules.All;
         import Thermo.Phases.Gas;
         import Thermo.Phases.Liquid;
+        import Thermo.rho;
+        import Thermo.mw;
         
         annotation (Diagram, Icon(
             Ellipse(extent=[-80,80; 80,-80], style(
@@ -1135,24 +1140,25 @@ by default it is 1 M.</p>
               string="%name")));
         
         outer Modelica.SIunits.Pressure p_env "Environment pressure";
+        outer Modelica.SIunits.Temperature T_env "Environment temperature";
         
-        parameter VolumeFraction liquidFraction = 0.5 
-          "Fraction of liquid volume";
-        
-        Concentration c(start=1000) = n_l[Methanol]/V_l 
-          "Methanol concentration";
+        Concentration c(start=1000,fixed=true) "Methanol concentration";
         
       equation 
-        V_g = sum(n_g[i]*Thermo.mw(i)/Thermo.rho(T,i,Gas) for i in All);
+        c = n_l[Methanol]/V_l;
         
-        // Bind internal energy to molar enthalpy (and thereby temperature, see Equilibrium class)
-        U + p_env*V = h_tot * sum(n);
+        V_g = sum(n_g[i]*mw(i)/rho(T,i,Gas) for i in All);
+        V_l = sum(n_l[i]*mw(i)/rho(T,i,Liquid) for i in Condensable);
         
-        overflow = V_g <= 0 and L <= 0;  // FIXME or ?
+        U + p_env*V = h_tot*sum(n);
+        
+        overflow = V_g <= 0 and L <= 0;
         
       initial equation 
-      //  V_l = liquidFraction*V;
-      //  y[Incondensable] = air.y[Incondensable];
+        y[Oxygen] / 0.21 = y[Nitrogen] / 0.79;
+        y[CarbonDioxide] = 385E-6;
+        
+        n[Water] = 0.5*V*rho(T,Water,Liquid)/mw(Water);
         
       end Mixer;
       
@@ -1244,7 +1250,7 @@ by default it is 1 M.</p>
           Sources.Environment env annotation (extent=[80,-20; 60,0]);
           Measurements.GasFlowController mfc 
             annotation (extent=[22,-16; 34,-4], rotation=0);
-          annotation (Diagram, experiment(StopTime=0.001));
+          annotation (Diagram, experiment);
           Measurements.LiquidPump pump_in 
                                  annotation (extent=[24,24; 34,34], rotation=180);
           Measurements.LiquidPump fuel_pump 
@@ -1252,7 +1258,7 @@ by default it is 1 M.</p>
           MyEquilibriumAndBalances mixer annotation (extent=[-20,0; 0,20]);
           Sink sinkPort     annotation (extent=[-80,12; -72,20], rotation=180);
           Sink sink annotation (extent=[-14,36; -6,44], rotation=90);
-          Measurements.PeristalticPump pump_out
+          Measurements.PeristalticPump pump_out 
             annotation (extent=[-52,4; -40,16]);
         equation 
           
@@ -1286,22 +1292,22 @@ by default it is 1 M.</p>
         equation 
           connect(pump_out.inlet, mixer.outlet) annotation (points=[-46,10; -18,
                 10], style(color=62, rgbcolor={0,127,127}));
-          connect(pump_out.outlet, sinkPort.inlet) annotation (points=[-46,16; 
+          connect(pump_out.outlet, sinkPort.inlet) annotation (points=[-46,16;
                 -72.4,16], style(color=62, rgbcolor={0,127,127}));
         end EquilibriumAndBalancesTest;
         
         model MixerTest "Test for the mixer unit" 
           
-          import Modelica.SIunits.VolumeFlowRate;
+          import Units.MolarFlow;
           
           inner parameter Modelica.SIunits.Temperature T_env = 298.15;
           inner parameter Units.RelativeHumidity RH_env = 60;
           inner parameter Modelica.SIunits.Pressure p_env = 101325;
           
-          parameter VolumeFlowRate airFlow = 1E-6;
-          parameter VolumeFlowRate solutionIn = 1E-6;
-          parameter VolumeFlowRate solutionOut = 1E-6;
-          parameter VolumeFlowRate fuel = 0.1E-6;
+          parameter MolarFlow airFlow = 1E-6;
+          parameter MolarFlow solutionIn = 2E-3;
+          parameter MolarFlow solutionOut = 1E-3;
+          parameter MolarFlow fuel = 0.1E-3;
           
           Mixer mixer annotation (extent=[-20,0; 0,20]);
           Sources.Solution anodicLoop(C=700, T=330) 
@@ -1315,17 +1321,17 @@ by default it is 1 M.</p>
             annotation (extent=[22,-16; 34,-4], rotation=0);
           Measurements.PeristalticPump pump_out 
                                  annotation (extent=[-40,4; -28,16]);
-          annotation (Diagram, experiment(StopTime=6));
+          annotation (Diagram, experiment);
           Measurements.LiquidPump pump_in 
                                  annotation (extent=[24,24; 34,34], rotation=180);
           Measurements.LiquidPump fuel_pump 
                                  annotation (extent=[-16,-36; -4,-24], rotation=0);
           Sink Overflow     annotation (extent=[-14,28; -6,36],  rotation=90);
         equation 
-          mfc.V = airFlow;
-          pump_in.V = solutionIn;
-          pump_out.V = solutionOut;
-          fuel_pump.V = fuel;
+          mfc.F = airFlow;
+          pump_in.F = solutionIn;
+          pump_out.F = solutionOut;
+          fuel_pump.F = fuel;
           
           connect(env.outlet, mfc.inlet) annotation (points=[61,-10; 28,-10], style(
                 color=62, rgbcolor={0,127,127}));
@@ -1349,6 +1355,10 @@ by default it is 1 M.</p>
                 -10,2], style(color=62, rgbcolor={0,127,127}));
           connect(mixer.envPort, Overflow.inlet) annotation (points=[-10,18;
                 -10,28.4], style(color=62, rgbcolor={0,127,127}));
+          
+        initial equation 
+          mixer.T = T_env;
+          
         end MixerTest;
       end Test;
     end Membrane;
