@@ -1,4 +1,4 @@
-                                                                          /**
+                                                                            /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1049,20 +1049,20 @@ by default it is 1 M.</p>
       equation 
         z = n / sum(n);
         
-        outlet.n[2:end] = z[2:end] * sum(outlet.n);
-        outlet.H = h_tot * sum(outlet.n);
-        
         H_wet = - sum(Thermo.h(T,i,Gas)*inlet.n[i] for i in Incondensable)
                 + sum(Thermo.h(T,c,Gas)*y[c]*wetOut for c in Condensable);
+        
+        outlet.n[2:end] = sum(outlet.n) * (if overflow then x[2:end] else z[2:end]);
+        outlet.H        = sum(outlet.n) * (if overflow then h_l else h_tot);
         
         if overflow then
           envPort.n[Incondensable] = -inlet.n[Incondensable];
           envPort.n[Condensable]   = wetOut*y[Condensable] + L*x[Condensable];
           envPort.H                = H_wet + L*h_l;
         else
-          envPort.n[2:end] = semiLinear(F_env, air.y[2:end], y[2:end]);
-          envPort.H        = semiLinear(F_env, air.H,        h_g);
-          der(L) = 0;
+          envPort.n[Condensable]   = semiLinear(F_env, air.y[Condensable],   y[Condensable]) + L*x[Condensable];
+          envPort.n[Incondensable] = semiLinear(F_env, air.y[Incondensable], y[Incondensable]);
+          envPort.H                = semiLinear(F_env, air.H,                h_g);
         end if;
         
       end EquilibriumAndBalances;
@@ -1071,6 +1071,7 @@ by default it is 1 M.</p>
         extends EquilibriumAndBalances;
         extends VolumeSum;
         
+        import Modelica.Constants.eps;
         import Modelica.SIunits.Concentration;
         import Thermo.Molecules.Methanol;
         import Thermo.Molecules.Water;
@@ -1152,7 +1153,7 @@ by default it is 1 M.</p>
         
         U + p_env*V = h_tot*sum(n);
         
-        overflow = V_g <= 0 and L <= 0;
+        overflow = V_g < V/1000 and L < 0; // TODO make "relay" on V_g, so that it does not chatter
         
       initial equation 
         y[Oxygen] / 0.21 = y[Nitrogen] / 0.79;
@@ -1321,7 +1322,7 @@ by default it is 1 M.</p>
             annotation (extent=[22,-16; 34,-4], rotation=0);
           Measurements.PeristalticPump pump_out 
                                  annotation (extent=[-40,4; -28,16]);
-          annotation (Diagram, experiment);
+          annotation (Diagram, experiment(StopTime=150));
           Measurements.LiquidPump pump_in 
                                  annotation (extent=[24,24; 34,34], rotation=180);
           Measurements.LiquidPump fuel_pump 
