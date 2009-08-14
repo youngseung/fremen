@@ -1,4 +1,4 @@
-                                                                              /**
+                                                                                /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -882,7 +882,6 @@ by default it is 1 M.</p>
       n[Incondensable] = zeros(size(Incondensable,1));
       
     end Mixer;
-    
     
     package HeatExchangers "Various types of heat exchangers" 
       
@@ -2072,7 +2071,7 @@ current.</p>
       end if;
       
     end Equilibrium;
-
+    
     partial model Balances "Modelling of mass and energy balances" 
       
       import Modelica.SIunits.AmountOfSubstance;
@@ -2133,7 +2132,7 @@ current.</p>
             4.44089e-16; 0,80; 5.55112e-16,80],
                                    style(color=62, rgbcolor={0,127,127}));
     end Balances;
-
+    
     partial model VolumeSum "Modelling of volume balance" 
       import Modelica.SIunits.Volume;
       
@@ -2146,7 +2145,7 @@ current.</p>
       V = V_g + V_l;
       
     end VolumeSum;
-
+    
     partial model EquilibriumAndBalances 
       "Joining equilibrium and mass and energy balances" 
       extends Equilibrium;
@@ -2208,7 +2207,7 @@ current.</p>
       end if;
       
     end EquilibriumAndBalances;
-
+    
     model Mixer "A unit mixing four molar flows." 
       extends EquilibriumAndBalances;
       extends VolumeSum;
@@ -2295,7 +2294,7 @@ current.</p>
       
       U + p_env*V = h_tot*sum(n);
       
-      overflow = V_g < V/1000 and L < 0; // TODO make "relay" on V_g, so that it does not chatter
+      overflow = V_g < V/1000 and L < 0;
       
     initial equation 
       y[Oxygen] / 0.21 = y[Nitrogen] / 0.79;
@@ -2304,7 +2303,7 @@ current.</p>
       n[Water] = 0.5*V*rho(T,Water,Liquid)/mw(Water);
       
     end Mixer;
-
+    
     package Test 
       model EquilibriumTest 
         import Modelica.SIunits.MoleFraction;
@@ -2345,7 +2344,7 @@ current.</p>
         
         sum(solution.outlet.n) = -1;
         
-        connect(solution.outlet, bal.inlet) annotation (points=[70,6.66134e-16; 
+        connect(solution.outlet, bal.inlet) annotation (points=[70,6.66134e-16;
               44,6.66134e-16; 44,1.22125e-15; 16,1.22125e-15],
             style(color=62, rgbcolor={0,127,127}));
         
@@ -2420,11 +2419,11 @@ current.</p>
               29], style(color=62, rgbcolor={0,127,127}));
         connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
               -30], style(color=62, rgbcolor={0,127,127}));
-        connect(mixer.inlet, pump_in.outlet) annotation (points=[-2,10; 14,10; 
+        connect(mixer.inlet, pump_in.outlet) annotation (points=[-2,10; 14,10;
               14,24; 29,24], style(color=62, rgbcolor={0,127,127}));
         connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,
               10; -2,10], style(color=62, rgbcolor={0,127,127}));
-        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
+        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
               -10,2],      style(color=62, rgbcolor={0,127,127}));
         connect(sink.inlet, mixer.envPort) annotation (points=[-10,36.4; -10,
               18], style(color=62, rgbcolor={0,127,127}));
@@ -2448,7 +2447,6 @@ current.</p>
         inner parameter Modelica.SIunits.Pressure p_env = 101325;
         
         parameter MolarFlow airFlow = 1E-6;
-        parameter MolarFlow solutionIn = 2E-3;
         parameter MolarFlow solutionOut = 1E-3;
         parameter MolarFlow fuel = 0.1E-3;
         
@@ -2464,15 +2462,19 @@ current.</p>
           annotation (extent=[22,-16; 34,-4], rotation=0);
         Measurements.PeristalticPump pump_out 
                                annotation (extent=[-40,4; -28,16]);
-        annotation (Diagram, experiment(StopTime=150));
+        annotation (Diagram, experiment(StopTime=500));
         Measurements.LiquidPump pump_in 
                                annotation (extent=[24,24; 34,34], rotation=180);
         Measurements.LiquidPump fuel_pump 
                                annotation (extent=[-16,-36; -4,-24], rotation=0);
         Sink Overflow     annotation (extent=[-14,28; -6,36],  rotation=90);
+        Modelica.Blocks.Sources.Sine sine(
+          freqHz=0.01, 
+          amplitude=0.005, 
+          offset=1E-3) annotation (extent=[-16,54; -4,66]);
       equation 
         mfc.F = airFlow;
-        pump_in.F = solutionIn;
+        pump_in.F = sine.y;
         pump_out.F = solutionOut;
         fuel_pump.F = fuel;
         
