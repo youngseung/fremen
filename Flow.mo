@@ -1,4 +1,4 @@
-                                                                                /**
+                                                                                  /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -2070,6 +2070,15 @@ current.</p>
         beta = Thermo.rr(z[Methanol], z[Water], T);
       end if;
       
+      annotation (Documentation(info="<html>
+<p>This class models the equilibrium relationships between liquid and gas
+compositions in a two-phase mixture.</p>
+<p>Equilibrium is calculated with the <tt>Thermo</tt> library's analytical
+Rachford-Rice solution, which gives a given &beta; value once the 
+<tt><b>z</b></tt> values are known.</p>
+<p>The model has 6 degrees of freedom, corresponding to the five compositions 
+and temperature.</p>
+</html>"));
     end Equilibrium;
     
     partial model Balances "Modelling of mass and energy balances" 
@@ -2104,7 +2113,17 @@ current.</p>
               fillColor=43,
               rgbfillColor={255,85,85},
               fillPattern=1),
-            string="%name")));
+            string="%name")), 
+        Documentation(info="<html>
+<p>This class models extensive balances of a mixer. Given four ports,
+it calculates and keeps track of the accumulation of substance and
+internal energy.</p>
+<p>It also defines a few handy quantities, such as molar exchange through
+the environment port, <tt>F_env</tt>, molar exchange with the environment 
+<tt>L</tt> (which cannot be defined at this point, since equilibrium 
+calculations have not yet been introduced), and the total molar inflow of
+dry gases.</p>
+</html>"));
     protected 
       Sink accumulator "Accumulation sink" 
                                    annotation (extent=[0,-10; 20,10]);
@@ -2144,6 +2163,12 @@ current.</p>
     equation 
       V = V_g + V_l;
       
+      annotation (Documentation(info="<html>
+<p>This simple class includes the variables used to keep track
+of the liquid and gaseous volumes, simply by declaring them and
+their relationship, i.e. that their sum is equal to a given
+parameter.</p>
+</html>"));
     end VolumeSum;
     
     partial model EquilibriumAndBalances 
@@ -2171,7 +2196,35 @@ current.</p>
               fillColor=43,
               rgbfillColor={255,85,85},
               fillPattern=1),
-            string="%name")));
+            string="%name")), 
+        Documentation(info="<html>
+<p>This partial class is a first step towards the completed mixer. It does
+not yet include the volume balance, but joins the mass and energy balances
+with the vapour-liquid equilibrium relations.</p>
+
+<p>Joining the mass balances with the equilibrium is straightforward, as
+<tt>z</tt> is trivially related to the molar holdup <tt>n</tt>.
+
+<p>The class defines a new boolean variable, <tt>overflow</tt>, which indicates when
+the sole gas flow is insufficient to satisfy the molar balance, and liquid
+must therefore be expelled from the mixer as well. The rules to define when
+<tt>overflow</tt> is true or false are left to be defined in a child class.</p>
+
+<p>Depending on the state of overflow, the composition of flow through the
+enviroment port is set. With no overflow, the composition is either that of
+air (when entering) or that of the gas phase (when exiting). In case of overflow,
+instead, the composition is a bit trickier: there is one gaseous component,
+consisting of all the incondensable gases entering the system along with
+associated vapours from the liquid phase, and then the liquid phase itself.
+There is no case for entering composition when in overflow, since that would
+immediately mean that <tt>overflow</tt> must be false, falling back to the
+two-phase model.</p>
+
+<p>The class also defines the exiting composition, usually the average 
+composition in the mixer (<tt>z</tt>), but in case of overflow the liquid
+composition: the reason for this is that the model will be numerically more
+stable, with a negligibly small error being introduced.</p>
+</html>"));
       
       Boolean overflow "Whether tank is full and overflowing";
       
@@ -2279,7 +2332,40 @@ current.</p>
               fillColor=43,
               rgbfillColor={255,85,85},
               fillPattern=1),
-            string="%name")));
+            string="%name")), 
+        Documentation(info="<html>
+<p>The model of an integrated separator and mixer, in which gas is preferentially
+dumped to the environment, but liquid can be removed as well when all gas has
+been exhausted.</p>
+
+<p>The class integrates the volume balance with the other balances (mass and energy)
+and the equilibrium relations through the definitions of volumes <tt>V_g</tt> and 
+<tt>V_l</tt>, which depend on gas and liquid composition on one side, and on temperature
+on the other.</p>
+
+<p>The class also defines the relation between internal energy and temperature through
+the overall specific enthalpy.</p>
+
+<p>The most important relation is the definition of the <tt>overflow</tt> variable: it
+is defined to be true when the gaseous volume is very small (not exactly zero, as this
+would cause divide-by-zero errors e.g. in the calculations of gas molar fractions), 
+<em>and</em> liquid is flowing out through the environment port. It is not enough that
+there is no more gas left in the system to state that we are in an overflom condition:
+if we do not specify that liquid can go only out, we will not be able to return back to 
+the non-overflow state, because no gas will remain in the mixer in the overflow 
+condition by construction (see how this was implemented in model <tt>EquilibriumAndBalances</tt>).
+As a result, we would see liquid at the same condition as in the mixer <em>entering</em>
+the mixer from the environment, which is a clear nonsense.</p>
+
+<p>The model also defines a convenience variable for methanol concentration.</p>
+
+<p>The model is initialised so than the initial gas composition is equal to that in the
+atmosphere (in its dry part), and that the water moles are about half of the mixer
+volume. Unfortunately, direct initialisation by setting a liquid or gaseous volume is
+numerically unstable. Finally, the concentration start value is strictly enforced 
+(<tt>fixed</tt>).</p>
+
+</html>"));
       
       outer Modelica.SIunits.Pressure p_env "Environment pressure";
       outer Modelica.SIunits.Temperature T_env "Environment temperature";
@@ -2419,11 +2505,11 @@ current.</p>
               29], style(color=62, rgbcolor={0,127,127}));
         connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
               -30], style(color=62, rgbcolor={0,127,127}));
-        connect(mixer.inlet, pump_in.outlet) annotation (points=[-2,10; 14,10;
+        connect(mixer.inlet, pump_in.outlet) annotation (points=[-2,10; 14,10; 
               14,24; 29,24], style(color=62, rgbcolor={0,127,127}));
         connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,
               10; -2,10], style(color=62, rgbcolor={0,127,127}));
-        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
+        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
               -10,2],      style(color=62, rgbcolor={0,127,127}));
         connect(sink.inlet, mixer.envPort) annotation (points=[-10,36.4; -10,
               18], style(color=62, rgbcolor={0,127,127}));
@@ -2469,8 +2555,8 @@ current.</p>
                                annotation (extent=[-16,-36; -4,-24], rotation=0);
         Sink Overflow     annotation (extent=[-14,28; -6,36],  rotation=90);
         Modelica.Blocks.Sources.Sine sine(
-          freqHz=0.01, 
-          amplitude=0.005, 
+          freqHz=0.01,
+          amplitude=0.005,
           offset=1E-3) annotation (extent=[-16,54; -4,66]);
       equation 
         mfc.F = airFlow;
