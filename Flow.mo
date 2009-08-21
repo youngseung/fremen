@@ -1,4 +1,4 @@
-                                                                                  /**
+                                                                                    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -2113,7 +2113,7 @@ and temperature.</p>
               fillColor=43,
               rgbfillColor={255,85,85},
               fillPattern=1),
-            string="%name")), 
+            string="%name")),
         Documentation(info="<html>
 <p>This class models extensive balances of a mixer. Given four ports,
 it calculates and keeps track of the accumulation of substance and
@@ -2196,7 +2196,7 @@ parameter.</p>
               fillColor=43,
               rgbfillColor={255,85,85},
               fillPattern=1),
-            string="%name")), 
+            string="%name")),
         Documentation(info="<html>
 <p>This partial class is a first step towards the completed mixer. It does
 not yet include the volume balance, but joins the mass and energy balances
@@ -2226,6 +2226,9 @@ composition: the reason for this is that the model will be numerically more
 stable, with a negligibly small error being introduced.</p>
 </html>"));
       
+      parameter Boolean mixedOutlet = true 
+        "Whether to use z instead of x in outlet";
+      
       Boolean overflow "Whether tank is full and overflowing";
       
       AmountOfSubstance n_l_tot = (1-beta)*n_tot "Total moles in liquid phase";
@@ -2246,14 +2249,20 @@ stable, with a negligibly small error being introduced.</p>
       H_wet = - sum(Thermo.h(T,i,Gas)*inlet.n[i] for i in Incondensable)
               + sum(Thermo.h(T,c,Gas)*y[c]*wetOut for c in Condensable);
       
-      outlet.n[2:end] = sum(outlet.n) * (if overflow then x[2:end] else z[2:end]);
-      outlet.H        = sum(outlet.n) * (if overflow then h_l else h_tot);
+      if mixedOutlet then
+        outlet.n[2:end] = sum(outlet.n) * (if overflow then x[2:end] else z[2:end]);
+        outlet.H        = sum(outlet.n) * (if overflow then h_l else h_tot);
+      else
+        outlet.n[2:end] = sum(outlet.n) * x[2:end];
+        outlet.H        = sum(outlet.n) * h_l;
+      end if;
       
       if overflow then
         envPort.n[Incondensable] = -inlet.n[Incondensable];
         envPort.n[Condensable]   = wetOut*y[Condensable] + L*x[Condensable];
         envPort.H                = H_wet + L*h_l;
       else
+        // NOTE: L*x is supposed to be 0 here, but it helps with the initialisation.
         envPort.n[Condensable]   = semiLinear(F_env, air.y[Condensable],   y[Condensable]) + L*x[Condensable];
         envPort.n[Incondensable] = semiLinear(F_env, air.y[Incondensable], y[Incondensable]);
         envPort.H                = semiLinear(F_env, air.H,                h_g);
@@ -2332,7 +2341,7 @@ stable, with a negligibly small error being introduced.</p>
               fillColor=43,
               rgbfillColor={255,85,85},
               fillPattern=1),
-            string="%name")), 
+            string="%name")),
         Documentation(info="<html>
 <p>The model of an integrated separator and mixer, in which gas is preferentially
 dumped to the environment, but liquid can be removed as well when all gas has
@@ -2505,11 +2514,11 @@ numerically unstable. Finally, the concentration start value is strictly enforce
               29], style(color=62, rgbcolor={0,127,127}));
         connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
               -30], style(color=62, rgbcolor={0,127,127}));
-        connect(mixer.inlet, pump_in.outlet) annotation (points=[-2,10; 14,10; 
+        connect(mixer.inlet, pump_in.outlet) annotation (points=[-2,10; 14,10;
               14,24; 29,24], style(color=62, rgbcolor={0,127,127}));
         connect(mfc.outlet, mixer.inlet) annotation (points=[28,-4; 14,-4; 14,
               10; -2,10], style(color=62, rgbcolor={0,127,127}));
-        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
+        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
               -10,2],      style(color=62, rgbcolor={0,127,127}));
         connect(sink.inlet, mixer.envPort) annotation (points=[-10,36.4; -10,
               18], style(color=62, rgbcolor={0,127,127}));
