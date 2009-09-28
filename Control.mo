@@ -1,4 +1,4 @@
-              /**
+                /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -445,4 +445,73 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     der(int) = if isSaturated then 0 else e;
     
   end TemperatureControl;
+
+  model MingledTemperatureControl 
+    extends Modelica.Blocks.Interfaces.BlockIcon;
+    
+    annotation (Diagram, Icon(
+        Line(points=[-76,-14; 82,-14; 82,-14], style(color=1, rgbcolor={255,0,0})),
+        Line(points=[-76,-78; -76,-14; -46,-14; 34,62; 84,62]),
+        Polygon(points=[-76,92; -84,70; -68,70; -76,92],     style(color=8,
+               fillColor=8)),
+        Text(
+          extent=[-76,-16; 84,-58],
+          style(color=8), 
+          string="PI+sat+lambda"),
+        Polygon(points=[94,-78; 72,-70; 72,-86; 94,-78],     style(color=8,
+               fillColor=8)),
+        Line(points=[-86,-78; 86,-78],   style(color=8)),
+        Line(points=[-76,80; -76,-88],   style(color=8))));
+    
+    import Modelica.SIunits.Concentration;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.Time;
+    import Modelica.SIunits.Volume;
+    import Modelica.SIunits.VolumeFlowRate;
+    import Flow.IO.CurrentInput;
+    import Flow.IO.TemperatureInput;
+    import Flow.IO.VolumeFlowRateOutput;
+    import Units.F;
+    
+    CurrentInput I "Current in cell" annotation (extent=[-140,-80; -100,-40]);
+    TemperatureInput T_mix "Mixer's temperature" 
+      annotation (extent=[-140,-20; -100,20]);
+    TemperatureInput T_stack "Stack's temperature" 
+      annotation (extent=[-140,40; -100,80]);
+    VolumeFlowRateOutput V "Anodic-loop flow" 
+      annotation (extent=[100,-20; 140,20]);
+    
+    parameter VolumeFlowRate V_max = 1.5E-6 "Maximum flow allowed by pump";
+    parameter Integer n = 1 "Number of cells in stack";
+    parameter Temperature T_r = 330 "Target stack temperature";
+    parameter Real lambda = 2 "Minimum lambda";
+    parameter Concentration c = 800 "Worst-case (lowest) concentration";
+    parameter Time tau_c = 600 "Desired closed-loop response";
+    parameter Volume V_cp = 5.95E-6 
+      "Volume of solution with same heat capacity as one cell";
+    parameter Real aA = 8.5E-9 "Partial derivative of n_x wrt. c";
+    parameter Real b = 0.21 "Partial derivative of n_x wrt. n_H";
+    
+  protected 
+    Real K_c = n * V_cp * tau_c "PI-controller gain";
+    Time tau_I = 4*tau_c "PI-controller integrating time";
+    
+    VolumeFlowRate V_PI;
+    VolumeFlowRate V_lambda "Minimum (lambda-limited) flow";
+    
+    Real x "Internal integrator";
+    Real e "Measured error";
+    
+  equation 
+    V = min(V_max, max(V_lambda, V_PI));
+    V_lambda = lambda * n * (aA*c + (1-b) * I / (6*F)) / c;
+    V_PI * (T_stack - T_mix) = K_c * (e + x);
+    
+    e = T_stack - T_r;
+    // Anti-windup strategy: integrate only when PI active
+    der(x) = if V_PI < V_lambda or V_PI > V_max then 0 else e;
+    
+    assert( V>=0, "==> Negative flow resulting from control");
+    
+  end MingledTemperatureControl;
 end Control;
