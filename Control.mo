@@ -1,4 +1,4 @@
-                /**
+                  /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -445,18 +445,18 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     der(int) = if isSaturated then 0 else e;
     
   end TemperatureControl;
-
+  
   model MingledTemperatureControl 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
-    annotation (Diagram, Icon(
+    annotation (defaultComponentName="K",Diagram, Icon(
         Line(points=[-76,-14; 82,-14; 82,-14], style(color=1, rgbcolor={255,0,0})),
         Line(points=[-76,-78; -76,-14; -46,-14; 34,62; 84,62]),
         Polygon(points=[-76,92; -84,70; -68,70; -76,92],     style(color=8,
                fillColor=8)),
         Text(
           extent=[-76,-16; 84,-58],
-          style(color=8), 
+          style(color=8),
           string="PI+sat+lambda"),
         Polygon(points=[94,-78; 72,-70; 72,-86; 94,-78],     style(color=8,
                fillColor=8)),
