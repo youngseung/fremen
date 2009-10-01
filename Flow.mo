@@ -1,4 +1,4 @@
-                                                                                    /**
+                                                                                      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -772,7 +772,6 @@ catalytic-bed converter.</p>
     model Mixer "A unit mixing four molar flows." 
       
       import Modelica.SIunits.Area;
-      import Units.Temperature;
       import Modelica.SIunits.AmountOfSubstance;
       import Modelica.SIunits.Concentration;
       import Modelica.SIunits.InternalEnergy;
@@ -860,9 +859,10 @@ by default it is 1 M.</p>
       AmountOfSubstance n[size(Thermo.Molecules.All,1)] "Molar holdup";
       InternalEnergy U "Energy holdup";
       Concentration c(start=1000) "Methanol concentration";
-      Temperature T "Mixer temperature";
       Volume V(start=5E-6, fixed=true) "Solution volume";
       
+      IO.TemperatureOutput T "Mixer temperature"
+        annotation (extent=[-80,60; -100,80]);
     equation 
       der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
       der(n) = fuelInlet.n + loopInlet.n + waterInlet.n + outlet.n;
@@ -2586,12 +2586,12 @@ numerically unstable. Finally, the concentration start value is strictly enforce
             style(color=62, rgbcolor={0,127,127}));
         connect(pump_in.inlet, anodicLoop.outlet) annotation (points=[29,29; 45,
               29], style(color=62, rgbcolor={0,127,127}));
-        connect(pump_in.outlet, mixer.inlet) annotation (points=[29,24; 14,24; 
+        connect(pump_in.outlet, mixer.inlet) annotation (points=[29,24; 14,24;
               14,10; -2,10],
                           style(color=62, rgbcolor={0,127,127}));
         connect(fuelTank.outlet, fuel_pump.inlet) annotation (points=[10,-30; -10,
               -30], style(color=62, rgbcolor={0,127,127}));
-        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24; 
+        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (points=[-10,-24;
               -10,2], style(color=62, rgbcolor={0,127,127}));
         connect(mixer.envPort, Overflow.inlet) annotation (points=[-10,18;
               -10,28.4], style(color=62, rgbcolor={0,127,127}));
