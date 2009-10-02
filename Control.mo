@@ -1,4 +1,4 @@
-                    /**
+                      /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -95,15 +95,15 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     connect(difference.u1, T_r) annotation (points=[-58,6.66134e-16; -62,
           6.66134e-16; -62,1.11022e-15; -120,1.11022e-15], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16; 
+    connect(limiter.y, V) annotation (points=[81,6.10623e-16; 83.5,6.10623e-16;
           83.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(PI.u, signChange.y) annotation (points=[18,6.66134e-16; 12,
           6.66134e-16; 12,6.10623e-16; 1,6.10623e-16], style(color=74, rgbcolor=
            {0,0,127}));
-    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16; 
+    connect(signChange.u, difference.y) annotation (points=[-22,6.66134e-16;
           -24,6.66134e-16; -24,6.10623e-16; -41,6.10623e-16], style(color=74,
           rgbcolor={0,0,127}));
-    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16; 
+    connect(limiter.u, PI.y) annotation (points=[58,6.66134e-16; 50,6.66134e-16;
           50,6.10623e-16; 41,6.10623e-16], style(color=74, rgbcolor={0,0,127}));
   end CoolerControl;
   annotation (uses(Modelica(version="2.2.1")), Documentation(info="<html>
@@ -163,13 +163,13 @@ for.</p>
       annotation (extent=[-70,-24; -50,0]);
   equation 
     connect(getO2Consumption.y, convertToFlow.u) 
-                           annotation (points=[22,1.22125e-15; 6.5,1.22125e-15; 
+                           annotation (points=[22,1.22125e-15; 6.5,1.22125e-15;
           6.5,6.66134e-16; 48,6.66134e-16], style(color=74, rgbcolor={0,0,127}));
     connect(convertToFlow.y, V) 
-                       annotation (points=[71,6.10623e-16; 73.5,6.10623e-16; 
+                       annotation (points=[71,6.10623e-16; 73.5,6.10623e-16;
           73.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(getO2Consumption.u1, I) 
-                       annotation (points=[-24,12; -80,12; -80,1.11022e-15; 
+                       annotation (points=[-24,12; -80,12; -80,1.11022e-15;
           -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
     connect(c.y, getO2Consumption.u2) annotation (points=[-49,-12; -24,-12],
@@ -231,7 +231,7 @@ for.</p>
     connect(add.u1, I) annotation (points=[-44,18; -90,18; -90,0; -106,0; -106,
           1.11022e-15; -120,1.11022e-15],
         style(color=74, rgbcolor={0,0,127}));
-    connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16; 
+    connect(divide.y, V) annotation (points=[81,6.10623e-16; 87.5,6.10623e-16;
           87.5,1.11022e-15; 120,1.11022e-15], style(color=74, rgbcolor={0,0,127}));
     connect(excessRatio.y, divide.u1) 
                                annotation (points=[41,6; 45.25,6; 45.25,6; 49.5,
@@ -240,13 +240,13 @@ for.</p>
     connect(c_mix.y, divide.u2) 
                             annotation (points=[41,-20; 50,-20; 50,-6; 58,-6],
         style(color=74, rgbcolor={0,0,127}));
-    connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6; 
+    connect(add.y, excessRatio.u) annotation (points=[2,6; 6,6; 6,6; 10,6; 10,6;
           18,6], style(color=74, rgbcolor={0,0,127}));
     connect(c_an.y, add.u2) annotation (points=[-59,-6; -51.5,-6; -51.5,-6; -44,
           -6], style(color=74, rgbcolor={0,0,127}));
   end AnodeLambdaControl;
   
-  block FuelControl "Feedforward controller for the fuel flow" 
+  block ReferenceFuelControl "Feedforward controller for the fuel flow" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
     
     import Modelica.SIunits.Concentration;
@@ -272,11 +272,9 @@ for.</p>
           style(color=3, rgbcolor={0,0,255}),
           string="V = f(I,T)")),
       Documentation(info="<html>
-<p>This feedforward controller takes current, concentration and degasser
-temperature and returns the appropriate volumetric flow rate of methanol from
+<p>This feedforward controller takes current and degasser temperature and 
+returns the appropriate volumetric flow rate of methanol from
 the fuel tank.</p>
-<p>The provided concentration value is supposed to be the one
-in the anodic bulk, usually assumed to be the outlet one.</p>
 <p>Two parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
 to estimate the extent of cross-over current in the cell to compensate for.</p>
 </html>"));
@@ -297,7 +295,7 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
     
     V = n_to_V * ((1-b)/6/F*I + aA*c_ref + fM*I*c_ref)*cells;
     
-  end FuelControl;
+  end ReferenceFuelControl;
   
   block WaterControl "Feedback controller for solution level" 
     extends Modelica.Blocks.Interfaces.BlockIcon;
@@ -464,13 +462,22 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
         Polygon(points=[94,-78; 72,-70; 72,-86; 94,-78],     style(color=8,
                fillColor=8)),
         Line(points=[-86,-78; 86,-78],   style(color=8)),
-        Line(points=[-76,80; -76,-88],   style(color=8))));
+        Line(points=[-76,80; -76,-88],   style(color=8))), 
+      Documentation(info="<html>
+<p>This controller sets the anodic flow rate to maintain a certain cell
+temperature. The controller will however maintain a minimum &lambda;, to 
+prioritise the reaction to cell heating.</p>
+<p>Internally, the controller uses a Skogestad PI controller, whose 
+integrator is disconnected when overridden by the &lambda; control to 
+avoid wind-up.</p>
+</html>"));
     
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Temperature;
     import Modelica.SIunits.Time;
     import Modelica.SIunits.Volume;
     import Modelica.SIunits.VolumeFlowRate;
+    import Modelica.Constants.eps;
     import Flow.IO.CurrentInput;
     import Flow.IO.TemperatureInput;
     import Flow.IO.VolumeFlowRateOutput;
@@ -522,4 +529,66 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     assert( V>=0, "==> Negative flow resulting from control");
     
   end MingledTemperatureControl;
+  
+  block MingledFuelControl "Feedforward controller for the fuel flow" 
+    extends Modelica.Blocks.Interfaces.BlockIcon;
+    
+    import Modelica.SIunits.Concentration;
+    import Modelica.SIunits.MoleFraction;
+    import Modelica.SIunits.Pressure;
+    import Modelica.SIunits.Temperature;
+    import Modelica.Constants.R;
+    import Thermo.Molecules.Methanol;
+    import Thermo.Molecules.Water;
+    import Thermo.Phases.Liquid;
+    import Thermo.K;
+    import Thermo.mw;
+    import Thermo.rho;
+    import Units.MolarFlow;
+    import Units.F;
+    
+    outer Temperature T_env "Environment temperature";
+    outer Pressure p_env "Environment pressure";
+    
+    parameter Integer cells = 1 "Number of cells in the stack";
+    parameter Concentration c_ref = 1000 "Concentration set point";
+    parameter Real lambda = 2 "Cathodic air excess ratio";
+    
+    parameter Real aA = 8.5E-9 "Partial derivative of I_x wrt. c";
+    parameter Real b = 0.21 "Partial derivative of I_x wrt. I";
+    
+    annotation (defaultComponentName="K", Diagram, Icon(Text(
+          extent=[100,100; -100,-100],
+          style(color=3, rgbcolor={0,0,255}),
+          string="V = f(V,I,T)")),
+      Documentation(info="<html>
+<p>This feedforward controller takes cathodic inflow, current and separator
+temperature, and returns the appropriate volumetric flow rate of methanol from
+the fuel tank.</p>
+<p>Two parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
+to estimate the extent of cross-over current in the cell to compensate for.</p>
+</html>"));
+    Flow.IO.VolumeFlowRateInput V_cath "Cathodic inflow" 
+      annotation (extent=[-140,40; -100,80]);
+    Flow.IO.TemperatureInput T_sep "Separator temperature" 
+      annotation (extent=[-140,-80; -100,-40]);
+    Flow.IO.CurrentInput I annotation (extent=[-140,-20; -100,20]);
+    Flow.IO.VolumeFlowRateOutput V "Solution flow" 
+                                annotation (extent=[100,-20; 140,20]);
+    
+  protected 
+    constant MoleFraction y_O2 = 0.2 "Molar fraction of oxygen in air";
+    MolarFlow n_cath = V_cath * p_env / R / T_env "Cathodic molar inflow";
+    MoleFraction x "Approximate molar fraction of methanol";
+    Real fM "Separator loss factor";
+    Real n_to_V "Conversion factor from methanol moles to volume";
+    
+  equation 
+    x = c_ref * mw(Water)/rho(T_sep, Water, Liquid);
+    fM = (1-y_O2/3/lambda)*K(T_sep, Methanol)/(1-K(T_sep,Water));
+    n_to_V = mw(Methanol)/rho(T_env, Methanol, Liquid);
+    
+    V = n_to_V * ((1-b)/6/F*I + aA*c_ref)*cells + n_to_V * fM*n_cath*x;
+    
+  end MingledFuelControl;
 end Control;
