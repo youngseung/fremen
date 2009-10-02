@@ -1,4 +1,4 @@
-                  /**
+                    /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -120,6 +120,7 @@ some particular units, such as coolers.</p>
     import Modelica.SIunits.Temperature;
     import Units.F;
     
+    parameter Integer cells = 1 "Number of cells in the stack";
     parameter Real lambda = 2 "Reactant excess ratio";
     parameter Concentration c_est = 1500 
       "Worst-case (highest) anodic concentration";
@@ -155,8 +156,8 @@ for.</p>
     Modelica.Blocks.Math.Add getO2Consumption(k1=(1 - b)/(4*F), k2=(3/2)*aA) 
       "Sums the measurement with the appropriate weights" 
       annotation (extent=[-20,-20; 20,20]);
-    Modelica.Blocks.Math.Gain convertToFlow(k=lambda/x_O2_env*(R*T_env/p_env)) 
-      "Obtains air volumetric flow to feed" 
+    Modelica.Blocks.Math.Gain convertToFlow(k=cells*lambda/x_O2_env*(R*T_env/
+          p_env)) "Obtains air volumetric flow to feed" 
       annotation (extent=[50,-10; 70,10]);
     Modelica.Blocks.Sources.RealExpression c(y=c_est) "Concentration estimate" 
       annotation (extent=[-70,-24; -50,0]);
@@ -181,6 +182,7 @@ for.</p>
     import Modelica.SIunits.Concentration;
     import Units.F;
     
+    parameter Integer cells = 1 "Number of cells in the stack";
     parameter Real lambda = 5 "Reactant excess ratio";
     parameter Concentration c_est_an = 1500 
       "Worst-case (highest) anodic concentration";
@@ -213,7 +215,7 @@ for.</p>
     Modelica.Blocks.Math.Add add(            k2=aA, k1=(1 - b)/(6*F)) 
       "Sums the measurement with the appropriate weights" 
       annotation (extent=[-40,-14; 0,26]);
-    Modelica.Blocks.Math.Gain excessRatio(k=lambda) 
+    Modelica.Blocks.Math.Gain excessRatio(k=cells*lambda) 
       "Multiplies by excess ratio" 
       annotation (extent=[20,-4; 40,16]);
     Modelica.Blocks.Math.Division divide 
@@ -259,6 +261,7 @@ for.</p>
     
     outer Temperature T_env "Environment temperature";
     
+    parameter Integer cells = 1 "Number of cells in the stack";
     parameter Concentration c_ref = 1000 "Concentration set point";
     
     parameter Real aA = 8.5E-9 "Partial derivative of I_x wrt. c";
@@ -292,7 +295,7 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
     fM = K(T_deg, Methanol)*mw(Water)/rho(T_deg, Water, Liquid)/(6*F)/(1-K(T_deg,Water));
     n_to_V = mw(Methanol)/rho(T_env, Methanol, Liquid);
     
-    V = n_to_V * ((1-b)/6/F*I + aA*c_ref + fM*I*c_ref);
+    V = n_to_V * ((1-b)/6/F*I + aA*c_ref + fM*I*c_ref)*cells;
     
   end FuelControl;
   
@@ -496,8 +499,10 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     Real K_c = n * V_cp * tau_c "PI-controller gain";
     Time tau_I = 4*tau_c "PI-controller integrating time";
     
-    VolumeFlowRate V_PI;
+    VolumeFlowRate V_PI "Flow given by the PI controller";
     VolumeFlowRate V_lambda "Minimum (lambda-limited) flow";
+    
+    Temperature DeltaT "Temperature difference between stack and mixer";
     
     Real x "Internal integrator";
     Real e "Measured error";
@@ -505,7 +510,10 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
   equation 
     V = min(V_max, max(V_lambda, V_PI));
     V_lambda = lambda * n * (aA*c + (1-b) * I / (6*F)) / c;
-    V_PI * (T_stack - T_mix) = K_c * (e + x);
+    V_PI * DeltaT = K_c * (e + x);
+    
+    // Avoid division-by-zero errors
+    DeltaT = if noEvent(abs(T_stack-T_mix) < eps) then  eps else T_stack-T_mix;
     
     e = T_stack - T_r;
     // Anti-windup strategy: integrate only when PI active
