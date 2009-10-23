@@ -1,5 +1,5 @@
 within ;
-        /**
+          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -718,7 +718,8 @@ carried out.</p>
 </html>"));
   end rho;
 
-  annotation (uses(Modelica(version="3.1")),   Documentation(info="<html>
+  annotation (uses(Modelica(version="3.1"), Units(version="1")),
+                                               Documentation(info="<html>
 <p>This package contains a number of property functions, such as molar enthalpy,
 molar heat capacity, vapour pressure, molecular weight and so on.</p>
 </html>"),
