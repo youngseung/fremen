@@ -1,5 +1,5 @@
 within ;
-            /**
+              /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@ of our modelling effort. Some constants are also included.</p>
     "Important for membrane reaction modelling";
   type ArealResistance = Real (final quantity="Areal resistance", final unit="Ohm.m2")
     "Important property of fuel-cell membranes";
+  type Capacity = Real (final quantity="Charge capacity", final unit="A.s", min=0);
   type CatalystCoverage = Real(final quantity="Catalyst coverage", final unit="", min=0, max=1)
     "Fraction of catalyst occupied by some species";
   type CondensationCoefficient = Real(final quantity="Condensation coefficient",
