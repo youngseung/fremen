@@ -1,5 +1,5 @@
 within ;
-                                                                                              /**
+                                                                                                /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -856,8 +856,8 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
       FlowPort liquidOutlet "Single-phase liquid outlet" 
                             annotation (Placement(transformation(extent={{60,
                 -50},{80,-30}}, rotation=0)));
-      annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{
-                -100,-100},{100,100}}), graphics={
+      annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+                -100},{100,100}}), graphics={
             Ellipse(
               extent={{-100,40},{-60,-40}},
               lineColor={0,0,0},
@@ -1897,7 +1897,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
 
       // Parameters for N115 membrane.
       Real k_d = 4.2 + (T-303.15)/40 "Drag factor for N115";
-      MassTransportCoefficient k_m = 15.6E-6*exp(2436*(1/T-1/333))
+      MassTransportCoefficient k_m = 15.6E-6*exp(2436*(1/333-1/T))
           "Mass transport coefficient";
 
       Real a = k_m/(1+k_m*d/D)
