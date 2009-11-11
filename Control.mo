@@ -1,5 +1,5 @@
 within ;
-                        /**
+                          /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -44,8 +44,7 @@ package Control "Controllers for the DMFC system"
           Text(
             extent={{-20,-22},{80,-62}},
             lineColor={192,192,192},
-            textString=
-                 "PI+sat")}),
+            textString="PI+sat")}),
       Documentation(info="<html>
 <p>This controller is used in the <tt>AbstractCooler</tt> class to set
 the process outlet temperature by manipulating the coolant air flow.</p>
@@ -118,7 +117,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     connect(PI.u, signChange.y) annotation (Line(points={{18,6.66134e-16},{12,
             6.66134e-16},{12,6.10623e-16},{1,6.10623e-16}}, color={0,0,127}));
     connect(signChange.u, difference.y) annotation (Line(points={{-22,
-            6.66134e-16},{-24,6.66134e-16},{-24,6.10623e-16},{-41,6.10623e-16}}, 
+            6.66134e-16},{-24,6.66134e-16},{-24,6.10623e-16},{-41,6.10623e-16}},
           color={0,0,127}));
     connect(limiter.u, PI.y) annotation (Line(points={{58,6.66134e-16},{50,
             6.66134e-16},{50,6.10623e-16},{41,6.10623e-16}}, color={0,0,127}));
@@ -158,8 +157,7 @@ some particular units, such as coolers.</p>
           graphics),                               Icon(graphics={Text(
             extent={{100,100},{-100,-100}},
             lineColor={0,0,255},
-            textString=
-                 "V = f(I)")}),
+            textString="V = f(I)")}),
       Documentation(info="<html>
 <p>This feedforward controller uses the current and the anodic 
 methanol concentration (either a measurement or a value) to set
@@ -180,15 +178,15 @@ for.</p>
   protected
     Modelica.Blocks.Math.Add getO2Consumption(k1=(1 - b)/(4*F), k2=(3/2)*aA)
       "Sums the measurement with the appropriate weights" 
-      annotation (Placement(transformation(extent={{-20,-20},{20,20}}, rotation
-            =0)));
+      annotation (Placement(transformation(extent={{-20,-20},{20,20}}, rotation=
+             0)));
     Modelica.Blocks.Math.Gain convertToFlow(k=cells*lambda/x_O2_env*(R*T_env/
           p_env)) "Obtains air volumetric flow to feed" 
       annotation (Placement(transformation(extent={{50,-10},{70,10}}, rotation=
               0)));
     Modelica.Blocks.Sources.RealExpression c(y=c_est) "Concentration estimate" 
-      annotation (Placement(transformation(extent={{-70,-24},{-50,0}}, rotation
-            =0)));
+      annotation (Placement(transformation(extent={{-70,-24},{-50,0}}, rotation=
+             0)));
   equation
     connect(getO2Consumption.y, convertToFlow.u) 
                            annotation (Line(points={{22,1.22125e-15},{6.5,
@@ -224,8 +222,7 @@ for.</p>
           graphics),                               Icon(graphics={Text(
             extent={{100,100},{-100,-100}},
             lineColor={0,0,255},
-            textString=
-                 "V = f(I)")}),
+            textString="V = f(I)")}),
       Documentation(info="<html>
 <p>This feedforward controller uses the current and the anodic 
 methanol concentration (either a measurement or a value) to set
@@ -257,12 +254,12 @@ for.</p>
               0)));
     Modelica.Blocks.Sources.RealExpression c_mix(y=c_est_mix)
       "Concentration estimate in the mixer" 
-      annotation (Placement(transformation(extent={{20,-10},{40,-30}}, rotation
-            =0)));
+      annotation (Placement(transformation(extent={{20,-10},{40,-30}}, rotation=
+             0)));
     Modelica.Blocks.Sources.RealExpression c_an(y=c_est_an)
       "Concentration estimate in anode" 
-      annotation (Placement(transformation(extent={{-80,4},{-60,-16}}, rotation
-            =0)));
+      annotation (Placement(transformation(extent={{-80,4},{-60,-16}}, rotation=
+             0)));
   equation
     connect(add.u1, I) annotation (Line(points={{-44,18},{-90,18},{-90,0},{-106,
             0},{-106,1.11022e-15},{-120,1.11022e-15}}, color={0,0,127}));
@@ -455,26 +452,14 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
           Text(
             extent={{-20,-22},{80,-62}},
             lineColor={192,192,192},
-            textString=
-                 "PID+sat")}),
+            textString="PID+sat")}),
       Documentation(info="<html>
-<p>This PID controller tries to make the fuel-cell temperature converge to a given
-set-point by manipulating the degasser reference temperature around a given nominal
-value.</p>
-<p>The effect of degasser temperature on fuel-cell temperature is assumed to be a unit-gain
-process with two lags. The unit gain is justified since most of the flow exiting the anodic
-side is the main heat input into the cell, so one degree more in the degasser will eventually
-translate to one degree more in the fuel cell (in reality it will be a bit less).
-The first lag is due to the solution in the mixer, which when
-assumed to be 5 ml of (mostly) water results in a lag of 60 seconds. The second lag
-is due to the material of the fuel-cell graphite plates, resulting in about 300 seconds.</p>
+<p>This PID controller tries to make the fuel-cell temperature converge to a given set-point by manipulating the degasser reference temperature around a given nominal value.</p>
+<p>The effect of degasser temperature on fuel-cell temperature is assumed to be a unit-gain process with two lags. The unit gain is justified since most of the flow exiting the anodic side is the main heat input into the cell, so one degree more in the degasser will eventually translate to one degree more in the fuel cell (in reality it will be a bit less). The first lag is due to the solution in the mixer, which when assumed to be 5 ml of (mostly) water results in a lag of 60 seconds. The second lag is due to the material of the fuel-cell graphite plates, resulting in about 75 seconds.</p>
 <p>From these two lags, the PID parameters are calculated with the Skogestad rules.</p>
-<p>Note that this controller implements a simple anti-windup strategy; if the manipulated
-variable is reported to be saturated (through <tt>isSaturated</tt>), the integrator is
-frozen.</p>
-<h3>References</h3>
-<p>Skogestad, Sigurd: <em>Simple analytic rules for model reduction and PID controller 
-tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
+<em>Note that this controller implements a simple anti-windup strategy; if the manipulated variable is reported to be saturated (through isSaturated), the integrator is frozen.</em>
+<h2>References</h2>
+<p>Skogestad, Sigurd: <i>Simple analytic rules for model reduction and PID controller tuning</i>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
 
   public
