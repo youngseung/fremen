@@ -1,5 +1,5 @@
 within ;
-                          /**
+                            /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -122,8 +122,8 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     connect(limiter.u, PI.y) annotation (Line(points={{58,6.66134e-16},{50,
             6.66134e-16},{50,6.10623e-16},{41,6.10623e-16}}, color={0,0,127}));
   end CoolerControl;
-  annotation (uses(Modelica(version="3.1"), Flow(version="1")),
-                                               Documentation(info="<html>
+  annotation (uses(Modelica(version="3.1"), Flow(version="1"),
+      Units(version="1")),                     Documentation(info="<html>
 <p>A collection of controllers for system-wide control and for
 some particular units, such as coolers.</p>
 </html>"),
@@ -433,7 +433,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     import Units.Temperature;
 
     annotation (defaultComponentName="K",Diagram(coordinateSystem(
-            preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+            preserveAspectRatio=true,  extent={{-100,-100},{100,100}}),
           graphics),
       Icon(graphics={
           Line(points={{-80,76},{-80,-92}}, color={192,192,192}),
@@ -455,9 +455,19 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
             textString="PID+sat")}),
       Documentation(info="<html>
 <p>This PID controller tries to make the fuel-cell temperature converge to a given set-point by manipulating the degasser reference temperature around a given nominal value.</p>
-<p>The effect of degasser temperature on fuel-cell temperature is assumed to be a unit-gain process with two lags. The unit gain is justified since most of the flow exiting the anodic side is the main heat input into the cell, so one degree more in the degasser will eventually translate to one degree more in the fuel cell (in reality it will be a bit less). The first lag is due to the solution in the mixer, which when assumed to be 5 ml of (mostly) water results in a lag of 60 seconds. The second lag is due to the material of the fuel-cell graphite plates, resulting in about 75 seconds.</p>
+<p>The effect of degasser temperature on fuel-cell temperature is assumed to be a unit-gain process with two lags.</p>
+<ul>
+<li>The unit gain is justified since most of the flow exiting the anodic side is the main heat input into the cell, so one degree more in the degasser will eventually translate to one degree more in the fuel cell (in reality it will be a bit less).</li>
+<li>The first lag is due to the solution in the mixer, which when assumed to be 5 ml of (mostly) water results in a lag of 60 seconds.</li>
+<li>The second lag is due to the material of the fuel-cell graphite plates, resulting in about 75 seconds.</li>
+</ul>
 <p>From these two lags, the PID parameters are calculated with the Skogestad rules.</p>
-<em>Note that this controller implements a simple anti-windup strategy; if the manipulated variable is reported to be saturated (through isSaturated), the integrator is frozen.</em>
+<p>This controller implements conditional integration, with a fuzzy twist to avoid chattering problems.</p>
+<ul>
+<li>If the output temperature is lower than the environmental temperature, or higher than the fuel-cell temperature, the integrator is frozen;</li>
+<li>If the output temperature is within these two values, the integrator works nominally;</li>
+<li>If the output temperature is <em>close</em> to the two limits, it gradually reduces the <tt>freezer</tt> factor from 1 to 0 as it approaches them. The &epsilon; value through which the factor changes is configurable, usually 0.01 K.</li>
+</ul>
 <h2>References</h2>
 <p>Skogestad, Sigurd: <i>Simple analytic rules for model reduction and PID controller tuning</i>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
@@ -470,26 +480,39 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     parameter Temperature T_deg_0 = 315 "Nominal degasser temperature";
     parameter Temperature T_FC_ref = 333
       "Set-point for the fuel cell's temperature";
+    parameter Temperature eps = 0.1 "Fuzzy temperature interval";
 
     Flow.IO.TemperatureInput T_m "Measurement" 
       annotation (Placement(transformation(extent={{-140,-20},{-100,20}},
             rotation=0)));
     Flow.IO.TemperatureOutput T_deg_ref "Manipulable variable" 
-      annotation (Placement(transformation(extent={{100,0},{140,40}}, rotation=
+      annotation (Placement(transformation(extent={{100,-20},{140,20}},
+                                                                      rotation=
               0)));
-    Modelica.Blocks.Interfaces.BooleanInput isSaturated
-      "Whether input is saturated" annotation (Placement(transformation(extent=
-              {{140,0},{100,-40}}, rotation=0)));
 
   protected
+    outer Temperature T_env;
     Real int "Integral of the error";
     Temperature e = T_FC_ref -T_m "Measured error";
+    Real freezer "Fuzzy conditional integration";
 
   equation
     T_deg_ref = T_deg_0 + Kc * (e + int/tau_I + der(e)*tau_D);
 
     // Anti-windup in case of saturation
-    der(int) = if isSaturated then 0 else e;
+    der(int) = freezer * e;
+
+    if T_deg_ref < T_env then
+      freezer = 0;
+    elseif T_deg_ref < T_env+eps then
+      freezer = (T_deg_ref - T_env)/eps;
+    elseif T_deg_ref < T_m - eps then
+      freezer = 1;
+    elseif T_deg_ref < T_m then
+      freezer = (T_m - T_deg_ref)/eps;
+    else
+      freezer = 0;
+    end if;
 
   end TemperatureControl;
 
@@ -580,7 +603,7 @@ avoid wind-up.</p>
     V_PI * DeltaT = K_c * (e + x/second);
 
     // Avoid division-by-zero errors
-    DeltaT = if noEvent(abs(T_stack-T_mix) < eps) then  eps else T_stack-T_mix;
+    DeltaT = if noEvent(abs(T_stack-T_mix) < eps) then eps else T_stack-T_mix;
 
     e = T_stack - T_r;
     // Anti-windup strategy: integrate only when PI active

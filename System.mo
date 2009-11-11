@@ -1,5 +1,5 @@
 within ;
-                                                    /**
+                                                      /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -205,8 +205,8 @@ see what happens.</p>
     Control.ReferenceFuelControl K_fuel 
                                annotation (Placement(transformation(extent={{
               -16,-94},{-4,-86}}, rotation=0)));
-    Control.WaterControl K_cond annotation (Placement(transformation(extent={{
-              26,8},{38,18}}, rotation=0)));
+    Control.WaterControl K_cond annotation (Placement(transformation(extent={{28,4},{
+              40,14}},        rotation=0)));
     Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800) 
                                     annotation (Placement(transformation(extent=
              {{-70,-64},{-60,-56}}, rotation=0)));
@@ -235,12 +235,12 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(cathodeCooler.T_ref, K_cond.T_ref) annotation (Line(
-        points={{42,37},{42,13},{39.2,13}},
+        points={{42,37},{42,9},{41.2,9}},
         color={255,0,0},
         pattern=LinePattern.Dot));
     connect(K_cond.p_mix, mixer.p) annotation (Line(
-        points={{24.8,16},{18,16},{18,8},{4,8},{4,-44},{16,-44},{16,-74},{-4.7,
-            -74},{-4.7,-66.9}},
+        points={{26.8,12},{18,12},{4,12},{4,-44},{16,-44},{16,-74},{-4.7,-74},{
+            -4.7,-66.9}},
         color={127,0,127},
         pattern=LinePattern.Dot));
     connect(degasser.T, K_fuel.T_deg) annotation (Line(
@@ -258,7 +258,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         pattern=LinePattern.Dot));
 
     connect(K_cath.V, K_cond.V_cath) annotation (Line(
-        points={{-70,23},{-70,18},{16,18},{16,13},{24.8,13}},
+        points={{-70,23},{-70,18},{16,18},{16,9},{26.8,9}},
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(K_fuel.V, fuelPump.V) annotation (Line(
@@ -273,18 +273,14 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
 
     connect(anodeCooler.T_ref, K_temp.T_deg_ref) 
                                             annotation (Line(
-        points={{20,-23},{20,-26.8},{-2.8,-26.8}},
+        points={{20,-23},{20,-28},{-2.8,-28}},
         color={255,0,0},
         pattern=LinePattern.Dot));
     connect(cathodeCooler.T_process_out, K_cond.T_cond) annotation (Line(
-        points={{51.4,38.6},{60,38},{60,0},{20,0},{20,10},{24.8,10}},
+        points={{51.4,38.6},{60,38},{60,0},{20,0},{20,6},{26.8,6}},
         color={255,0,0},
         pattern=LinePattern.Dot));
-    connect(K_temp.isSaturated, anodeCooler.isSaturated) 
-                                                        annotation (Line(
-        points={{-2.8,-29.2},{22,-29.2},{22,-24},{23,-23}},
-        color={255,0,255},
-        pattern=LinePattern.Dot));
+
   end Reference_Control;
 
   partial model Mingled "A DMFC system with outlet mingling"

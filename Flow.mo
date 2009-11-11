@@ -1,5 +1,5 @@
 within ;
-                                                                                                /**
+                                                                                                  /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -279,8 +279,8 @@ about which we do not care much.</p>
               -60,30}}, rotation=0)));
   end Sink;
 
-  annotation (uses(Modelica(version="3.1"), Units(version="1")),
-                                               Documentation(info="<html>
+  annotation (uses(Modelica(version="3.1"), Units(version="1"),
+      Control(version="1")),                   Documentation(info="<html>
 <p>This package contains various models related to fluid flow in stirred tanks.</p>
 </html>"),
     version="1",
@@ -881,7 +881,9 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
               fillColor={255,85,85},
               fillPattern=FillPattern.Solid,
               textString="%name")}),
-                              Diagram(graphics),
+                              Diagram(coordinateSystem(preserveAspectRatio=
+                false, extent={{-100,-100},{100,100}}),
+                                      graphics),
         Documentation(info="<html>
 <p>The separator unit simply splits a flow in its gaseous and liquid components. 
 The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
@@ -906,7 +908,8 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       connect(ft.outlet, liquidOutlet) annotation (Line(points={{8,6.10623e-16},
               {40,6.10623e-16},{40,-40},{70,-40}}, color={0,127,127}));
       connect(T, ft.T) annotation (Line(points={{110,5.55112e-16},{78,0},{60,0},
-              {60,-20},{0,-20},{0,-8},{4.996e-16,-8}}, color={0,0,255}));
+              {60,-20},{0,-20},{0,-8},{6.10623e-16,-8}},
+                                                       color={0,0,255}));
     end Separator;
 
     model Burner "An adiabatic combustor"
@@ -1449,7 +1452,9 @@ used only for condensing flows where LMTD theory is not valid.</p>
       FlowPort outlet "Outlet from the cooler" 
                       annotation (Placement(transformation(extent={{88,-6},{100,
                   6}}, rotation=0)));
-      annotation (defaultComponentName="cooler", Diagram(graphics),
+      annotation (defaultComponentName="cooler", Diagram(coordinateSystem(
+                preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+                                                         graphics),
                                                           Icon(coordinateSystem(
                 preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
               graphics={
@@ -1518,7 +1523,9 @@ temperature.</p>
       Flow.Sink sink "Makes up for lost heat" 
                                              annotation (Placement(
               transformation(extent={{0,80},{20,100}}, rotation=0)));
-      annotation (Diagram(graphics),
+      annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
+                  -100},{100,100}}),
+                          graphics),
                            Icon(coordinateSystem(preserveAspectRatio=false,
                 extent={{-100,-100},{100,100}}),
                                 graphics),
@@ -1526,10 +1533,6 @@ temperature.</p>
 <p>This is a straightforward implementation of the abstract cooler that sets the
 cooler's outlet temperature according to a given reference. There is a build-in,
 customisable lag after which the outlet temperature will reach the reference value.</p>
-<p>The outlet temperature can reach only values between inlet and environment
-temperature; if the reference is outside these limits, the boolean output 
-<tt>isSaturated</tt> will allow an external control algorithm to notice this and avoid
-a wind-up situation.</p>
 </html>"));
       FlowTemperature T_out "Outlet temperature measurement" 
         annotation (Placement(transformation(extent={{40,60},{60,80}}, rotation=
@@ -1546,16 +1549,10 @@ a wind-up situation.</p>
           "Keeps requested temperature within reason" 
         annotation (Placement(transformation(extent={{-20,0},{0,20}}, rotation=
                   0)));
-      constant Real eps = 0.01;
       outer Modelica.SIunits.Temperature T_env;
+      constant Modelica.SIunits.Temperature eps = 0.01;
 
       public
-      Modelica.Blocks.Interfaces.BooleanOutput isSaturated
-          "Whether the current set point is saturated" 
-        annotation (Placement(transformation(
-              origin={30,-30},
-              extent={{-10,-10},{10,10}},
-              rotation=270)));
       Modelica.SIunits.HeatFlowRate Q = sink.inlet.H "Cooling duty";
 
     equation
@@ -1583,16 +1580,9 @@ a wind-up situation.</p>
       connect(limiter.limit1, T_in.T) annotation (Line(points={{-22,18},{-40,18},
                 {-40,40},{-60,40},{-60,62}}, color={0,0,127}));
       connect(limiter.u, T_ref) annotation (Line(points={{-22,10},{-56,10},{-56,
-                -16},{0,-16},{0,-30},{-5.55112e-16,-30}}, color={0,0,127}));
+                -16},{0,-16},{0,-30},{5.55112e-16,-30}},  color={0,0,127}));
       connect(lag.u, limiter.y) 
         annotation (Line(points={{18,10},{1,10}}, color={0,0,127}));
-    algorithm
-
-      when T_ref < T_env-eps or T_ref > T_process_in+eps then
-        isSaturated := true;
-      elsewhen T_ref > T_env+eps and T_ref < T_process_in-eps then
-        isSaturated := false;
-      end when;
 
     end Simple;
 
