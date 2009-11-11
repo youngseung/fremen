@@ -1,5 +1,5 @@
 within ;
-                                                  /**
+                                                    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -34,10 +34,10 @@ package System "DMFC systems"
                      annotation (Placement(transformation(extent={{-10,-70},{10,
               -50}}, rotation=0)));
     Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
-              annotation (Placement(transformation(extent={{-30,-66},{-42,-54}}, 
+              annotation (Placement(transformation(extent={{-30,-66},{-42,-54}},
             rotation=0)));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
-              -100,-100},{100,100}}), graphics),
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}),      graphics),
                          Documentation(info="<html>
 <p>This is a generic reference system, with no process integration
 whatsoever. Some components, such as the fuel cell, are abstract and
@@ -45,13 +45,13 @@ must be specialised in subclasses.</p>
 </html>"));
     replaceable Flow.UnitOperations.Coolers.Abstract anodeCooler
       "The solution-loop cooler" 
-                  annotation (Placement(transformation(extent={{10,-30},{30,-10}}, 
+                  annotation (Placement(transformation(extent={{10,-30},{30,-10}},
             rotation=0)));
     Flow.Sources.Methanol pureMethanolSource "A substitute for an actual tank" 
                                           annotation (Placement(transformation(
             extent={{30,-96},{42,-84}}, rotation=0)));
     Flow.Measurements.LiquidPump fuelPump "The smaller fuel pump" 
-                  annotation (Placement(transformation(extent={{20,-96},{8,-84}}, 
+                  annotation (Placement(transformation(extent={{20,-96},{8,-84}},
             rotation=0)));
     Flow.UnitOperations.Separator degasser "The CO2-degasser" 
                         annotation (Placement(transformation(extent={{38,-30},{
@@ -63,8 +63,8 @@ must be specialised in subclasses.</p>
                       annotation (Placement(transformation(extent={{-50,-12},{
               -14,22}}, rotation=0)));
     Flow.Sources.Environment environment "The air from the environment" 
-      annotation (Placement(transformation(extent={{-100,0},{-80,20}}, rotation
-            =0)));
+      annotation (Placement(transformation(extent={{-100,0},{-80,20}}, rotation=
+             0)));
     Flow.Measurements.GasFlowController blower "The mass-flow controller" 
       annotation (Placement(transformation(
           origin={-70,10},
@@ -72,7 +72,7 @@ must be specialised in subclasses.</p>
           rotation=270)));
     replaceable Flow.UnitOperations.Coolers.Abstract cathodeCooler
       "The cathode-side cooler" 
-                  annotation (Placement(transformation(extent={{32,30},{52,50}}, 
+                  annotation (Placement(transformation(extent={{32,30},{52,50}},
             rotation=0)));
     Flow.UnitOperations.Separator condenser "The water-recuperating unit" 
                         annotation (Placement(transformation(extent={{68,30},{
@@ -86,8 +86,8 @@ must be specialised in subclasses.</p>
     Modelica.Electrical.Analog.Basic.Ground ground 
       annotation (Placement(transformation(extent={{-8,24},{8,40}}, rotation=0)));
     Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer
-      "Current in external circuit" annotation (Placement(transformation(extent
-            ={{-32,80},{-12,100}}, rotation=0)));
+      "Current in external circuit" annotation (Placement(transformation(extent=
+             {{-32,80},{-12,100}}, rotation=0)));
 
   protected
     MolarFlow inCell = fuelCell.anode_inlet.n[1] - (-fuelCell.anode_outlet.n[1])
@@ -104,8 +104,8 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (Line(points={{-81,10},{-70,
             10}}, color={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(points={{
-            -64,10},{-50,10},{-50,10.1}}, color={0,127,127}));
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(points={{-64,10},
+            {-50,10},{-50,10.1}},         color={0,127,127}));
     connect(cathodeCooler.outlet, condenser.inlet) 
       annotation (Line(points={{51.4,40},{68,40}}, color={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
@@ -122,9 +122,9 @@ must be specialised in subclasses.</p>
     connect(condenser.liquidOutlet, mixer.waterInlet) 
       annotation (Line(points={{83.3,36},{88,36},{88,-60},{8,-60}}, color={0,
             127,127}));
-    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (Line(points={{
-            55,-24},{60,-24},{60,-40},{0,-40},{0,-52},{6.10623e-16,-52}}, color
-          ={0,127,127}));
+    connect(degasser.liquidOutlet, mixer.loopInlet) annotation (Line(points={{55,-24},
+            {60,-24},{60,-40},{0,-40},{0,-52},{6.10623e-16,-52}},         color=
+           {0,127,127}));
     connect(fuelCell.anode_outlet, anodeCooler.inlet) 
                                                  annotation (Line(points={{-14,
             -0.1},{-14,0},{-4,0},{-4,-20},{10.6,-20}}, color={0,127,127}));
@@ -186,33 +186,35 @@ see what happens.</p>
 
   model Reference_Control
     "The reference DMFC system derived from the one to be presented at ASME FC09"
-    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
-          cells=5),
-      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
+      redeclare Modelica.Electrical.Analog.Sources.SineCurrent load(
+        freqHz=2E-3,
+        offset=5,
+        startTime=2700,
+        I=5),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       mixer(T(fixed=true), c(fixed=true)));
 
   public
-    Control.CathodeLambdaControl K_cath(c_est=1200, cells=5)
-      "Cathode lambda controller" 
+    Control.CathodeLambdaControl K_cath(c_est=1200) "Cathode lambda controller"
       annotation (Placement(transformation(
           origin={-70,29},
           extent={{-5,-4},{5,4}},
           rotation=270)));
-    Control.ReferenceFuelControl K_fuel(cells=5) 
+    Control.ReferenceFuelControl K_fuel 
                                annotation (Placement(transformation(extent={{
               -16,-94},{-4,-86}}, rotation=0)));
     Control.WaterControl K_cond annotation (Placement(transformation(extent={{
               26,8},{38,18}}, rotation=0)));
-    Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800,
-      cells=5)                      annotation (Placement(transformation(extent
-            ={{-70,-64},{-60,-56}}, rotation=0)));
-    Control.TemperatureControl K_deg(T_FC_ref=340) 
+    Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800) 
+                                    annotation (Placement(transformation(extent=
+             {{-70,-64},{-60,-56}}, rotation=0)));
+    Control.TemperatureControl K_temp(T_FC_ref=340) 
                                  annotation (Placement(transformation(extent={{
               -16,-34},{-4,-22}}, rotation=0)));
-    annotation (experiment(StopTime=1800), experimentSetupOutput,
-      Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+    annotation (experiment(StopTime=5000), experimentSetupOutput,
+      Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
               100,100}}), graphics),
       Documentation(info="<html>
 <p>This specialisation of the reference system implements a series of
@@ -242,19 +244,19 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={127,0,127},
         pattern=LinePattern.Dot));
     connect(degasser.T, K_fuel.T_deg) annotation (Line(
-        points={{59,-20},{66,-20},{66,-98},{-30,-98},{-30,-92.4},{-17.2,-92.4}}, 
-
+        points={{59,-20},{66,-20},{66,-98},{-30,-98},{-30,-92.4},{-17.2,-92.4}},
         color={255,0,0},
         pattern=LinePattern.Dot));
+
     connect(pump.V, K_an.V) annotation (Line(
         points={{-42,-60},{-59,-60}},
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(K_an.I, amperometer.i) annotation (Line(
-        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-22,76},{-22,80}}, 
-
+        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-22,76},{-22,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
+
     connect(K_cath.V, K_cond.V_cath) annotation (Line(
         points={{-70,23},{-70,18},{16,18},{16,13},{24.8,13}},
         color={0,255,0},
@@ -263,13 +265,13 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         points={{-2.8,-90},{8,-90}},
         color={0,255,0},
         pattern=LinePattern.Dot));
-    connect(K_deg.T_m, fuelCell.T) 
+    connect(K_temp.T_m, fuelCell.T) 
                                annotation (Line(
-        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-12.2,5.34}}, 
-
+        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-12.2,5.34}},
         color={255,0,0},
         pattern=LinePattern.Dot));
-    connect(anodeCooler.T_ref, K_deg.T_deg_ref) 
+
+    connect(anodeCooler.T_ref, K_temp.T_deg_ref) 
                                             annotation (Line(
         points={{20,-23},{20,-26.8},{-2.8,-26.8}},
         color={255,0,0},
@@ -278,7 +280,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         points={{51.4,38.6},{60,38},{60,0},{20,0},{20,10},{24.8,10}},
         color={255,0,0},
         pattern=LinePattern.Dot));
-    connect(K_deg.isSaturated, anodeCooler.isSaturated) annotation (Line(
+    connect(K_temp.isSaturated, anodeCooler.isSaturated) 
+                                                        annotation (Line(
         points={{-2.8,-29.2},{22,-29.2},{22,-24},{23,-23}},
         color={255,0,255},
         pattern=LinePattern.Dot));
@@ -300,23 +303,23 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
                      annotation (Placement(transformation(extent={{-10,-70},{10,
               -50}}, rotation=0)));
     Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
-              annotation (Placement(transformation(extent={{-30,-66},{-42,-54}}, 
+              annotation (Placement(transformation(extent={{-30,-66},{-42,-54}},
             rotation=0)));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
-              -100,-100},{100,100}}), graphics),
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}),      graphics),
                          Documentation(info="<html>
 <p>This is a generic reference system, with no process integration
 whatsoever. Some components, such as the fuel cell, are abstract and
 must be specialised in subclasses.</p>
 </html>"));
     replaceable Flow.UnitOperations.Coolers.Abstract cooler "The system cooler"
-                  annotation (Placement(transformation(extent={{14,-4},{32,14}}, 
+                  annotation (Placement(transformation(extent={{14,-4},{32,14}},
             rotation=0)));
     Flow.Sources.Methanol pureMethanolSource "A substitute for an actual tank" 
                                           annotation (Placement(transformation(
             extent={{30,-96},{42,-84}}, rotation=0)));
     Flow.Measurements.LiquidPump fuelPump "The smaller fuel pump" 
-                  annotation (Placement(transformation(extent={{20,-96},{8,-84}}, 
+                  annotation (Placement(transformation(extent={{20,-96},{8,-84}},
             rotation=0)));
     Flow.UnitOperations.Separator separator "The loop separator" 
                         annotation (Placement(transformation(extent={{48,-6},{
@@ -328,8 +331,8 @@ must be specialised in subclasses.</p>
                       annotation (Placement(transformation(extent={{-50,-12},{
               -14,22}}, rotation=0)));
     Flow.Sources.Environment environment "The air from the environment" 
-      annotation (Placement(transformation(extent={{-100,0},{-80,20}}, rotation
-            =0)));
+      annotation (Placement(transformation(extent={{-100,0},{-80,20}}, rotation=
+             0)));
     Flow.Measurements.GasFlowController blower "The mass-flow controller" 
       annotation (Placement(transformation(
           origin={-70,10},
@@ -341,8 +344,8 @@ must be specialised in subclasses.</p>
     Modelica.Electrical.Analog.Basic.Ground ground 
       annotation (Placement(transformation(extent={{-8,24},{8,40}}, rotation=0)));
     Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer
-      "Current in external circuit" annotation (Placement(transformation(extent
-            ={{-32,80},{-12,100}}, rotation=0)));
+      "Current in external circuit" annotation (Placement(transformation(extent=
+             {{-32,80},{-12,100}}, rotation=0)));
   protected
     MolarFlow inCell = fuelCell.anode_inlet.n[1] - (-fuelCell.anode_outlet.n[1])
       "Methanol consumed in the cell";
@@ -360,8 +363,8 @@ must be specialised in subclasses.</p>
     connect(environment.outlet, blower.inlet) 
                                          annotation (Line(points={{-81,10},{-70,
             10}}, color={0,127,127}));
-    connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(points={{
-            -64,10},{-50,10},{-50,10.1}}, color={0,127,127}));
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(points={{-64,10},
+            {-50,10},{-50,10.1}},         color={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (Line(points={{14,-84},{0,-84},{0,-68},{6.10623e-16,-68}},
           color={0,127,127}));
@@ -380,10 +383,10 @@ must be specialised in subclasses.</p>
             {-21.2,40},{0,40},{0,90},{-12,90}}, color={0,0,255}));
     connect(fuelCell.plus, load.p) annotation (Line(points={{-42.8,15.2},{-42.8,
             40},{-64,40},{-64,90},{-52,90}}, color={0,0,255}));
-    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (Line(points={{
-            14.54,5},{0,5},{0,10.1},{-14,10.1}}, color={0,127,127}));
-    connect(separator.liquidOutlet, mixer.waterInlet) annotation (Line(points={
-            {65,0.6},{65,-60},{8,-60}}, color={0,127,127}));
+    connect(cooler.inlet, fuelCell.cathode_outlet) annotation (Line(points={{14.54,5},
+            {0,5},{0,10.1},{-14,10.1}},          color={0,127,127}));
+    connect(separator.liquidOutlet, mixer.waterInlet) annotation (Line(points={{65,0.6},
+            {65,-60},{8,-60}},          color={0,127,127}));
     connect(separator.gasOutlet, co2sink.inlet) annotation (Line(points={{65,
             9.4},{72,9.4},{72,20},{80.4,20}}, color={0,127,127}));
   end Mingled;
@@ -459,10 +462,10 @@ must be specialised in subclasses.</p>
         color={128,0,255},
         pattern=LinePattern.Dot));
     connect(K_cond.T_cond, cooler.T_process_out) annotation (Line(
-        points={{-1.2,-29.6},{-10,-30},{-10,-40},{40,-40},{40,4},{31.46,3.74}}, 
-
+        points={{-1.2,-29.6},{-10,-30},{-10,-40},{40,-40},{40,4},{31.46,3.74}},
         color={255,0,0},
         pattern=LinePattern.Dot));
+
     connect(K_T.V, pump.V) annotation (Line(
         points={{-52.4,-69},{-48,-69},{-48,-60},{-42,-60}},
         color={0,255,0},
@@ -494,9 +497,9 @@ must be specialised in subclasses.</p>
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_fuel.T_sep, cooler.T_process_out) annotation (Line(
-        points={{-27.4,-94.8},{-40,-94},{-40,-98},{40,-98},{40,4},{31.46,3.74}}, 
-
+        points={{-27.4,-94.8},{-40,-94},{-40,-98},{40,-98},{40,4},{31.46,3.74}},
         color={255,0,0},
         pattern=LinePattern.Dot));
+
   end Mingled_Control;
 end System;
