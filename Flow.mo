@@ -1,5 +1,5 @@
 within ;
-                                                                                                  /**
+                                                                                                    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -2030,7 +2030,7 @@ constant voltage for the stack.</p>
       import Modelica.SIunits.Resistance;
 
       parameter Voltage V0 = 0.7 "Open-circuit voltage";
-      parameter Resistance R = 0.005 "Internal resistance";
+      parameter Resistance R = 0.05 "Internal resistance";
 
       annotation (Documentation(info="<html>
 <p>This class implements a voltage model that emulates a Thevenin equivalent circuit. It is possible
