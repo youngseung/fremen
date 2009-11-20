@@ -1,5 +1,5 @@
 within ;
-                                                      /**
+                                                          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -80,7 +80,7 @@ must be specialised in subclasses.</p>
     Flow.Sink airSink "The gas outlet of the condenser" 
                       annotation (Placement(transformation(extent={{92,46},{100,
               54}}, rotation=0)));
-    replaceable Modelica.Electrical.Analog.Interfaces.OnePort load
+    replaceable Modelica.Electrical.Analog.Interfaces.TwoPin load
       "Load connected to the cell"       annotation (Placement(transformation(
             extent={{-52,84},{-40,96}}, rotation=0)));
     Modelica.Electrical.Analog.Basic.Ground ground 
@@ -187,33 +187,73 @@ see what happens.</p>
   model Reference_Control
     "The reference DMFC system derived from the one to be presented at ASME FC09"
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
-      redeclare Modelica.Electrical.Analog.Sources.SineCurrent load(
-        freqHz=2E-3,
-        offset=5,
-        startTime=2700,
-        I=5),
+      redeclare Load load,
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       mixer(T(fixed=true), c(fixed=true)));
 
+      model Load
+        extends Modelica.Electrical.Analog.Interfaces.TwoPin;
+
+        annotation (Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,
+                -100},{100,100}}), graphics={Text(
+              extent={{-100,-20},{100,20}},
+              lineColor={0,0,255},
+              textString="Load")}),   Diagram(coordinateSystem(preserveAspectRatio=true,
+                extent={{-100,-100},{100,100}}), graphics),
+        experiment(StopTime=8000));
+        Modelica.Electrical.Analog.Sources.StepCurrent step(
+        I=2,
+        offset=5,
+        startTime(displayUnit="h") = 3600) 
+          annotation (Placement(transformation(extent={{-20,20},{20,60}})));
+      Modelica.Electrical.Analog.Sources.SineCurrent sine(
+        I=2,
+        freqHz=2E-3,
+        startTime(displayUnit="h") = 7200)
+        annotation (Placement(transformation(extent={{-20,-60},{20,-20}})));
+      equation
+      connect(step.p, p)          annotation (Line(
+            points={{-20,40},{-60,40},{-60,5.55112e-16},{-100,5.55112e-16}},
+            color={0,0,255},
+            smooth=Smooth.None));
+
+
+      connect(sine.p, p) annotation (Line(
+          points={{-20,-40},{-60,-40},{-60,5.55112e-16},{-100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(sine.n, n) annotation (Line(
+          points={{20,-40},{60,-40},{60,0},{100,0},{100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(step.n, n) annotation (Line(
+          points={{20,40},{60,40},{60,5.55112e-16},{100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      end Load;
+
   public
-    Control.CathodeLambdaControl K_cath(c_est=1200) "Cathode lambda controller"
+    Control.CathodeLambdaControl K_cath(c_est=1200,
+      aA=9E-9,
+      b=0.19) "Cathode lambda controller" 
       annotation (Placement(transformation(
           origin={-70,29},
           extent={{-5,-4},{5,4}},
           rotation=270)));
-    Control.ReferenceFuelControl K_fuel 
+    Control.ReferenceFuelControl K_fuel(aA=9E-9, b=0.19) 
                                annotation (Placement(transformation(extent={{
               -16,-94},{-4,-86}}, rotation=0)));
     Control.WaterControl K_cond annotation (Placement(transformation(extent={{28,4},{
               40,14}},        rotation=0)));
-    Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800) 
-                                    annotation (Placement(transformation(extent=
+    Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800,
+      aA=9E-9,
+      b=0.19)                       annotation (Placement(transformation(extent=
              {{-70,-64},{-60,-56}}, rotation=0)));
     Control.TemperatureControl K_temp(T_FC_ref=340) 
                                  annotation (Placement(transformation(extent={{
               -16,-34},{-4,-22}}, rotation=0)));
-    annotation (experiment(StopTime=5000), experimentSetupOutput,
+    annotation (experiment(StopTime=10800),experimentSetupOutput,
       Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
               100,100}}), graphics),
       Documentation(info="<html>
