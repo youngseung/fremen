@@ -1,5 +1,5 @@
 within ;
-                            /**
+                              /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -350,6 +350,8 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
     parameter Area A = 50E-4 "Mixer cross-sectional area";
     parameter Temperature T_0 = 325 "Nominal condenser temperature";
     parameter Time tau = 600 "Desired response time";
+    parameter Boolean feedforward = false
+      "Whether to simply use the nominal temperature";
 
     annotation (defaultComponentName="K", Diagram(coordinateSystem(
             preserveAspectRatio=false, extent={{-100,-100},{100,100}}), graphics),
@@ -417,7 +419,11 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     Pressure delta_p = p_mix - p_0 "Pressure variation";
 
   equation
-    T_ref = T_0 + 1/(tau * V_cath/R/T_env * dp_h2o_dt(T_cond,1)) * A/mw(Species.Water)/g * delta_p;
+    if feedforward then
+      T_ref = T_0;
+    else
+      T_ref = T_0 + 1/(tau * V_cath/R/T_env * dp_h2o_dt(T_cond,1)) * A/mw(Species.Water)/g * delta_p;
+    end if;
 
     when initial() then
       p_0 = p_mix;
