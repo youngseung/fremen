@@ -1554,6 +1554,7 @@ customisable lag after which the outlet temperature will reach the reference val
 
       public
       Modelica.SIunits.HeatFlowRate Q = sink.inlet.H "Cooling duty";
+      parameter Boolean perfectControl = false "Neglect internal dynamics";
 
     equation
       limiter.limit2 = T_env;
@@ -1563,7 +1564,7 @@ customisable lag after which the outlet temperature will reach the reference val
 
       // Set the two variables to be equal
       // NOTE must do it here, these are both output variables.
-      T_process_out = lag.y;
+      T_process_out = if perfectControl then T_ref else lag.y;
       connect(T_in.inlet, inlet) annotation (Line(points={{-68,70},{-80,70},{
                 -80,-2.22045e-16},{-94,-2.22045e-16}}, color={0,127,127}));
       connect(T_in.T, T_process_in) annotation (Line(points={{-60,62},{-60,-14},
@@ -1684,7 +1685,9 @@ cathode-loop cooler (condenser).</p>
         protected
           Sink sink         annotation (Placement(transformation(extent={{60,-4},
                     {68,4}}, rotation=0)));
-          annotation (Diagram(graphics),
+          annotation (Diagram(coordinateSystem(preserveAspectRatio=false,
+                  extent={{-100,-100},{100,100}}),
+                              graphics),
             experiment(StopTime=80),
             experimentSetupOutput);
           Sources.Solution sol(   T=330) 
