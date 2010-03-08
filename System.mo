@@ -1,5 +1,5 @@
 within ;
-                                                          /**
+                                                                        /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -186,7 +186,8 @@ see what happens.</p>
 
   model Reference_Control
     "The reference DMFC system derived from the one to be presented at ASME FC09"
-    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
+          cells=3),
       redeclare Load load,
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
@@ -194,7 +195,6 @@ see what happens.</p>
 
       model Load
         extends Modelica.Electrical.Analog.Interfaces.TwoPin;
-
         annotation (Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,
                 -100},{100,100}}), graphics={Text(
               extent={{-100,-20},{100,20}},
@@ -210,14 +210,13 @@ see what happens.</p>
       Modelica.Electrical.Analog.Sources.SineCurrent sine(
         I=2,
         freqHz=2E-3,
-        startTime(displayUnit="h") = 7200)
+        startTime(displayUnit="h") = 7200) 
         annotation (Placement(transformation(extent={{-20,-60},{20,-20}})));
       equation
       connect(step.p, p)          annotation (Line(
             points={{-20,40},{-60,40},{-60,5.55112e-16},{-100,5.55112e-16}},
             color={0,0,255},
             smooth=Smooth.None));
-
 
       connect(sine.p, p) annotation (Line(
           points={{-20,-40},{-60,-40},{-60,5.55112e-16},{-100,5.55112e-16}},
@@ -235,20 +234,26 @@ see what happens.</p>
 
   public
     Control.CathodeLambdaControl K_cath(c_est=1200,
-      aA=9E-9,
-      b=0.19) "Cathode lambda controller" 
+      cells=3,
+      aA=5.02E-9,
+      b=0.24,
+      lambda=7) "Cathode lambda controller" 
       annotation (Placement(transformation(
           origin={-70,29},
           extent={{-5,-4},{5,4}},
           rotation=270)));
-    Control.ReferenceFuelControl K_fuel(aA=9E-9, b=0.19) 
-                               annotation (Placement(transformation(extent={{
+    Control.ReferenceFuelControl K_fuel(
+      cells=3,
+      aA=5.02E-9,
+      b=0.24)                  annotation (Placement(transformation(extent={{
               -16,-94},{-4,-86}}, rotation=0)));
-    Control.WaterControl K_cond annotation (Placement(transformation(extent={{28,4},{
+    Control.WaterControl K_cond(T_0(displayUnit="K") = 330) 
+                                annotation (Placement(transformation(extent={{28,4},{
               40,14}},        rotation=0)));
     Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800,
-      aA=9E-9,
-      b=0.19)                       annotation (Placement(transformation(extent=
+      cells=3,
+      aA=5.02E-9,
+      b=0.24)                       annotation (Placement(transformation(extent=
              {{-70,-64},{-60,-56}}, rotation=0)));
     Control.TemperatureControl K_temp(T_FC_ref=340) 
                                  annotation (Placement(transformation(extent={{
@@ -260,6 +265,10 @@ see what happens.</p>
 <p>This specialisation of the reference system implements a series of
 controllers. Note that controller connections are dotted and colour-coded.</p>
 </html>"));
+
+    output Modelica.SIunits.HeatFlowRate crossover_heat = 725000 * fuelCell.n_x;
+    output Modelica.SIunits.HeatFlowRate heat_removal = - (fuelCell.cathode_outlet.H + fuelCell.anode_outlet.H);
+
   equation
     connect(amperometer.i, K_cath.I) annotation (Line(
         points={{-22,80},{-22,76},{-70,76},{-70,35}},

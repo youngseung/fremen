@@ -1,5 +1,5 @@
 within ;
-                              /**
+                                /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -417,12 +417,15 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
   protected
     discrete Pressure p_0 "Initial hydrostatic pressure";
     Pressure delta_p = p_mix - p_0 "Pressure variation";
+    Real K_c "Control proportionality constant";
 
   equation
+    K_c = 1/(tau * V_cath/R/T_env * dp_h2o_dt(T_cond,1)) * A/mw(Species.Water)/g;
+
     if feedforward then
       T_ref = T_0;
     else
-      T_ref = T_0 + 1/(tau * V_cath/R/T_env * dp_h2o_dt(T_cond,1)) * A/mw(Species.Water)/g * delta_p;
+      T_ref = T_0 +  K_c * delta_p;
     end if;
 
     when initial() then

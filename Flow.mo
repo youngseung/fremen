@@ -1781,7 +1781,7 @@ cathode-loop cooler (condenser).</p>
                 fillColor={85,170,255},
                 fillPattern=FillPattern.Solid)}),
                                             Diagram(coordinateSystem(
-              preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+              preserveAspectRatio=true,  extent={{-100,-100},{100,100}}),
                                                     graphics),
         DymolaStoredErrors,
         Documentation(info="<html>
@@ -1880,24 +1880,24 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       outer Temperature T_env "Enviroment temperature";
 
       parameter Integer cells = 1 "Number of cells";
-      parameter Length d = 142E-6 "Membrane thickness";
       parameter Area A = 26E-4 "Membrane active area";
       parameter HeatCapacity Cp = 24.7 "Overall heat capacity of the stack";
-      parameter DiffusionCoefficient D = 6E-10
-          "Methanol diffusion coefficient in the membrane";
+      parameter MassTransportCoefficient k_x = 2.4E-6
+          "Mass transport coefficient across the membrane, D/d";
       parameter Boolean enableSanityChecks = true
           "Whether to activate checks for some non-negative quantities";
+      parameter MassTransportCoefficient k_m_333 = 8.05E-6
+          "Mass transport coefficient at 333 K";
 
       // Parameters for N115 membrane.
       Real k_d = 4.2 + (T-303.15)/40 "Drag factor for N115";
-      MassTransportCoefficient k_m = 15.6E-6*exp(2436*(1/333-1/T))
+      MassTransportCoefficient k_m = k_m_333*exp(2436*(1/333-1/T))
           "Mass transport coefficient";
 
-      Real a = k_m/(1+k_m*d/D)
-          "Partial derivative of crossover flux wrt. concentration";
+      Real a = k_m*b "Partial derivative of crossover flux wrt. concentration";
       Real aAn = a*A*cells
           "Partial derivative of crossover flow wrt. concentration";
-      Real b = 1/(1+k_m*d/D)
+      Real b = 1/(1+k_m/k_x)
           "Opposite of partial derivative of crossover flux wrt. anodic reaction rate";
 
       Voltage V_rev "Reversible voltage";
@@ -1960,7 +1960,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       k_m * (c-c_cl) = N_x + N_H/6;
 
       // Crossover methanol flux.
-      N_x = D/d * c_cl;
+      N_x = k_x * c_cl;
 
       /* The reversible voltage; the terms are:
    * - Standard reaction enthalpy, minus
@@ -2072,7 +2072,9 @@ current.</p>
           Sources.Solution methanolSolution(   T=anodeInletTemperature) 
                                             annotation (Placement(
                 transformation(extent={{-66,-30},{-54,-18}}, rotation=0)));
-          annotation (Diagram(graphics));
+          annotation (Diagram(coordinateSystem(preserveAspectRatio=false,
+                  extent={{-100,-100},{100,100}}),
+                              graphics));
           Measurements.LiquidPump pump "Pump for the anode flow" 
                                               annotation (Placement(
                 transformation(extent={{-42,-30},{-30,-18}}, rotation=0)));
@@ -2116,15 +2118,17 @@ current.</p>
                   27.2},{13.2,27.2}}, color={0,0,255}));
           connect(I_cell.n, stack.minus)    annotation (Line(points={{34,60},{
                   34.8,60},{34.8,27.2}}, color={0,0,255}));
-          connect(pump.outlet, stack.anode_inlet)    annotation (Line(points={{
-                  -36,-18},{-16,-18},{-16,11.9},{6,11.9}}, color={0,127,127}));
+          connect(pump.outlet, stack.anode_inlet)    annotation (Line(points={{-36,-18},
+                  {-16,-18},{-16,11.9},{6,11.9}},          color={0,127,127}));
         end AbstractStackTest;
 
         model ConstantVoltageStackTest "Test for the constant-voltage model"
           extends AbstractStackTest(redeclare ConstantVoltage stack,
               anodeFlow = stack.cells*30E-6/60,
               cathodeFlow = stack.cells*30E-5/60);
-          annotation (Diagram(graphics));
+          annotation (Diagram(coordinateSystem(preserveAspectRatio=false,
+                  extent={{-100,-100},{100,100}}),
+                              graphics));
         end ConstantVoltageStackTest;
 
         model TheveninStackTest "Test for the Thevenin-circuit model"
