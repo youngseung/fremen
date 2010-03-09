@@ -1,5 +1,5 @@
 within ;
-                                                                        /**
+                                                                          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -188,7 +188,7 @@ see what happens.</p>
     "The reference DMFC system derived from the one to be presented at ASME FC09"
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
           cells=3),
-      redeclare Load load,
+      redeclare Load load(step(I=4, offset=3)),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       mixer(T(fixed=true), c(fixed=true)));
@@ -237,7 +237,7 @@ see what happens.</p>
       cells=3,
       aA=5.02E-9,
       b=0.24,
-      lambda=7) "Cathode lambda controller" 
+      lambda=6) "Cathode lambda controller" 
       annotation (Placement(transformation(
           origin={-70,29},
           extent={{-5,-4},{5,4}},
@@ -247,7 +247,7 @@ see what happens.</p>
       aA=5.02E-9,
       b=0.24)                  annotation (Placement(transformation(extent={{
               -16,-94},{-4,-86}}, rotation=0)));
-    Control.WaterControl K_cond(T_0(displayUnit="K") = 330) 
+    Control.WaterControl K_cond(T_0(displayUnit="K") = 305) 
                                 annotation (Placement(transformation(extent={{28,4},{
               40,14}},        rotation=0)));
     Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800,
@@ -476,8 +476,8 @@ must be specialised in subclasses.</p>
           origin={-70,33},
           extent={{-5,-6},{5,6}},
           rotation=270)));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
-              -100,-100},{100,100}}), graphics),
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}),      graphics),
                           experiment(StopTime=1800));
     Control.WaterControl K_cond annotation (Placement(transformation(extent={{0,
               -32},{12,-20}}, rotation=0)));

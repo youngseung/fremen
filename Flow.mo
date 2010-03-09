@@ -1754,7 +1754,6 @@ cathode-loop cooler (condenser).</p>
       import Modelica.SIunits.StoichiometricNumber;
       import Modelica.SIunits.Temperature;
       import Modelica.SIunits.Voltage;
-      import Modelica.Constants.eps;
       import Modelica.Constants.R;
       import Modelica.Electrical.Analog.Interfaces.PositivePin;
       import Modelica.Electrical.Analog.Interfaces.NegativePin;
@@ -1941,6 +1940,8 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       StoichiometricNumber[:] anode_nu = {-1/6, -1/6-k_d, 0, 1/6, 0};
       constant StoichiometricNumber[:] cathode_xi = {0, 2, -3/2, 1, 0};
       constant StoichiometricNumber[:] anode_xi = {-1, 0, 0, 0, 0};
+
+      constant Real eps = 1E-10 "Maximum numerical noise for molar flows";
 
     equation
       // Anode-side mass balance, accounting for reaction, drag and crossover
