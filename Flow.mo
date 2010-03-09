@@ -547,7 +547,9 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
 are present and in liquid phase.</p>
 <p>With the appropriate degrees of freedom removed, it can work as a flow measurement as well.</p>
 </html>"),
-      Diagram(graphics));
+      Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+                100,100}}),
+              graphics));
     IO.VolumeFlowRateInput V "Volumetric flow rate" 
       annotation (Placement(transformation(extent={{110,-10},{90,10}}, rotation=
                0)));
@@ -2075,8 +2077,8 @@ current.</p>
           annotation (Diagram(coordinateSystem(preserveAspectRatio=false,
                   extent={{-100,-100},{100,100}}),
                               graphics));
-          Measurements.LiquidPump pump "Pump for the anode flow" 
-                                              annotation (Placement(
+          Measurements.LiquidPump pump(T(start=anodeInletTemperature))
+            "Pump for the anode flow"         annotation (Placement(
                 transformation(extent={{-42,-30},{-30,-18}}, rotation=0)));
           Sources.Environment air 
                               annotation (Placement(transformation(extent={{-70,
@@ -2135,6 +2137,7 @@ current.</p>
           extends AbstractStackTest(redeclare Thevenin stack(cells=3,V0=2.1,R=0.015),
               anodeFlow = stack.cells*30E-6/60,
               cathodeFlow = stack.cells*30E-5/60);
+          annotation (experiment(StopTime=40, Algorithm="Dassl"));
         end TheveninStackTest;
       end Test;
     end Stack;
