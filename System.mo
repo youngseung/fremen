@@ -1,5 +1,5 @@
 within ;
-                                                                            /**
+                                                                              /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -604,4 +604,159 @@ must be specialised in subclasses.</p>
         pattern=LinePattern.Dot));
 
   end Mingled_Control;
+
+  partial model DoubleTank "DMFC system with tanks for water and solution"
+
+    import Modelica.SIunits.Efficiency;
+    import Units.MolarFlow;
+
+    inner parameter Modelica.SIunits.Pressure p_env = 101325;
+    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+    inner parameter Units.RelativeHumidity RH_env = 60;
+
+    Efficiency eta_to_cell "Fraction of methanol consumed in the cell";
+    Efficiency eta_system "Overall system efficiency";
+
+    Flow.UnitOperations.Mixer waterTank(c(start=0))
+      "Tank containing the make-up water" 
+                     annotation (Placement(transformation(extent={{30,-74},{44,
+              -58}}, rotation=0)));
+    Flow.Measurements.LiquidPump waterPump "The pure-water pump" 
+              annotation (Placement(transformation(extent={{-14,-72},{-26,-60}},
+            rotation=0)));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
+              -100},{100,100}}),      graphics),
+                         Documentation(info="<html>
+<p>This is a generic reference system, with no process integration
+whatsoever. Some components, such as the fuel cell, are abstract and
+must be specialised in subclasses.</p>
+</html>"));
+    replaceable Flow.UnitOperations.Coolers.Abstract anodeCooler
+      "The solution-loop cooler" 
+                  annotation (Placement(transformation(extent={{10,-30},{30,-10}},
+            rotation=0)));
+    Flow.Sources.Methanol pureMethanolSource "A substitute for an actual tank" 
+                                          annotation (Placement(transformation(
+            extent={{12,-92},{24,-80}}, rotation=0)));
+    Flow.Measurements.LiquidPump fuelPump "The smaller fuel pump" 
+                  annotation (Placement(transformation(extent={{-14,-92},{-26,
+              -80}},
+            rotation=0)));
+    Flow.UnitOperations.Separator degasser "The CO2-degasser" 
+                        annotation (Placement(transformation(extent={{38,-30},{
+              58,-10}}, rotation=0)));
+    Flow.Sink co2sink "The gas outlet of the degasser" 
+                      annotation (Placement(transformation(extent={{68,-16},{76,
+              -8}}, rotation=0)));
+    replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
+                      annotation (Placement(transformation(extent={{-50,-12},{
+              -14,22}}, rotation=0)));
+    Flow.Sources.Environment environment "The air from the environment" 
+      annotation (Placement(transformation(extent={{-100,0},{-80,20}}, rotation=
+             0)));
+    Flow.Measurements.GasFlowController blower "The mass-flow controller" 
+      annotation (Placement(transformation(
+          origin={-70,10},
+          extent={{6,-6},{-6,6}},
+          rotation=270)));
+    replaceable Flow.UnitOperations.Coolers.Abstract cathodeCooler
+      "The cathode-side cooler" 
+                  annotation (Placement(transformation(extent={{32,30},{52,50}},
+            rotation=0)));
+    Flow.UnitOperations.Separator condenser "The water-recuperating unit" 
+                        annotation (Placement(transformation(extent={{68,30},{
+              86,50}}, rotation=0)));
+    Flow.Sink airSink "The gas outlet of the condenser" 
+                      annotation (Placement(transformation(extent={{92,46},{100,
+              54}}, rotation=0)));
+    replaceable Modelica.Electrical.Analog.Interfaces.TwoPin load
+      "Load connected to the cell"       annotation (Placement(transformation(
+            extent={{-52,84},{-40,96}}, rotation=0)));
+    Modelica.Electrical.Analog.Basic.Ground ground 
+      annotation (Placement(transformation(extent={{-8,24},{8,40}}, rotation=0)));
+    Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer
+      "Current in external circuit" annotation (Placement(transformation(extent=
+             {{-32,80},{-12,100}}, rotation=0)));
+
+  protected
+    MolarFlow inCell = fuelCell.anode_inlet.n[1] - (-fuelCell.anode_outlet.n[1])
+      "Methanol consumed in the cell";
+    MolarFlow inDeg =  -degasser.gasOutlet.n[1] "Methanol lost in the degasser";
+
+  public
+    Flow.UnitOperations.Mixer solutionTank "Tank to gather the outlet solution"
+                     annotation (Placement(transformation(extent={{10,-54},{24,
+              -38}}, rotation=0)));
+    Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
+              annotation (Placement(transformation(extent={{-14,-52},{-26,-40}},
+            rotation=0)));
+    Flow.Measurements.FlowConcentration FC6
+      "Measures the concentration fed to the stack"
+      annotation (Placement(transformation(extent={{-64,-68},{-48,-52}})));
+  equation
+    eta_to_cell = inCell / (inCell + inDeg);
+    eta_system = eta_to_cell * fuelCell.eta_total;
+    connect(waterPump.inlet, waterTank.outlet) 
+      annotation (Line(points={{-20,-66},{-20,-66},{31.4,-66}},
+                                                    color={0,127,127}));
+    connect(pureMethanolSource.outlet, fuelPump.inlet) 
+      annotation (Line(points={{18,-86},{-2,-86},{-20,-86}},
+                                                   color={0,127,127}));
+    connect(environment.outlet, blower.inlet) 
+                                         annotation (Line(points={{-81,10},{-70,
+            10}}, color={0,127,127}));
+    connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(points={{-64,10},
+            {-50,10},{-50,10.1}},         color={0,127,127}));
+    connect(cathodeCooler.outlet, condenser.inlet) 
+      annotation (Line(points={{51.4,40},{68,40}}, color={0,127,127}));
+    connect(anodeCooler.outlet, degasser.inlet) 
+                                           annotation (Line(points={{29.4,-20},
+            {38,-20}}, color={0,127,127}));
+    connect(degasser.gasOutlet, co2sink.inlet)    annotation (Line(points={{55,
+            -16},{62,-16},{62,-12},{68.4,-12}}, color={0,127,127}));
+    connect(condenser.gasOutlet, airSink.inlet) 
+      annotation (Line(points={{83.3,44},{88,44},{88,50},{92.4,50}}, color={0,
+            127,127}));
+    connect(fuelCell.anode_outlet, anodeCooler.inlet) 
+                                                 annotation (Line(points={{-14,
+            -0.1},{-14,0},{-4,0},{-4,-20},{10.6,-20}}, color={0,127,127}));
+    connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (Line(
+          points={{32.6,40},{12,40},{12,14},{-14,14},{-14,10.1}}, color={0,127,
+            127}));
+    connect(fuelCell.minus, ground.p) annotation (Line(points={{-21.2,15.2},{
+            -21.2,40},{1.22125e-16,40}}, color={0,0,255}));
+    connect(amperometer.p, load.n) 
+      annotation (Line(points={{-32,90},{-40,90}}, color={0,0,255}));
+    connect(fuelCell.minus, amperometer.n) annotation (Line(points={{-21.2,15.2},
+            {-21.2,40},{0,40},{0,90},{-12,90}}, color={0,0,255}));
+    connect(fuelCell.plus, load.p) annotation (Line(points={{-42.8,15.2},{-42.8,
+            40},{-64,40},{-64,90},{-52,90}}, color={0,0,255}));
+    connect(pump.inlet, solutionTank.outlet) 
+      annotation (Line(points={{-20,-46},{-20,-46},{11.4,-46}},
+                                                    color={0,127,127}));
+    connect(solutionTank.waterInlet, degasser.liquidOutlet) annotation (Line(
+        points={{22.6,-46},{56,-46},{56,-24},{55,-24}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(waterTank.waterInlet, condenser.liquidOutlet) annotation (Line(
+        points={{42.6,-66},{84,-66},{84,36},{83.3,36}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(pump.outlet, FC6.outlet) annotation (Line(
+        points={{-20,-40},{-34,-40},{-34,-60},{-49.6,-60}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(waterPump.outlet, FC6.outlet) annotation (Line(
+        points={{-20,-60},{-49.6,-60}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(fuelPump.outlet, FC6.outlet) annotation (Line(
+        points={{-20,-80},{-34,-80},{-34,-60},{-49.6,-60}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(FC6.inlet, fuelCell.anode_inlet) annotation (Line(
+        points={{-62.4,-60},{-80,-60},{-80,-0.1},{-50,-0.1}},
+        color={0,127,127},
+        smooth=Smooth.None));
+  end DoubleTank;
 end System;
