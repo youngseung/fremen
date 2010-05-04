@@ -1,5 +1,5 @@
 within ;
-                                                                          /**
+                                                                            /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -468,10 +468,15 @@ must be specialised in subclasses.</p>
   model Mingled_Control
     extends Mingled(
       redeclare Flow.UnitOperations.Coolers.Simple cooler,
-      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
-      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=5),
+      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3),
+      redeclare Load load(step(I=4, offset=3)),
       mixer(T(fixed=true), c(fixed=true)));
-    Control.CathodeLambdaControl K_cath 
+    Control.CathodeLambdaControl K_cath(
+      aA=5.02E-9,
+      b=.24,
+      cells=3,
+      lambda=3,
+      c_est=1100) 
       annotation (Placement(transformation(
           origin={-70,33},
           extent={{-5,-6},{5,6}},
@@ -481,10 +486,62 @@ must be specialised in subclasses.</p>
                           experiment(StopTime=1800));
     Control.WaterControl K_cond annotation (Placement(transformation(extent={{0,
               -32},{12,-20}}, rotation=0)));
-    Control.MingledTemperatureControl K_T annotation (Placement(transformation(
+    Control.MingledTemperatureControl K_T(
+      n=3,
+      T_r(displayUnit="K"),
+      lambda=3,
+      c=900,
+      aA=5.02E-9,
+      b=.24)                              annotation (Placement(transformation(
             extent={{-70,-78},{-54,-60}}, rotation=0)));
-    Control.MingledFuelControl K_fuel annotation (Placement(transformation(
+    Control.MingledFuelControl K_fuel(
+      cells=3,
+      lambda=3,
+      aA=5.02E-9,
+      b=.24)                          annotation (Placement(transformation(
             extent={{-26,-98},{-12,-82}}, rotation=0)));
+
+    model Load
+      extends Modelica.Electrical.Analog.Interfaces.TwoPin;
+      annotation (
+        Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,-100},{
+                100,100}}), graphics={Text(
+              extent={{-100,-20},{100,20}},
+              lineColor={0,0,255},
+              textString="Load")}),
+        Diagram(coordinateSystem(preserveAspectRatio=true,
+                extent={{-100,-100},{100,100}}), graphics),
+        experiment(StopTime=8000));
+      Modelica.Electrical.Analog.Sources.StepCurrent step(
+        I=2,
+        offset=5,
+        startTime(displayUnit="h") = 3600) 
+        annotation (Placement(transformation(extent={{-20,20},{20,60}})));
+      Modelica.Electrical.Analog.Sources.SineCurrent sine(
+        I=2,
+        freqHz=2E-3,
+        startTime(displayUnit="h") = 7200) 
+        annotation (Placement(transformation(extent={{-20,-60},{20,-20}})));
+    equation
+      connect(step.p, p) annotation (Line(
+          points={{-20,40},{-60,40},{-60,5.55112e-16},{-100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+
+      connect(sine.p, p) annotation (Line(
+          points={{-20,-40},{-60,-40},{-60,5.55112e-16},{-100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(sine.n, n) annotation (Line(
+          points={{20,-40},{60,-40},{60,0},{100,0},{100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(step.n, n) annotation (Line(
+          points={{20,40},{60,40},{60,5.55112e-16},{100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+    end Load;
+
   equation
     connect(K_cath.V, blower.V) annotation (Line(
         points={{-70,27},{-70,16}},
