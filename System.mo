@@ -1,5 +1,5 @@
 within ;
-                                                                              /**
+                                                                                    /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -186,8 +186,7 @@ see what happens.</p>
 
   model Reference_Control
     "The reference DMFC system derived from the one to be presented at ASME FC09"
-    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
-          cells=3),
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3),
       redeclare Load load(step(I=4, offset=3)),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
@@ -213,20 +212,19 @@ see what happens.</p>
         startTime(displayUnit="h") = 7200) 
         annotation (Placement(transformation(extent={{-20,-60},{20,-20}})));
       equation
-      connect(step.p, p)          annotation (Line(
+        connect(step.p, p)          annotation (Line(
             points={{-20,40},{-60,40},{-60,5.55112e-16},{-100,5.55112e-16}},
             color={0,0,255},
             smooth=Smooth.None));
-
-      connect(sine.p, p) annotation (Line(
+        connect(sine.p, p) annotation (Line(
           points={{-20,-40},{-60,-40},{-60,5.55112e-16},{-100,5.55112e-16}},
           color={0,0,255},
           smooth=Smooth.None));
-      connect(sine.n, n) annotation (Line(
+        connect(sine.n, n) annotation (Line(
           points={{20,-40},{60,-40},{60,0},{100,0},{100,5.55112e-16}},
           color={0,0,255},
           smooth=Smooth.None));
-      connect(step.n, n) annotation (Line(
+        connect(step.n, n) annotation (Line(
           points={{20,40},{60,40},{60,5.55112e-16},{100,5.55112e-16}},
           color={0,0,255},
           smooth=Smooth.None));
@@ -296,7 +294,6 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         points={{59,-20},{66,-20},{66,-98},{-30,-98},{-30,-92.4},{-17.2,-92.4}},
         color={255,0,0},
         pattern=LinePattern.Dot));
-
     connect(pump.V, K_an.V) annotation (Line(
         points={{-42,-60},{-59,-60}},
         color={0,255,0},
@@ -305,7 +302,6 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-22,76},{-22,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
-
     connect(K_cath.V, K_cond.V_cath) annotation (Line(
         points={{-70,23},{-70,18},{16,18},{16,9},{26.8,9}},
         color={0,255,0},
@@ -319,7 +315,6 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-12.2,5.34}},
         color={255,0,0},
         pattern=LinePattern.Dot));
-
     connect(anodeCooler.T_ref, K_temp.T_deg_ref) 
                                             annotation (Line(
         points={{20,-23},{20,-28},{-2.8,-28}},
@@ -460,45 +455,50 @@ must be specialised in subclasses.</p>
     V_cathode = blower.V;
     T_cooler = cooler.T_ref;
 
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
-              -100,-100},{100,100}}), graphics),
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}),      graphics),
                          experiment(StopTime=7200));
   end Mingled_NoControl;
 
   model Mingled_Control
     extends Mingled(
       redeclare Flow.UnitOperations.Coolers.Simple cooler,
-      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3),
+      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
+        V0=2.1,
+        R=.15,
+        k_x=2E-6,
+        k_m_333=8E-6,
+        T(start=303.15)),
       redeclare Load load(step(I=4, offset=3)),
       mixer(T(fixed=true), c(fixed=true)));
     Control.CathodeLambdaControl K_cath(
-      aA=5.02E-9,
-      b=.24,
       cells=3,
       lambda=3,
-      c_est=1100) 
+      c_est=1100,
+      aA=4.16E-9,
+      b=0.2) 
       annotation (Placement(transformation(
           origin={-70,33},
           extent={{-5,-6},{5,6}},
           rotation=270)));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
               -100},{100,100}}),      graphics),
-                          experiment(StopTime=1800));
+                          experiment(StopTime=10800));
     Control.WaterControl K_cond annotation (Placement(transformation(extent={{0,
               -32},{12,-20}}, rotation=0)));
     Control.MingledTemperatureControl K_T(
       n=3,
-      T_r(displayUnit="K"),
-      lambda=3,
       c=900,
-      aA=5.02E-9,
-      b=.24)                              annotation (Placement(transformation(
+      aA=4.16E-9,
+      b=0.2,
+      T_r(displayUnit="degC"),
+      V_cp(displayUnit="ml"))             annotation (Placement(transformation(
             extent={{-70,-78},{-54,-60}}, rotation=0)));
     Control.MingledFuelControl K_fuel(
       cells=3,
       lambda=3,
-      aA=5.02E-9,
-      b=.24)                          annotation (Placement(transformation(
+      aA=4.16E-9,
+      b=0.2)                          annotation (Placement(transformation(
             extent={{-26,-98},{-12,-82}}, rotation=0)));
 
     model Load
@@ -691,7 +691,7 @@ must be specialised in subclasses.</p>
               annotation (Placement(transformation(extent={{-14,-52},{-26,-40}},
             rotation=0)));
     Flow.Measurements.FlowConcentration FC6
-      "Measures the concentration fed to the stack"
+      "Measures the concentration fed to the stack" 
       annotation (Placement(transformation(extent={{-64,-68},{-48,-52}})));
   equation
     eta_to_cell = inCell / (inCell + inDeg);

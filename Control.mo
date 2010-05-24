@@ -1,5 +1,5 @@
 within ;
-                                /**
+                                  /**
  * Â© Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -554,9 +554,19 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 <p>This controller sets the anodic flow rate to maintain a certain cell
 temperature. The controller will however maintain a minimum &lambda;, to 
 prioritise the reaction to cell heating.</p>
-<p>Internally, the controller uses a Skogestad PI controller, whose 
-integrator is disconnected when overridden by the &lambda; control to 
-avoid wind-up.</p>
+<p>Internally, the controller uses a (pseudo-)Skogestad PI controller for
+the feedback part.</p>
+<p>The formul&aelig; are found by setting up a heat balance around the cell, 
+focusing on the effect of anodic flow (the input) on the cell temperature
+(the state and output); all other terms can be assumed constant, i.e. 
+neglected.</p>
+<p>The gain between solution flow rate and cell temperature is
+<i>c<sub>p<sub><sup>sol<sup></i>/<i>C<sub>p<sub><sup>cell<sup></i> × <i>&Delta;T</i>.
+Since <i>&Delta;T</i> is the difference between cell and mixer temperatures (i.e. 
+anode inlet and outlet temperatures), the system is actually a nonlinear stable system.
+However, assuming <i>&Delta;T</i> is measured independently by two thermocouples and 
+is an external input, the system becomes a linear integrator (in reality this means we 
+introduced a hidden physical feedback, which in the worst case can lead to instability).</p>
 </html>"));
 
     import Modelica.SIunits.Concentration;
@@ -581,19 +591,21 @@ avoid wind-up.</p>
     VolumeFlowRateOutput V "Anodic-loop flow" 
       annotation (Placement(transformation(extent={{100,-20},{140,20}}, rotation=0)));
 
-    parameter VolumeFlowRate V_max = 1.5E-6 "Maximum flow allowed by pump";
+    parameter VolumeFlowRate V_max = 10E-6 "Maximum flow allowed by pump";
     parameter Integer n = 1 "Number of cells in stack";
-    parameter Temperature T_r = 330 "Target stack temperature";
+    parameter Temperature T_r = 333 "Target stack temperature";
     parameter Real lambda = 2 "Minimum lambda";
-    parameter Concentration c = 800 "Worst-case (lowest) concentration";
-    parameter Time tau_c = 600 "Desired closed-loop response";
-    parameter Volume V_cp = 5.95E-6
+    parameter Concentration c = 900 "Worst-case (lowest) concentration";
+    parameter Time tau_c = 20 "Desired closed-loop response";
+    parameter Volume V_cp = 6E-6
       "Volume of solution with same heat capacity as one cell";
-    parameter Real aA = 8.5E-9 "Partial derivative of n_x wrt. c";
-    parameter Real b = 0.21 "Partial derivative of n_x wrt. n_H";
+    parameter Real aA = 4E-9 "Partial derivative of n_x wrt. c";
+    parameter Real b = 0.2 "Partial derivative of n_x wrt. n_H";
+
+    Boolean lambdaControlled = V_lambda >= V_PI;
 
   protected
-    Real K_c = n * V_cp * tau_c / second^2 "PI-controller gain";
+    Real K_c = - n * V_cp / DeltaT / tau_c "PI-controller gain";
     Time tau_I = 4*tau_c "PI-controller integrating time";
 
     VolumeFlowRate V_PI "Flow given by the PI controller";
@@ -602,21 +614,17 @@ avoid wind-up.</p>
     Temperature DeltaT "Temperature difference between stack and mixer";
 
     Real x "Internal integrator";
-    Real e "Measured error";
-
-    constant Time second = 1 "To get dimensions right";
+    Temperature e = T_r - T_stack "Measured error";
 
   equation
-    V = min(V_max, max(V_lambda, V_PI));
+    V        = min(V_max, max(V_lambda, V_PI));
     V_lambda = lambda * n * (aA*c + (1-b) * I / (6*F)) / c;
-    V_PI * DeltaT = K_c * (e + x/second);
+    V_PI     = K_c * (e + x/tau_I);
 
     // Avoid division-by-zero errors
     DeltaT = if noEvent(abs(T_stack-T_mix) < eps) then eps else T_stack-T_mix;
 
-    e = T_stack - T_r;
-    // Anti-windup strategy: integrate only when PI active
-    der(x) = if V_PI < V_lambda or V_PI > V_max then 0 else e;
+    der(x) = if lambdaControlled then 0 else e;
 
     assert( V>=0, "==> Negative flow resulting from control");
 
