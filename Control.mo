@@ -1,5 +1,5 @@
 within ;
-                                  /**
+                                    /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -439,7 +439,8 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 
     import Modelica.SIunits.Time;
     import Modelica.SIunits.VolumeFlowRate;
-    import Units.Temperature;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.TemperatureDifference;
 
     annotation (defaultComponentName="K",Diagram(coordinateSystem(
             preserveAspectRatio=true,  extent={{-100,-100},{100,100}}),
@@ -502,7 +503,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
   protected
     outer Temperature T_env;
     Real int "Integral of the error";
-    Temperature e = T_FC_ref -T_m "Measured error";
+    TemperatureDifference e = T_FC_ref -T_m "Measured error";
     Real freezer "Fuzzy conditional integration";
 
   equation
@@ -571,6 +572,7 @@ introduced a hidden physical feedback, which in the worst case can lead to insta
 
     import Modelica.SIunits.Concentration;
     import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.TemperatureDifference;
     import Modelica.SIunits.Time;
     import Modelica.SIunits.Volume;
     import Modelica.SIunits.VolumeFlowRate;
@@ -614,7 +616,7 @@ introduced a hidden physical feedback, which in the worst case can lead to insta
     Temperature DeltaT "Temperature difference between stack and mixer";
 
     Real x "Internal integrator";
-    Temperature e = T_r - T_stack "Measured error";
+    TemperatureDifference e = T_r - T_stack "Measured error";
 
   equation
     V        = min(V_max, max(V_lambda, V_PI));
