@@ -280,7 +280,8 @@ about which we do not care much.</p>
   end Sink;
 
   annotation (uses(Modelica(version="3.1"), Units(version="1"),
-      Control(version="1")),                   Documentation(info="<html>
+      Control(version="1"),
+      Thermo(version="1")),                    Documentation(info="<html>
 <p>This package contains various models related to fluid flow in stirred tanks.</p>
 </html>"),
     version="1",
@@ -432,7 +433,9 @@ also for humidity.</p>
               fillColor={255,85,85},
               fillPattern=FillPattern.Solid,
               textString="%name")}),
-      Diagram(graphics));
+      Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+                100,100}}),
+              graphics));
 
   equation
     outlet.n = F * air.y;
@@ -717,6 +720,46 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
 
     end FlowConcentration;
 
+    model MethanolInAir "A measurement of methanol in a gas stream"
+      extends Modelica.Icons.TranslationalSensor;
+
+      import Modelica.SIunits.Density;
+      import Modelica.Constants.R;
+      import Thermo.Species;
+      import Thermo.mw;
+
+      outer Modelica.SIunits.Pressure p_env "Environment pressure";
+
+      Density exposure "Methanol mass in gas volume";
+
+      Real chronic_toxicity = exposure / chronic;
+      Real acute_toxicity =   exposure / acute;
+
+      FlowPort inlet annotation (Placement(transformation(extent={{-80,-30},{-60,-10}}),
+            iconTransformation(extent={{-80,-30},{-60,-10}})));
+      FlowPort outlet annotation (Placement(transformation(extent={{60,-30},{80,-10}}),
+            iconTransformation(extent={{60,-30},{80,-10}})));
+      annotation (Icon(graphics), Diagram(graphics));
+    protected
+      constant Density chronic =  4E-6 "Chronic reference exposure level";
+      constant Density acute =   28E-6 "Acute (1 h) reference exposure level";
+
+      FlowTemperature T 
+        annotation (Placement(transformation(extent={{-12,-32},{12,-8}})));
+    equation
+
+      exposure = T.vapour[Species.Methanol] * mw(Species.Methanol) / (sum(T.vapour) * R * T.T / p_env);
+
+      connect(inlet, T.inlet) annotation (Line(
+          points={{-70,-20},{-9.6,-20}},
+          color={0,127,127},
+          smooth=Smooth.None));
+      connect(T.outlet, outlet) annotation (Line(
+          points={{9.6,-20},{70,-20}},
+          color={0,127,127},
+          smooth=Smooth.None));
+    end MethanolInAir;
+
     package Test
       model LiquidPumpTest
 
@@ -729,8 +772,8 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
                 extent={{-10,-10},{10,10}}, rotation=0)));
         Measurements.FlowTemperature T annotation (Placement(transformation(
                 extent={{-40,-10},{-20,10}}, rotation=0)));
-        annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent=
-                  {{-100,-100},{100,100}}),
+        annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+                  -100},{100,100}}),
                             graphics));
 
         inner parameter Modelica.SIunits.Pressure p_env = 101325;
@@ -766,8 +809,8 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
                 extent={{10,-10},{30,10}}, rotation=0)));
         Measurements.FlowTemperature T annotation (Placement(transformation(
                 extent={{-20,-10},{0,10}}, rotation=0)));
-        annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent=
-                  {{-100,-100},{100,100}}),
+        annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+                  -100},{100,100}}),
                             graphics));
 
         inner parameter Modelica.SIunits.Pressure p_env = 101325;
@@ -801,7 +844,9 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
         replaceable Measurements.FlowTemperature measurement 
                                         annotation (Placement(transformation(
                 extent={{-20,0},{0,20}}, rotation=0)));
-        annotation (Diagram(graphics));
+        annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent=
+                  {{-100,-100},{100,100}}),
+                            graphics));
       protected
         Flow.Sources.Environment env "Atmospheric air" 
                                         annotation (Placement(transformation(
@@ -839,6 +884,54 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
         extends Flow.Measurements.Test.FlowTemperatureTest(redeclare
             Measurements.FlowConcentration measurement);
       end FlowConcentrationTest;
+
+      model GasMethanolTest "A test case for the methanol in air sensor"
+
+        annotation (Diagram(coordinateSystem(preserveAspectRatio=true, extent={{-100,
+                  -100},{100,100}}),
+                            graphics),
+          experiment,
+          experimentSetupOutput);
+      protected
+        Flow.Sources.Environment env "Atmospheric air" 
+                                        annotation (Placement(transformation(
+                extent={{-92,20},{-72,40}}, rotation=0)));
+        Flow.Sink sink "Dumpster" 
+                          annotation (Placement(transformation(extent={{40,6},{48,14}},
+                           rotation=0)));
+      public
+        Flow.Sources.Solution solution "Source of methanol solution" 
+                                          annotation (Placement(transformation(
+                extent={{-80,-10},{-68,2}}, rotation=0)));
+        inner parameter Modelica.SIunits.Pressure p_env = 101325;
+        inner Units.Temperature T_env;
+        inner Units.RelativeHumidity RH_env = 60;
+
+      protected
+        constant Modelica.SIunits.Time second = 1 "To get adimensional time";
+      public
+        MethanolInAir methanolInAir 
+          annotation (Placement(transformation(extent={{-20,2},{0,22}})));
+      equation
+        /* Running from time 0 to 1 will test negative flows and
+   * crossing of zero-flow condition. */
+        sum(env.outlet.n) = -1;
+        sum(solution.outlet.n) = -1;
+        T_env = 300 + 80*time;
+
+        connect(methanolInAir.inlet, solution.outlet) annotation (Line(
+            points={{-17,10},{-44,10},{-44,-4},{-74,-4}},
+            color={0,127,127},
+            smooth=Smooth.None));
+        connect(methanolInAir.inlet, env.outlet) annotation (Line(
+            points={{-17,10},{-44,10},{-44,30},{-73,30}},
+            color={0,127,127},
+            smooth=Smooth.None));
+        connect(methanolInAir.outlet, sink.inlet) annotation (Line(
+            points={{-3,10},{40.4,10}},
+            color={0,127,127},
+            smooth=Smooth.None));
+      end GasMethanolTest;
     end Test;
   end Measurements;
 
