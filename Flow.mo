@@ -314,7 +314,9 @@ about which we do not care much.</p>
 allows to set the concentration in moler per <em>cubic metre</em>; note that
 this is 1000 times the normal scale (1M = 1000 mol/m).</p>
 </html>"),
-      Diagram(graphics));
+      Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+                100,100}}),
+              graphics));
 
     parameter Concentration C = 1000 "Methanol concentration";
     parameter Temperature T = 298.15 "Temperature";
@@ -365,9 +367,11 @@ this is 1000 times the normal scale (1M = 1000 mol/m).</p>
 <p>This item is a source for a pure methanol stream. This model also keeps track 
 of how much methanol has been released in terms of moles, mass and volume.</p>
 </html>"),
-      Diagram(graphics));
+      Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+                100,100}}),
+              graphics));
 
-    outer Temperature T_env = 298.15 "Enviroment temperature";
+    outer Temperature T_env "Enviroment temperature";
 
     AmountOfSubstance n(start=0,fixed=true)
         "Released methanol moles from simulation start";

@@ -1,5 +1,5 @@
 within ;
-                                    /**
+                                      /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -472,12 +472,8 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 <li>The second lag is due to the material of the fuel-cell graphite plates, resulting in about 75 seconds.</li>
 </ul>
 <p>From these two lags, the PID parameters are calculated with the Skogestad rules.</p>
-<p>This controller implements conditional integration, with a fuzzy twist to avoid chattering problems.</p>
-<ul>
-<li>If the output temperature is lower than the environmental temperature, or higher than the fuel-cell temperature, the integrator is frozen;</li>
-<li>If the output temperature is within these two values, the integrator works nominally;</li>
-<li>If the output temperature is <em>close</em> to the two limits, it gradually reduces the <tt>freezer</tt> factor from 1 to 0 as it approaches them. The &epsilon; value through which the factor changes is configurable, usually 0.01 K.</li>
-</ul>
+<p>This controller implements conditional integration to deal with wind-up. If the output temperature is lower than the environmental temperature, or higher 
+than the fuel-cell temperature, the integrator is frozen.</p>
 <h2>References</h2>
 <p>Skogestad, Sigurd: <i>Simple analytic rules for model reduction and PID controller tuning</i>, Journal of Process Control, 13 (2003) 291-309.</p>
 </html>"));
@@ -490,7 +486,6 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     parameter Temperature T_deg_0 = 315 "Nominal degasser temperature";
     parameter Temperature T_FC_ref = 333
       "Set-point for the fuel cell's temperature";
-    parameter Temperature eps = 0.1 "Fuzzy temperature interval";
 
     Flow.IO.TemperatureInput T_m "Measurement" 
       annotation (Placement(transformation(extent={{-140,-20},{-100,20}},
@@ -501,28 +496,15 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
               0)));
 
   protected
-    outer Temperature T_env;
+    outer input Temperature T_env;
     Real int "Integral of the error";
     TemperatureDifference e = T_FC_ref -T_m "Measured error";
-    Real freezer "Fuzzy conditional integration";
 
   equation
     T_deg_ref = T_deg_0 + Kc * (e + int/tau_I + der(e)*tau_D);
 
     // Anti-windup in case of saturation
-    der(int) = freezer * e;
-
-    if T_deg_ref < T_env then
-      freezer = 0;
-    elseif T_deg_ref < T_env+eps then
-      freezer = (T_deg_ref - T_env)/eps;
-    elseif T_deg_ref < T_m - eps then
-      freezer = 1;
-    elseif T_deg_ref < T_m then
-      freezer = (T_m - T_deg_ref)/eps;
-    else
-      freezer = 0;
-    end if;
+    der(int) = if noEvent(T_deg_ref < T_env or T_deg_ref > T_m) then 0 else e;
 
   end TemperatureControl;
 
