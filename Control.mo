@@ -497,8 +497,9 @@ than the fuel-cell temperature, the integrator is frozen.</p>
               0)));
 
   protected
-    outer parameter Temperature T_env;
-    discrete Temperature T_env_initial;
+    outer Temperature T_env;
+    Temperature T_env_placeholder = T_env
+      "Auxiliary variable; essentially a hack";
     Real int "Integral of the error";
     TemperatureDifference e = T_FC_ref-T_m "Measured error";
     output Real freezer "Fuzzy conditional integration";
@@ -509,10 +510,10 @@ than the fuel-cell temperature, the integrator is frozen.</p>
     // Anti-windup in case of saturation
     der(int) = freezer * e;
 
-    if noEvent(T_deg_ref < T_env_initial) then
+    if noEvent(T_deg_ref < T_env_placeholder) then
       freezer = 0;
-    elseif noEvent(T_deg_ref < T_env_initial+eps) then
-      freezer = (T_deg_ref - T_env_initial)/eps;
+    elseif noEvent(T_deg_ref < T_env_placeholder+eps) then
+      freezer = (T_deg_ref - T_env_placeholder)/eps;
     elseif noEvent(T_deg_ref < T_m - eps) then
       freezer = 1;
     elseif noEvent(T_deg_ref < T_m) then
@@ -520,11 +521,6 @@ than the fuel-cell temperature, the integrator is frozen.</p>
     else
       freezer = 0;
     end if;
-
-    // FIXME really horrible hack. Without this variable T_env becomes a constant instead of a parameter at top level.
-    when initial() then
-      T_env_initial = T_env;
-    end when;
 
   end TemperatureControl;
 
