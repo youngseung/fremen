@@ -1,5 +1,5 @@
 within ;
-                                      /**
+                                          /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -486,6 +486,7 @@ than the fuel-cell temperature, the integrator is frozen.</p>
     parameter Temperature T_deg_0 = 315 "Nominal degasser temperature";
     parameter Temperature T_FC_ref = 333
       "Set-point for the fuel cell's temperature";
+    parameter Temperature eps = 0.1 "Fuzzy temperature interval";
 
     Flow.IO.TemperatureInput T_m "Measurement" 
       annotation (Placement(transformation(extent={{-140,-20},{-100,20}},
@@ -496,15 +497,34 @@ than the fuel-cell temperature, the integrator is frozen.</p>
               0)));
 
   protected
-    outer input Temperature T_env;
+    outer parameter Temperature T_env;
+    discrete Temperature T_env_initial;
     Real int "Integral of the error";
-    TemperatureDifference e = T_FC_ref -T_m "Measured error";
+    TemperatureDifference e = T_FC_ref-T_m "Measured error";
+    output Real freezer "Fuzzy conditional integration";
 
   equation
     T_deg_ref = T_deg_0 + Kc * (e + int/tau_I + der(e)*tau_D);
 
     // Anti-windup in case of saturation
-    der(int) = if noEvent(T_deg_ref < T_env or T_deg_ref > T_m) then 0 else e;
+    der(int) = freezer * e;
+
+    if noEvent(T_deg_ref < T_env_initial) then
+      freezer = 0;
+    elseif noEvent(T_deg_ref < T_env_initial+eps) then
+      freezer = (T_deg_ref - T_env_initial)/eps;
+    elseif noEvent(T_deg_ref < T_m - eps) then
+      freezer = 1;
+    elseif noEvent(T_deg_ref < T_m) then
+      freezer = (T_m - T_deg_ref)/eps;
+    else
+      freezer = 0;
+    end if;
+
+    // FIXME really horrible hack. Without this variable T_env becomes a constant instead of a parameter at top level.
+    when initial() then
+      T_env_initial = T_env;
+    end when;
 
   end TemperatureControl;
 
