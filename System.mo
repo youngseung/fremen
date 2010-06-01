@@ -1,5 +1,5 @@
 within ;
-                                                                                    /**
+                                                                                        /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ package System "DMFC systems"
     Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
               annotation (Placement(transformation(extent={{-30,-66},{-42,-54}},
             rotation=0)));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
               -100},{100,100}}),      graphics),
                          Documentation(info="<html>
 <p>This is a generic reference system, with no process integration
@@ -56,9 +56,6 @@ must be specialised in subclasses.</p>
     Flow.UnitOperations.Separator degasser "The CO2-degasser" 
                         annotation (Placement(transformation(extent={{38,-30},{
               58,-10}}, rotation=0)));
-    Flow.Sink co2sink "The gas outlet of the degasser" 
-                      annotation (Placement(transformation(extent={{68,-16},{76,
-              -8}}, rotation=0)));
     replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
                       annotation (Placement(transformation(extent={{-50,-12},{
               -14,22}}, rotation=0)));
@@ -78,8 +75,8 @@ must be specialised in subclasses.</p>
                         annotation (Placement(transformation(extent={{68,30},{
               86,50}}, rotation=0)));
     Flow.Sink airSink "The gas outlet of the condenser" 
-                      annotation (Placement(transformation(extent={{92,46},{100,
-              54}}, rotation=0)));
+                      annotation (Placement(transformation(extent={{92,64},{100,
+              72}}, rotation=0)));
     replaceable Modelica.Electrical.Analog.Interfaces.TwoPin load
       "Load connected to the cell"       annotation (Placement(transformation(
             extent={{-52,84},{-40,96}}, rotation=0)));
@@ -94,6 +91,10 @@ must be specialised in subclasses.</p>
       "Methanol consumed in the cell";
     MolarFlow inDeg =  -degasser.gasOutlet.n[1] "Methanol lost in the degasser";
 
+  public
+    Flow.Measurements.MethanolInAir emissions
+      "Measurement on methanol emissions"
+      annotation (Placement(transformation(extent={{68,60},{88,80}})));
   equation
     eta_to_cell = inCell / (inCell + inDeg);
     eta_system = eta_to_cell * fuelCell.eta_total;
@@ -114,11 +115,6 @@ must be specialised in subclasses.</p>
     connect(anodeCooler.outlet, degasser.inlet) 
                                            annotation (Line(points={{29.4,-20},
             {38,-20}}, color={0,127,127}));
-    connect(degasser.gasOutlet, co2sink.inlet)    annotation (Line(points={{55,
-            -16},{62,-16},{62,-12},{68.4,-12}}, color={0,127,127}));
-    connect(condenser.gasOutlet, airSink.inlet) 
-      annotation (Line(points={{83.3,44},{88,44},{88,50},{92.4,50}}, color={0,
-            127,127}));
     connect(condenser.liquidOutlet, mixer.waterInlet) 
       annotation (Line(points={{83.3,36},{88,36},{88,-60},{8,-60}}, color={0,
             127,127}));
@@ -141,6 +137,18 @@ must be specialised in subclasses.</p>
             {-21.2,40},{0,40},{0,90},{-12,90}}, color={0,0,255}));
     connect(fuelCell.plus, load.p) annotation (Line(points={{-42.8,15.2},{-42.8,
             40},{-64,40},{-64,90},{-52,90}}, color={0,0,255}));
+    connect(airSink.inlet, emissions.outlet) annotation (Line(
+        points={{92.4,68},{85,68}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(emissions.inlet, degasser.gasOutlet) annotation (Line(
+        points={{71,68},{64,68},{64,-16},{55,-16}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(condenser.gasOutlet, emissions.inlet) annotation (Line(
+        points={{83.3,44},{83.3,56},{64,56},{64,68},{71,68}},
+        color={0,127,127},
+        smooth=Smooth.None));
   end Reference;
 
   model Reference_NoControl "The reference system with manual control"
@@ -345,7 +353,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
     Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
               annotation (Placement(transformation(extent={{-30,-66},{-42,-54}},
             rotation=0)));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
               -100},{100,100}}),      graphics),
                          Documentation(info="<html>
 <p>This is a generic reference system, with no process integration
@@ -365,8 +373,8 @@ must be specialised in subclasses.</p>
                         annotation (Placement(transformation(extent={{48,-6},{
               68,16}}, rotation=0)));
     Flow.Sink co2sink "The gas outlet of the degasser" 
-                      annotation (Placement(transformation(extent={{80,16},{88,
-              24}}, rotation=0)));
+                      annotation (Placement(transformation(extent={{86,18},{94,
+              26}}, rotation=0)));
     replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
                       annotation (Placement(transformation(extent={{-50,-12},{
               -14,22}}, rotation=0)));
@@ -392,6 +400,10 @@ must be specialised in subclasses.</p>
     MolarFlow inDeg =  -separator.gasOutlet.n[1]
       "Methanol lost in the separator";
 
+  public
+    Flow.Measurements.MethanolInAir emissions
+      "Checks whether there is too much methanol in the outlet" 
+      annotation (Placement(transformation(extent={{68,16},{84,32}})));
   equation
     eta_to_cell = inCell / (inCell + inDeg);
     eta_system = eta_to_cell * fuelCell.eta_total;
@@ -427,8 +439,14 @@ must be specialised in subclasses.</p>
             {0,5},{0,10.1},{-14,10.1}},          color={0,127,127}));
     connect(separator.liquidOutlet, mixer.waterInlet) annotation (Line(points={{65,0.6},
             {65,-60},{8,-60}},          color={0,127,127}));
-    connect(separator.gasOutlet, co2sink.inlet) annotation (Line(points={{65,
-            9.4},{72,9.4},{72,20},{80.4,20}}, color={0,127,127}));
+    connect(separator.gasOutlet, emissions.inlet) annotation (Line(
+        points={{65,9.4},{65,22.7},{70.4,22.7},{70.4,22.4}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(co2sink.inlet, emissions.outlet) annotation (Line(
+        points={{86.4,22},{85.15,22},{85.15,22.4},{81.6,22.4}},
+        color={0,127,127},
+        smooth=Smooth.None));
   end Mingled;
 
   model Mingled_NoControl "The mingled system with manual control"
