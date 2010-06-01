@@ -1,5 +1,5 @@
 within ;
-/**
+  /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,57 @@ within ;
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package Electric "Components for electric interaction"
+  model CellEmulator "A Thevenin emulator of a fuel cell"
+    extends Modelica.Electrical.Analog.Interfaces.TwoPin;
+    annotation (
+      Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,-100},{100,
+              100}}), graphics={Rectangle(
+            extent={{-100,42},{100,-40}},
+            lineColor={0,0,0},
+            fillColor={255,255,255},
+            fillPattern=FillPattern.Solid,
+            lineThickness=1), Text(
+            extent={{-100,20},{100,-20}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            fillColor={255,255,255},
+            fillPattern=FillPattern.Solid,
+            textString="DMFC")}),
+      Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+              100,100}}),
+              graphics),
+      Documentation(info="<html>
+<p>A trivial fuel-cell emulator based on a Th&eacute;venin equivalent circuit.</p>
+<p>The parameters (5&nbsp;V, 0.3&nbsp;&Omega;) are taken for the design values of the
+cell stack ordered from Baltic Fuel Cells.</p>
+</html>"));
+    Modelica.Electrical.Analog.Sources.ConstantVoltage voltage(V=5) 
+      annotation (Placement(transformation(extent={{-60,-20},{-20,20}})));
+    Modelica.Electrical.Analog.Basic.Resistor resistor(useHeatPort=false, R=0.3) 
+      annotation (Placement(transformation(extent={{20,-20},{60,20}})));
+  equation
+    connect(resistor.p, voltage.n) annotation (Line(
+        points={{20,1.22125e-15},{0,-4.67291e-21},{0,1.22125e-15},{-20,
+            1.22125e-15}},
+        color={0,0,255},
+        smooth=Smooth.None));
+
+    connect(voltage.p, p) annotation (Line(
+        points={{-60,1.22125e-15},{-80,1.22125e-15},{-80,5.55112e-16},{-100,
+            5.55112e-16}},
+        color={0,0,255},
+        smooth=Smooth.None));
+
+    connect(resistor.n, n) annotation (Line(
+        points={{60,1.22125e-15},{82,1.22125e-15},{82,5.55112e-16},{100,
+            5.55112e-16}},
+        color={0,0,255},
+        smooth=Smooth.None));
+
+  end CellEmulator;
+
   model PowerLoad "A typical laptop power load"
     extends Modelica.Blocks.Sources.CombiTimeTable(
     table = transpose({ {0, 10, 10, 20, 20, 30, 30, 36, 36, 40, 40, 49, 49, 60, 60, 80, 80, 110, 111, 120, 120, 130, 130, 140, 140, 160, 160, 180},
@@ -127,7 +177,7 @@ defining the voltage.</p>
 
   equation
     V = cells * (E0_c - E0_a + eta_c - eta_a);
-  /*
+  /* FIXME why is this commented out?
   E0_a = -0.132 + 1.41*exp(-3.52*x);
   E0_c = 4.06279 + 0.0677504*tanh(-21.8502*y+12.8268)
        - 0.105734*(1/(1.00167-y)^0.379571 - 1.576)
@@ -155,6 +205,211 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
 1890&ndash;1903.</p>
 </html>"));
   end Li_ionBattery;
+
+  partial model Converter "A generic DC/DC converter"
+    Modelica.SIunits.Voltage v1 "Voltage drop over the left port";
+    Modelica.SIunits.Voltage v2 "Voltage drop over the right port";
+    Modelica.SIunits.Current i1
+      "Current flowing from pos. to neg. pin of the left port";
+    Modelica.SIunits.Current i2
+      "Current flowing from pos. to neg. pin of the right port";
+    Modelica.Electrical.Analog.Interfaces.PositivePin p1
+      "Positive pin of the left port (potential p1.v > n1.v for positive voltage drop v1)"
+                                                                                                        annotation (Placement(
+          transformation(extent={{-110,40},{-90,60}}, rotation=0)));
+    Modelica.Electrical.Analog.Interfaces.NegativePin n1
+      "Negative pin of the left port"              annotation (Placement(
+          transformation(extent={{-90,-60},{-110,-40}}, rotation=0)));
+    Modelica.Electrical.Analog.Interfaces.PositivePin p2
+      "Positive pin of the right port (potential p2.v > n2.v for positive voltage drop v2)"
+                                                                                                         annotation (Placement(
+          transformation(extent={{110,40},{90,60}}, rotation=0)));
+    Modelica.Electrical.Analog.Interfaces.NegativePin n2
+      "Negative pin of the right port"              annotation (Placement(
+          transformation(extent={{90,-60},{110,-40}}, rotation=0)));
+    Modelica.Blocks.Interfaces.RealInput D "Duty ratio" annotation (Placement(
+          transformation(
+          extent={{-20,-20},{20,20}},
+          rotation=270,
+          origin={0,120}), iconTransformation(
+          extent={{-10,-10},{10,10}},
+          rotation=270,
+          origin={0,110})));
+    annotation (
+      Diagram(coordinateSystem(
+          preserveAspectRatio=true,
+          extent={{-100,-100},{100,100}},
+          grid={1,1}), graphics={
+          Polygon(
+            points={{-120,53},{-110,50},{-120,47},{-120,53}},
+            lineColor={160,160,164},
+            fillColor={160,160,164},
+            fillPattern=FillPattern.Solid),
+          Line(points={{-136,50},{-111,50}}, color={160,160,164}),
+          Polygon(
+            points={{127,-47},{137,-50},{127,-53},{127,-47}},
+            lineColor={160,160,164},
+            fillColor={160,160,164},
+            fillPattern=FillPattern.Solid),
+          Line(points={{111,-50},{136,-50}}, color={160,160,164}),
+          Text(
+            extent={{112,-44},{128,-29}},
+            lineColor={160,160,164},
+            textString="i2"),
+          Text(
+            extent={{118,52},{135,67}},
+            lineColor={0,0,0},
+            textString="i2"),
+          Polygon(
+            points={{120,53},{110,50},{120,47},{120,53}},
+            lineColor={0,0,0},
+            fillPattern=FillPattern.HorizontalCylinder,
+            fillColor={160,160,164}),
+          Line(points={{111,50},{136,50}}, color={0,0,0}),
+          Line(points={{-136,-49},{-111,-49}}, color={160,160,164}),
+          Polygon(
+            points={{-126,-46},{-136,-49},{-126,-52},{-126,-46}},
+            lineColor={160,160,164},
+            fillColor={160,160,164},
+            fillPattern=FillPattern.Solid),
+          Text(
+            extent={{-127,-46},{-110,-31}},
+            lineColor={160,160,164},
+            textString="i1"),
+          Text(
+            extent={{-136,53},{-119,68}},
+            lineColor={160,160,164},
+            textString="i1")}),
+      Documentation(revisions="<html>
+<ul>
+<li><i> 1998   </i>
+       by Christoph Clauss<br> initially implemented<br>
+       </li>
+</ul>
+</html>", info="<html>
+
+</html>"),
+      Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
+              100}}), graphics={
+          Rectangle(
+            extent={{-100,100},{100,-100}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            fillPattern=FillPattern.Solid,
+            fillColor={255,255,255}),
+          Text(
+            extent={{-100,100},{0,0}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            textString="="),
+          Text(
+            extent={{0,0},{100,-100}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            textString="="),
+          Line(
+            points={{-100,-100},{100,100}},
+            color={0,0,0},
+            thickness=1,
+            smooth=Smooth.None)}));
+  equation
+    v1 = p1.v - n1.v;
+    v2 = p2.v - n2.v;
+    i1 = p1.i;
+    i2 = p2.i;
+  end Converter;
+
+  model BuckBoost "Buck-boost converter"
+    extends Converter;
+    annotation (
+      Diagram(graphics),
+      Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
+              100}}), graphics),
+      Documentation(info="<html>
+<p>This class implements a canonical buck-boost converter, which can be controlled
+by setting a duty ratio <i>D</i>, converted appropriately by an internal modulator
+in opening/closing signals for the internal switch.</p>
+</html>"));
+    Modelica.Electrical.Analog.Basic.Inductor inductor(L=1E-3) annotation (
+        Placement(transformation(
+          extent={{-20,-20},{20,20}},
+          rotation=270,
+          origin={0,0})));
+    Modelica.Electrical.Analog.Ideal.IdealClosingSwitch switch
+      annotation (Placement(transformation(extent={{-70,30},{-30,70}})));
+    PulseWidthModulator pwm annotation (Placement(transformation(
+          extent={{-6,-6},{6,6}},
+          rotation=270,
+          origin={-50,80})));
+    Modelica.Electrical.Analog.Ideal.IdealDiode diode annotation (Placement(
+          transformation(
+          extent={{-20,-20},{20,20}},
+          rotation=180,
+          origin={50,50})));
+  equation
+    connect(inductor.p, switch.n) annotation (Line(
+        points={{4.89506e-15,20},{4.89506e-15,50},{-30,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(inductor.n, n1) annotation (Line(
+        points={{-2.45257e-15,-20},{-2.45257e-15,-50},{-100,-50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(n2, inductor.n) annotation (Line(
+        points={{100,-50},{-2.45257e-15,-50},{-2.45257e-15,-20}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(pwm.switch, switch.control) annotation (Line(
+        points={{-50,72.8},{-50,64}},
+        color={255,0,255},
+        smooth=Smooth.None));
+    connect(pwm.D, D) annotation (Line(
+        points={{-50,87.2},{-50,94},{0,94},{0,120},{1.11022e-15,120}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(p2, diode.p) annotation (Line(
+        points={{100,50},{70,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(diode.n, inductor.p) annotation (Line(
+        points={{30,50},{4.89506e-15,50},{4.89506e-15,20}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(p1, switch.p) annotation (Line(
+        points={{-100,50},{-70,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+  end BuckBoost;
+
+  model PulseWidthModulator
+    "Given a duty ratio, produces a pulse-width-modulation signal"
+
+    Modelica.Blocks.Interfaces.RealInput D "Fraction of time switch is closed" 
+      annotation (Placement(transformation(extent={{-140,-20},{-100,20}})));
+    Modelica.Blocks.Interfaces.BooleanOutput switch
+      "Whether to close the switch" 
+      annotation (Placement(transformation(extent={{100,-20},{140,20}})));
+    annotation (defaultComponentName="pwm", Diagram(coordinateSystem(preserveAspectRatio=true, extent={{-100,
+              -100},{100,100}}),
+                           graphics), Icon(coordinateSystem(preserveAspectRatio=true,
+            extent={{-100,-100},{100,100}}), graphics={Rectangle(
+            extent={{-100,100},{100,-100}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            fillColor={255,255,255},
+            fillPattern=FillPattern.Solid), Text(
+            extent={{-100,40},{100,-40}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            textString="PWM")}));
+
+    parameter Modelica.SIunits.Time T = 1E-5 "Duty cycle";
+
+  equation
+    assert( T > 0, "Duty cycle must be a positive time");
+    switch = rem(time, T) < D*T;
+
+  end PulseWidthModulator;
 
   package Test "Test package"
 
@@ -203,7 +458,7 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
         I=2,
         phase=1.5707963267949) 
         annotation (Placement(transformation(extent={{-20,20},{20,60}})));
-      Li_ionBattery li_ionBattery
+      Li_ionBattery li_ionBattery 
         annotation (Placement(transformation(extent={{-40,-80},{40,0}})));
     equation
       connect(li_ionBattery.n, ground.p) annotation (Line(
@@ -211,14 +466,103 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
           color={0,0,255},
           smooth=Smooth.None));
       connect(sineCurrent.n, li_ionBattery.n) annotation (Line(
-          points={{20,40},{20,25.8},{20,25.8},{20,11.6},{20,-16.8},{20,-16.8}}, 
-
+          points={{20,40},{20,25.8},{20,25.8},{20,11.6},{20,-16.8},{20,-16.8}},
           color={0,0,255},
           smooth=Smooth.None));
+
       connect(sineCurrent.p, li_ionBattery.p) annotation (Line(
           points={{-20,40},{-20,-16.8}},
           color={0,0,255},
           smooth=Smooth.None));
     end Li_ionBatteryTest;
+
+    model TestPulseWidthModulator "A test for the pulse-width modulator class"
+
+      PulseWidthModulator pwm(T=0.01) 
+        annotation (Placement(transformation(extent={{-40,-40},{40,40}})));
+
+    equation
+      pwm.D = time-0.1;
+
+      annotation (experiment(StopTime=1.2, NumberOfIntervals=2000));
+    end TestPulseWidthModulator;
+
+    model TestBuckBoost "A test case for the buck-boost converter model"
+
+      CellEmulator cellEmulator annotation (Placement(transformation(
+            extent={{-20,-20},{20,20}},
+            rotation=270,
+            origin={-80,0})));
+      BuckBoost buckBoost 
+        annotation (Placement(transformation(extent={{-20,-20},{20,20}})));
+      annotation (Diagram(coordinateSystem(preserveAspectRatio=true, extent={{-100,
+                -100},{100,100}}),
+                             graphics), experiment(StopTime=0.05,
+            NumberOfIntervals=5000));
+      Modelica.Electrical.Analog.Basic.Resistor resistor(R=1) annotation (Placement(
+            transformation(
+            extent={{-10,-10},{10,10}},
+            rotation=90,
+            origin={62,0})));
+      Modelica.Electrical.Analog.Basic.Ground ground 
+        annotation (Placement(transformation(extent={{-100,-60},{-80,-40}})));
+      Modelica.Electrical.Analog.Basic.Capacitor inletCapacitor(C=0.5e-3) 
+        annotation (Placement(transformation(
+            extent={{-10,-10},{10,10}},
+            rotation=270,
+            origin={-50,0})));
+      Modelica.Electrical.Analog.Basic.Capacitor outletCapacitor(C=0.5e-3) 
+        annotation (Placement(transformation(
+            extent={{-10,-10},{10,10}},
+            rotation=90,
+            origin={84,0})));
+      Modelica.Blocks.Sources.Sine D(
+        startTime=0.001,
+        amplitude=0.5,
+        offset=0.5,
+        freqHz=40) "Duty ratio signal"
+        annotation (Placement(transformation(extent={{-50,44},{-30,64}})));
+    equation
+      connect(cellEmulator.p, buckBoost.p1) annotation (Line(
+          points={{-80,20},{-80,26},{-50,26},{-50,10},{-20,10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(cellEmulator.n, buckBoost.n1) annotation (Line(
+          points={{-80,-20},{-80,-26},{-50,-26},{-50,-10},{-20,-10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(ground.p, cellEmulator.n) annotation (Line(
+          points={{-90,-40},{-80,-40},{-80,-20}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(buckBoost.n2, resistor.p) annotation (Line(
+          points={{20,-10},{62,-10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(buckBoost.p2, resistor.n) annotation (Line(
+          points={{20,10},{30.5,10},{30.5,10},{41,10},{41,10},{62,10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(buckBoost.p1, inletCapacitor.p) annotation (Line(
+          points={{-20,10},{-27.5,10},{-27.5,10},{-35,10},{-35,10},{-50,10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(buckBoost.n1, inletCapacitor.n) annotation (Line(
+          points={{-20,-10},{-50,-10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(outletCapacitor.p, resistor.p) annotation (Line(
+          points={{84,-10},{80,-10},{80,-14},{74,-14},{74,-10},{62,-10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(outletCapacitor.n, resistor.n) annotation (Line(
+          points={{84,10},{80,10},{80,14},{74,14},{74,10},{62,10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(D.y, buckBoost.D) annotation (Line(
+          points={{-29,54},{0,54},{0,22},{1.22125e-15,22}},
+          color={0,0,127},
+          smooth=Smooth.None));
+    end TestBuckBoost;
   end Test;
 end Electric;
