@@ -1146,7 +1146,9 @@ catalytic-bed converter.</p>
       FlowPort waterInlet "The water-recovery inlet" 
                              annotation (Placement(transformation(extent={{70,
                 -10},{90,10}}, rotation=0)));
-      annotation (Diagram(graphics),
+      annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+                -100},{100,100}}),
+                          graphics),
                            Icon(coordinateSystem(preserveAspectRatio=false,
               extent={{-100,-100},{100,100}}), graphics={
             Ellipse(
@@ -1210,6 +1212,8 @@ by default it is 1 M.</p>
       c = n[Species.Methanol] / V;
 
       p = rho(T,Species.Water,Phases.Liquid)*g*(V/A);
+
+      assert(V > sqrt(Modelica.Constants.eps), "==> Mixer ran out of solution");
 
     initial equation
       n[Incondensables] = zeros(size(Incondensables,1));
