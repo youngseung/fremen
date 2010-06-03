@@ -1,5 +1,5 @@
 within ;
-                                                                                        /**
+                                                                                          /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -93,7 +93,7 @@ must be specialised in subclasses.</p>
 
   public
     Flow.Measurements.MethanolInAir emissions
-      "Measurement on methanol emissions"
+      "Measurement on methanol emissions" 
       annotation (Placement(transformation(extent={{68,60},{88,80}})));
   equation
     eta_to_cell = inCell / (inCell + inDeg);
@@ -243,7 +243,7 @@ see what happens.</p>
       cells=3,
       aA=5.02E-9,
       b=0.24,
-      lambda=6) "Cathode lambda controller" 
+      lambda=3) "Cathode lambda controller" 
       annotation (Placement(transformation(
           origin={-70,29},
           extent={{-5,-4},{5,4}},
