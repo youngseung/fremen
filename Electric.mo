@@ -1,5 +1,5 @@
 within ;
-  /**
+      /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,9 +16,14 @@ within ;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 package Electric "Components for electric interaction"
   model CellEmulator "A Thevenin emulator of a fuel cell"
-    extends Modelica.Electrical.Analog.Interfaces.TwoPin;
+    extends Modelica.Electrical.Analog.Interfaces.OnePort;
+
+    parameter Modelica.SIunits.Voltage V = 5 "Open-circuit voltage";
+    parameter Modelica.SIunits.Resistance R = 0.3 "Internal resistance";
+
     annotation (
       Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,-100},{100,
               100}}), graphics={Rectangle(
@@ -41,28 +46,9 @@ package Electric "Components for electric interaction"
 <p>The parameters (5&nbsp;V, 0.3&nbsp;&Omega;) are taken for the design values of the
 cell stack ordered from Baltic Fuel Cells.</p>
 </html>"));
-    Modelica.Electrical.Analog.Sources.ConstantVoltage voltage(V=5) 
-      annotation (Placement(transformation(extent={{-60,-20},{-20,20}})));
-    Modelica.Electrical.Analog.Basic.Resistor resistor(useHeatPort=false, R=0.3) 
-      annotation (Placement(transformation(extent={{20,-20},{60,20}})));
   equation
-    connect(resistor.p, voltage.n) annotation (Line(
-        points={{20,1.22125e-15},{0,-4.67291e-21},{0,1.22125e-15},{-20,
-            1.22125e-15}},
-        color={0,0,255},
-        smooth=Smooth.None));
 
-    connect(voltage.p, p) annotation (Line(
-        points={{-60,1.22125e-15},{-80,1.22125e-15},{-80,5.55112e-16},{-100,
-            5.55112e-16}},
-        color={0,0,255},
-        smooth=Smooth.None));
-
-    connect(resistor.n, n) annotation (Line(
-        points={{60,1.22125e-15},{82,1.22125e-15},{82,5.55112e-16},{100,
-            5.55112e-16}},
-        color={0,0,255},
-        smooth=Smooth.None));
+    v = V + R*i;
 
   end CellEmulator;
 
@@ -213,6 +199,7 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
       "Current flowing from pos. to neg. pin of the left port";
     Modelica.SIunits.Current i2
       "Current flowing from pos. to neg. pin of the right port";
+
     Modelica.Electrical.Analog.Interfaces.PositivePin p1
       "Positive pin of the left port (potential p1.v > n1.v for positive voltage drop v1)"
                                                                                                         annotation (Placement(
@@ -317,6 +304,7 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
     v2 = p2.v - n2.v;
     i1 = p1.i;
     i2 = p2.i;
+
   end Converter;
 
   model BuckBoost "Buck-boost converter"
@@ -330,12 +318,13 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
 by setting a duty ratio <i>D</i>, converted appropriately by an internal modulator
 in opening/closing signals for the internal switch.</p>
 </html>"));
-    Modelica.Electrical.Analog.Basic.Inductor inductor(L=1E-3) annotation (
+    Modelica.Electrical.Analog.Basic.Inductor inductance(L=1E-3) 
+                                                               annotation (
         Placement(transformation(
-          extent={{-20,-20},{20,20}},
+          extent={{-16,-16},{16,16}},
           rotation=270,
-          origin={0,0})));
-    Modelica.Electrical.Analog.Ideal.IdealClosingSwitch switch
+          origin={0,24})));
+    Modelica.Electrical.Analog.Ideal.IdealClosingSwitch switch 
       annotation (Placement(transformation(extent={{-70,30},{-30,70}})));
     PulseWidthModulator pwm annotation (Placement(transformation(
           extent={{-6,-6},{6,6}},
@@ -346,17 +335,15 @@ in opening/closing signals for the internal switch.</p>
           extent={{-20,-20},{20,20}},
           rotation=180,
           origin={50,50})));
+    Modelica.Electrical.Analog.Basic.Resistor resistance(R=0.01) annotation (
+        Placement(transformation(
+          extent={{-16,-16},{16,16}},
+          rotation=270,
+          origin={0,-24})));
   equation
-    connect(inductor.p, switch.n) annotation (Line(
-        points={{4.89506e-15,20},{4.89506e-15,50},{-30,50}},
-        color={0,0,255},
-        smooth=Smooth.None));
-    connect(inductor.n, n1) annotation (Line(
-        points={{-2.45257e-15,-20},{-2.45257e-15,-50},{-100,-50}},
-        color={0,0,255},
-        smooth=Smooth.None));
-    connect(n2, inductor.n) annotation (Line(
-        points={{100,-50},{-2.45257e-15,-50},{-2.45257e-15,-20}},
+    connect(inductance.p, switch.n) 
+                                  annotation (Line(
+        points={{3.36094e-15,40},{3.36094e-15,50},{-30,50}},
         color={0,0,255},
         smooth=Smooth.None));
     connect(pwm.switch, switch.control) annotation (Line(
@@ -371,12 +358,25 @@ in opening/closing signals for the internal switch.</p>
         points={{100,50},{70,50}},
         color={0,0,255},
         smooth=Smooth.None));
-    connect(diode.n, inductor.p) annotation (Line(
-        points={{30,50},{4.89506e-15,50},{4.89506e-15,20}},
+    connect(diode.n, inductance.p) 
+                                 annotation (Line(
+        points={{30,50},{3.36094e-15,50},{3.36094e-15,40}},
         color={0,0,255},
         smooth=Smooth.None));
     connect(p1, switch.p) annotation (Line(
         points={{-100,50},{-70,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(resistance.p, inductance.n) annotation (Line(
+        points={{3.36094e-15,-8},{-2.51717e-15,-8},{-2.51717e-15,8}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(resistance.n, n1) annotation (Line(
+        points={{-2.51717e-15,-40},{0,-40},{0,-50},{-100,-50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(resistance.n, n2) annotation (Line(
+        points={{-2.51717e-15,-40},{0,-40},{0,-50},{100,-50}},
         color={0,0,255},
         smooth=Smooth.None));
   end BuckBoost;
@@ -498,8 +498,9 @@ in opening/closing signals for the internal switch.</p>
       annotation (Diagram(coordinateSystem(preserveAspectRatio=true, extent={{-100,
                 -100},{100,100}}),
                              graphics), experiment(StopTime=0.05,
-            NumberOfIntervals=5000));
-      Modelica.Electrical.Analog.Basic.Resistor resistor(R=1) annotation (Placement(
+            NumberOfIntervals=100000));
+      Modelica.Electrical.Analog.Basic.Resistor resistor(R=10) 
+                                                              annotation (Placement(
             transformation(
             extent={{-10,-10},{10,10}},
             rotation=90,
@@ -516,12 +517,11 @@ in opening/closing signals for the internal switch.</p>
             extent={{-10,-10},{10,10}},
             rotation=90,
             origin={84,0})));
-      Modelica.Blocks.Sources.Sine D(
-        startTime=0.001,
-        amplitude=0.5,
-        offset=0.5,
-        freqHz=40) "Duty ratio signal"
-        annotation (Placement(transformation(extent={{-50,44},{-30,64}})));
+      Modelica.Blocks.Sources.Step D(
+        height=0.2,
+        offset=0.4,
+        startTime=0.02) 
+        annotation (Placement(transformation(extent={{-40,40},{-20,60}})));
     equation
       connect(cellEmulator.p, buckBoost.p1) annotation (Line(
           points={{-80,20},{-80,26},{-50,26},{-50,10},{-20,10}},
@@ -560,7 +560,7 @@ in opening/closing signals for the internal switch.</p>
           color={0,0,255},
           smooth=Smooth.None));
       connect(D.y, buckBoost.D) annotation (Line(
-          points={{-29,54},{0,54},{0,22},{1.22125e-15,22}},
+          points={{-19,50},{0,50},{0,22},{1.22125e-15,22}},
           color={0,0,127},
           smooth=Smooth.None));
     end TestBuckBoost;
