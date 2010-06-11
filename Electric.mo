@@ -1,5 +1,5 @@
 within ;
-      /**
+        /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -192,6 +192,36 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
 </html>"));
   end Li_ionBattery;
 
+  model PulseWidthModulator
+    "Given a duty ratio, produces a pulse-width-modulation signal"
+
+    Modelica.Blocks.Interfaces.RealInput D "Fraction of time switch is closed" 
+      annotation (Placement(transformation(extent={{-140,-20},{-100,20}})));
+    Modelica.Blocks.Interfaces.BooleanOutput switch
+      "Whether to close the switch" 
+      annotation (Placement(transformation(extent={{100,-20},{140,20}})));
+    annotation (defaultComponentName="pwm", Diagram(coordinateSystem(preserveAspectRatio=true, extent={{-100,
+              -100},{100,100}}),
+                           graphics), Icon(coordinateSystem(preserveAspectRatio=true,
+            extent={{-100,-100},{100,100}}), graphics={Rectangle(
+            extent={{-100,100},{100,-100}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            fillColor={255,255,255},
+            fillPattern=FillPattern.Solid), Text(
+            extent={{-100,40},{100,-40}},
+            lineColor={0,0,0},
+            lineThickness=1,
+            textString="PWM")}));
+
+    parameter Modelica.SIunits.Time T = 1E-6 "Duty cycle";
+
+  equation
+    assert( T > 0, "Duty cycle must be a positive time");
+    switch = rem(time, T) < D*T;
+
+  end PulseWidthModulator;
+
   partial model Converter "A generic DC/DC converter"
     Modelica.SIunits.Voltage v1 "Voltage drop over the left port";
     Modelica.SIunits.Voltage v2 "Voltage drop over the right port";
@@ -318,7 +348,7 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
 by setting a duty ratio <i>D</i>, converted appropriately by an internal modulator
 in opening/closing signals for the internal switch.</p>
 </html>"));
-    Modelica.Electrical.Analog.Basic.Inductor inductance(L=1E-3) 
+    Modelica.Electrical.Analog.Basic.Inductor inductance(L=33E-6) 
                                                                annotation (
         Placement(transformation(
           extent={{-16,-16},{16,16}},
@@ -335,7 +365,7 @@ in opening/closing signals for the internal switch.</p>
           extent={{-20,-20},{20,20}},
           rotation=180,
           origin={50,50})));
-    Modelica.Electrical.Analog.Basic.Resistor resistance(R=0.01) annotation (
+    Modelica.Electrical.Analog.Basic.Resistor resistance(R=0.06) annotation (
         Placement(transformation(
           extent={{-16,-16},{16,16}},
           rotation=270,
@@ -381,35 +411,76 @@ in opening/closing signals for the internal switch.</p>
         smooth=Smooth.None));
   end BuckBoost;
 
-  model PulseWidthModulator
-    "Given a duty ratio, produces a pulse-width-modulation signal"
-
-    Modelica.Blocks.Interfaces.RealInput D "Fraction of time switch is closed" 
-      annotation (Placement(transformation(extent={{-140,-20},{-100,20}})));
-    Modelica.Blocks.Interfaces.BooleanOutput switch
-      "Whether to close the switch" 
-      annotation (Placement(transformation(extent={{100,-20},{140,20}})));
-    annotation (defaultComponentName="pwm", Diagram(coordinateSystem(preserveAspectRatio=true, extent={{-100,
-              -100},{100,100}}),
-                           graphics), Icon(coordinateSystem(preserveAspectRatio=true,
-            extent={{-100,-100},{100,100}}), graphics={Rectangle(
-            extent={{-100,100},{100,-100}},
-            lineColor={0,0,0},
-            lineThickness=1,
-            fillColor={255,255,255},
-            fillPattern=FillPattern.Solid), Text(
-            extent={{-100,40},{100,-40}},
-            lineColor={0,0,0},
-            lineThickness=1,
-            textString="PWM")}));
-
-    parameter Modelica.SIunits.Time T = 1E-5 "Duty cycle";
-
+  model IdealCuk "An ideal, lossless C'uk converter"
+    extends Converter;
+    PulseWidthModulator pwm annotation (Placement(transformation(
+          extent={{-6,-6},{6,6}},
+          rotation=180,
+          origin={0,0})));
+    Modelica.Electrical.Analog.Basic.Inductor inductor_in(L=10E-6)
+      annotation (Placement(transformation(extent={{-80,30},{-40,70}})));
+    Modelica.Electrical.Analog.Basic.Capacitor capacitor(C=1E-3)
+      annotation (Placement(transformation(extent={{-20,30},{20,70}})));
+    Modelica.Electrical.Analog.Ideal.IdealClosingSwitch switch 
+      annotation (Placement(transformation(extent={{-20,-20},{20,20}},
+          rotation=270,
+          origin={-30,0})));
+    annotation (Diagram(graphics));
+    Modelica.Electrical.Analog.Ideal.IdealDiode diode annotation (Placement(
+          transformation(
+          extent={{-20,-20},{20,20}},
+          rotation=270,
+          origin={30,0})));
+    Modelica.Electrical.Analog.Basic.Inductor inductor_out(L=10E-6)
+      annotation (Placement(transformation(extent={{40,30},{80,70}})));
   equation
-    assert( T > 0, "Duty cycle must be a positive time");
-    switch = rem(time, T) < D*T;
+    connect(inductor_in.p, p1) annotation (Line(
+        points={{-80,50},{-100,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(switch.p, inductor_in.n) annotation (Line(
+        points={{-30,20},{-30,50},{-40,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(pwm.D, D) annotation (Line(
+        points={{7.2,-1.17037e-15},{16,-1.17037e-15},{16,80},{1.11022e-15,80},{
+            1.11022e-15,120}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(switch.control, pwm.switch) annotation (Line(
+        points={{-16,-1.68349e-15},{-7.2,-1.68349e-15},{-7.2,5.93059e-16}},
+        color={255,0,255},
+        smooth=Smooth.None));
+    connect(capacitor.p, switch.p) annotation (Line(
+        points={{-20,50},{-30,50},{-30,20}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(n1, switch.n) annotation (Line(
+        points={{-100,-50},{-30,-50},{-30,-20}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(switch.n, diode.n) annotation (Line(
+        points={{-30,-20},{-30,-50},{30,-50},{30,-20}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(n2, diode.n) annotation (Line(
+        points={{100,-50},{30,-50},{30,-20}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(capacitor.n, inductor_out.p) annotation (Line(
+        points={{20,50},{40,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(inductor_out.n, p2) annotation (Line(
+        points={{80,50},{100,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    connect(diode.p, capacitor.n) annotation (Line(
+        points={{30,20},{30,50},{20,50}},
+        color={0,0,255},
+        smooth=Smooth.None));
+  end IdealCuk;
 
-  end PulseWidthModulator;
 
   package Test "Test package"
 
@@ -487,18 +558,16 @@ in opening/closing signals for the internal switch.</p>
       annotation (experiment(StopTime=1.2, NumberOfIntervals=2000));
     end TestPulseWidthModulator;
 
-    model TestBuckBoost "A test case for the buck-boost converter model"
+    model TestConverter "A test case for a generic converter model"
 
       CellEmulator cellEmulator annotation (Placement(transformation(
             extent={{-20,-20},{20,20}},
             rotation=270,
             origin={-80,0})));
-      BuckBoost buckBoost 
-        annotation (Placement(transformation(extent={{-20,-20},{20,20}})));
       annotation (Diagram(coordinateSystem(preserveAspectRatio=true, extent={{-100,
                 -100},{100,100}}),
-                             graphics), experiment(StopTime=0.05,
-            NumberOfIntervals=100000));
+                             graphics), experiment(StopTime=0.005,
+            NumberOfIntervals=1000000));
       Modelica.Electrical.Analog.Basic.Resistor resistor(R=10) 
                                                               annotation (Placement(
             transformation(
@@ -520,35 +589,13 @@ in opening/closing signals for the internal switch.</p>
       Modelica.Blocks.Sources.Step D(
         height=0.2,
         offset=0.4,
-        startTime=0.02) 
+        startTime=0.002) 
         annotation (Placement(transformation(extent={{-40,40},{-20,60}})));
+      replaceable Converter converter
+        annotation (Placement(transformation(extent={{-18,-18},{18,18}})));
     equation
-      connect(cellEmulator.p, buckBoost.p1) annotation (Line(
-          points={{-80,20},{-80,26},{-50,26},{-50,10},{-20,10}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      connect(cellEmulator.n, buckBoost.n1) annotation (Line(
-          points={{-80,-20},{-80,-26},{-50,-26},{-50,-10},{-20,-10}},
-          color={0,0,255},
-          smooth=Smooth.None));
       connect(ground.p, cellEmulator.n) annotation (Line(
           points={{-90,-40},{-80,-40},{-80,-20}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      connect(buckBoost.n2, resistor.p) annotation (Line(
-          points={{20,-10},{62,-10}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      connect(buckBoost.p2, resistor.n) annotation (Line(
-          points={{20,10},{30.5,10},{30.5,10},{41,10},{41,10},{62,10}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      connect(buckBoost.p1, inletCapacitor.p) annotation (Line(
-          points={{-20,10},{-27.5,10},{-27.5,10},{-35,10},{-35,10},{-50,10}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      connect(buckBoost.n1, inletCapacitor.n) annotation (Line(
-          points={{-20,-10},{-50,-10}},
           color={0,0,255},
           smooth=Smooth.None));
       connect(outletCapacitor.p, resistor.p) annotation (Line(
@@ -559,10 +606,44 @@ in opening/closing signals for the internal switch.</p>
           points={{84,10},{80,10},{80,14},{74,14},{74,10},{62,10}},
           color={0,0,255},
           smooth=Smooth.None));
-      connect(D.y, buckBoost.D) annotation (Line(
-          points={{-19,50},{0,50},{0,22},{1.22125e-15,22}},
+      connect(converter.p2, resistor.n) annotation (Line(
+          points={{18,9},{42,9},{42,10},{62,10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(resistor.p, converter.n2) annotation (Line(
+          points={{62,-10},{41,-10},{41,-9},{18,-9}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(cellEmulator.p, inletCapacitor.p) annotation (Line(
+          points={{-80,20},{-80,28},{-50,28},{-50,10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(cellEmulator.n, inletCapacitor.n) annotation (Line(
+          points={{-80,-20},{-80,-28},{-50,-28},{-50,-10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(converter.n1, inletCapacitor.n) annotation (Line(
+          points={{-18,-9},{-34,-9},{-34,-10},{-50,-10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(converter.p1, inletCapacitor.p) annotation (Line(
+          points={{-18,9},{-34,9},{-34,10},{-50,10}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(converter.D, D.y) annotation (Line(
+          points={{-5.66214e-16,19.8},{-5.66214e-16,50},{-19,50}},
           color={0,0,127},
           smooth=Smooth.None));
+    end TestConverter;
+
+    model TestBuckBoost "Test for a buck-boost converter"
+      extends TestConverter(redeclare BuckBoost converter);
     end TestBuckBoost;
+
+    model TestIdealCuk "Test case for an ideal Cuk converter"
+      extends TestConverter(redeclare IdealCuk converter(pwm(T=1E-5)), D(
+            startTime=0.005));
+      annotation (experiment(StopTime=0.005, NumberOfIntervals=100000));
+    end TestIdealCuk;
   end Test;
 end Electric;
