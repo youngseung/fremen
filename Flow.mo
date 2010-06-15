@@ -738,6 +738,7 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
 
       Real chronic_toxicity = exposure / chronic "Chronic toxicity limit is 1";
       Real acute_toxicity =   exposure / acute "Acute toxicity limit is 1";
+      Real Mak_toxicity =   exposure / MAK "MAK-Wert, limit is 1";
 
       FlowPort inlet annotation (Placement(transformation(extent={{-80,-30},{-60,-10}}),
             iconTransformation(extent={{-80,-30},{-60,-10}})));
@@ -751,9 +752,9 @@ phase</em> to the temperature measurement of <tt>FlowTemperature</tt>.</p>
         Documentation(info="<html>
 <p>This unit measures the concentration of methanol in air of a flow passing through,
 and helps to draw conclusions on its toxicity.</p>
-<p>Two values are provided, <tt>chronic_toxicity</tt> and <tt>acute_toxicity</tt>, 
-which at less than unitary values indicate a concentration that is safe respectively
-permanently or for a period of one hour.</p>
+<p>Three values are provided, <tt>chronic_toxicity</tt>, <tt>acute_toxicity</tt>, and
+<tt>Mak_toxicity</tt> which at less than unitary values indicate a concentration that is 
+safe respectively permanently, for a period of one hour, or for German workplaces.</p>
 <p>The numbers can also be read as the dilution required to bring the toxicity to
 acceptable levels. E.g. a value of 10 indicates that the gas volume has to be diluted
 10 times to become safe for breathing.</p>
@@ -765,12 +766,16 @@ teratogenicity.</p>
 <p>The given concentration limits are 4&nbsp;mg/m<sup>3</sup> for chronic and 
 28&nbsp;mg/m<sup>3</sup> for acute exposure; data were taken from 
 <a href=\"http://www.oehha.org/air/allrels.html\">the Office of Environmental Health Hazard 
-Assessment</a> of the state of California.</p>
+Assessment</a> of the state of California.
+The MAK value was taken from <a href=\"http://www.enius.de/schadstoffe/methanol.html\">this
+link</a>; note that the link says 260&nbsp;mg/m<sup>3</sup>, but there are other numbers
+reported. An official one should be sought.</p>
 
 </html>"));
     protected
       constant Density chronic =  4E-6 "Chronic reference exposure level";
-      constant Density acute =   28E-6 "Acute (1 h) reference exposure level";
+      constant Density acute = 28E-6 "Acute (1 h) reference exposure level";
+      constant Density MAK = 260E-6 "Maximale Arbeitsplatzkonzentration";
 
       FlowTemperature T 
         annotation (Placement(transformation(extent={{-12,-32},{12,-8}})));
