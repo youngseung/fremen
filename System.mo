@@ -1,5 +1,5 @@
 within ;
-                                                                                          /**
+                                                                                            /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -194,7 +194,9 @@ see what happens.</p>
 
   model Reference_Control
     "The reference DMFC system derived from the one to be presented at ASME FC09"
-    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3),
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
+        k_x=2E-6,
+        k_m_333=8E-6),
       redeclare Load load(step(I=4, offset=3)),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
@@ -239,30 +241,35 @@ see what happens.</p>
       end Load;
 
   public
-    Control.CathodeLambdaControl K_cath(c_est=1200,
+    Control.CathodeLambdaControl K_cath(
       cells=3,
-      aA=5.02E-9,
-      b=0.24,
-      lambda=3) "Cathode lambda controller" 
+      lambda=3,
+      c_est=1100,
+      aA=4.16E-9,
+      b=0.2) "Cathode lambda controller" 
       annotation (Placement(transformation(
           origin={-70,29},
           extent={{-5,-4},{5,4}},
           rotation=270)));
     Control.ReferenceFuelControl K_fuel(
       cells=3,
-      aA=5.02E-9,
-      b=0.24)                  annotation (Placement(transformation(extent={{
+      aA=4.16E-9,
+      b=0.2)                   annotation (Placement(transformation(extent={{
               -16,-94},{-4,-86}}, rotation=0)));
-    Control.WaterControl K_cond(T_0(displayUnit="K") = 305) 
+    Control.WaterControl K_cond(T_0(displayUnit="K") = 320) 
                                 annotation (Placement(transformation(extent={{28,4},{
               40,14}},        rotation=0)));
-    Control.AnodeLambdaControl K_an(c_est_an=1200, c_est_mix=800,
+    Control.AnodeLambdaControl K_an(
       cells=3,
-      aA=5.02E-9,
-      b=0.24)                       annotation (Placement(transformation(extent=
+      c_est_an=1100,
+      aA=4.16E-9,
+      b=0.2,
+      c_est_mix=900)                annotation (Placement(transformation(extent=
              {{-70,-64},{-60,-56}}, rotation=0)));
-    Control.TemperatureControl K_temp(T_FC_ref=340) 
-                                 annotation (Placement(transformation(extent={{
+    Control.TemperatureControl K_temp(
+      T_FC_ref(displayUnit="K"),
+      T_deg_0(displayUnit="degC"),
+      eps(displayUnit="degC"))   annotation (Placement(transformation(extent={{
               -16,-34},{-4,-22}}, rotation=0)));
     annotation (experiment(StopTime=10800),experimentSetupOutput,
       Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
@@ -294,8 +301,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={255,0,0},
         pattern=LinePattern.Dot));
     connect(K_cond.p_mix, mixer.p) annotation (Line(
-        points={{26.8,12},{18,12},{4,12},{4,-44},{16,-44},{16,-74},{-4.7,-74},{
-            -4.7,-66.9}},
+        points={{26.8,12},{26.8,12},{4,12},{4,-36},{-14,-36},{-14,-68},{-4.7,
+            -68},{-4.7,-66.9}},
         color={127,0,127},
         pattern=LinePattern.Dot));
     connect(degasser.T, K_fuel.T_deg) annotation (Line(
