@@ -1,5 +1,5 @@
 within ;
-                                          /**
+                                            /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -486,7 +486,7 @@ than the fuel-cell temperature, the integrator is frozen.</p>
     parameter Temperature T_deg_0 = 315 "Nominal degasser temperature";
     parameter Temperature T_FC_ref = 333
       "Set-point for the fuel cell's temperature";
-    parameter Temperature eps = 0.1 "Fuzzy temperature interval";
+    parameter TemperatureDifference eps = 0.1 "Fuzzy temperature interval";
 
     Flow.IO.TemperatureInput T_m "Measurement" 
       annotation (Placement(transformation(extent={{-140,-20},{-100,20}},
