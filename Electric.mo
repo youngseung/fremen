@@ -1,5 +1,5 @@
 within ;
-        /**
+            /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -348,7 +348,7 @@ Lithium Ion Cells</em>, Journal of the Electrochemical Society, 1996, 143,
 by setting a duty ratio <i>D</i>, converted appropriately by an internal modulator
 in opening/closing signals for the internal switch.</p>
 </html>"));
-    Modelica.Electrical.Analog.Basic.Inductor inductance(L=33E-6) 
+    Modelica.Electrical.Analog.Basic.Inductor inductance(L=10.6E-3) 
                                                                annotation (
         Placement(transformation(
           extent={{-16,-16},{16,16}},
@@ -356,7 +356,8 @@ in opening/closing signals for the internal switch.</p>
           origin={0,24})));
     Modelica.Electrical.Analog.Ideal.IdealClosingSwitch switch 
       annotation (Placement(transformation(extent={{-70,30},{-30,70}})));
-    PulseWidthModulator pwm annotation (Placement(transformation(
+    PulseWidthModulator pwm(T=1E-5) 
+                            annotation (Placement(transformation(
           extent={{-6,-6},{6,6}},
           rotation=270,
           origin={-50,80})));
@@ -365,7 +366,7 @@ in opening/closing signals for the internal switch.</p>
           extent={{-20,-20},{20,20}},
           rotation=180,
           origin={50,50})));
-    Modelica.Electrical.Analog.Basic.Resistor resistance(R=0.06) annotation (
+    Modelica.Electrical.Analog.Basic.Resistor resistance(R=0.01) annotation (
         Placement(transformation(
           extent={{-16,-16},{16,16}},
           rotation=270,
@@ -417,9 +418,9 @@ in opening/closing signals for the internal switch.</p>
           extent={{-6,-6},{6,6}},
           rotation=180,
           origin={0,0})));
-    Modelica.Electrical.Analog.Basic.Inductor inductor_in(L=10E-6)
+    Modelica.Electrical.Analog.Basic.Inductor inductor_in(L=10E-6) 
       annotation (Placement(transformation(extent={{-80,30},{-40,70}})));
-    Modelica.Electrical.Analog.Basic.Capacitor capacitor(C=1E-3)
+    Modelica.Electrical.Analog.Basic.Capacitor capacitor(C=1E-3) 
       annotation (Placement(transformation(extent={{-20,30},{20,70}})));
     Modelica.Electrical.Analog.Ideal.IdealClosingSwitch switch 
       annotation (Placement(transformation(extent={{-20,-20},{20,20}},
@@ -431,7 +432,7 @@ in opening/closing signals for the internal switch.</p>
           extent={{-20,-20},{20,20}},
           rotation=270,
           origin={30,0})));
-    Modelica.Electrical.Analog.Basic.Inductor inductor_out(L=10E-6)
+    Modelica.Electrical.Analog.Basic.Inductor inductor_out(L=10E-6) 
       annotation (Placement(transformation(extent={{40,30},{80,70}})));
   equation
     connect(inductor_in.p, p1) annotation (Line(
@@ -480,7 +481,6 @@ in opening/closing signals for the internal switch.</p>
         color={0,0,255},
         smooth=Smooth.None));
   end IdealCuk;
-
 
   package Test "Test package"
 
@@ -591,7 +591,7 @@ in opening/closing signals for the internal switch.</p>
         offset=0.4,
         startTime=0.002) 
         annotation (Placement(transformation(extent={{-40,40},{-20,60}})));
-      replaceable Converter converter
+      replaceable Converter converter 
         annotation (Placement(transformation(extent={{-18,-18},{18,18}})));
     equation
       connect(ground.p, cellEmulator.n) annotation (Line(
@@ -637,7 +637,10 @@ in opening/closing signals for the internal switch.</p>
     end TestConverter;
 
     model TestBuckBoost "Test for a buck-boost converter"
-      extends TestConverter(redeclare BuckBoost converter);
+      extends TestConverter(redeclare BuckBoost converter, D(startTime=0.05),
+        inletCapacitor(C=10E-3),
+        outletCapacitor(C=10E-3));
+      annotation (experiment(StopTime=0.1, Interval=1e-06));
     end TestBuckBoost;
 
     model TestIdealCuk "Test case for an ideal Cuk converter"
