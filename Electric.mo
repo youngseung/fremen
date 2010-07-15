@@ -1,5 +1,5 @@
 within ;
-            /**
+              /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -366,7 +366,7 @@ in opening/closing signals for the internal switch.</p>
           extent={{-20,-20},{20,20}},
           rotation=180,
           origin={50,50})));
-    Modelica.Electrical.Analog.Basic.Resistor resistance(R=0.01) annotation (
+    Modelica.Electrical.Analog.Basic.Resistor resistance(R=0.12) annotation (
         Placement(transformation(
           extent={{-16,-16},{16,16}},
           rotation=270,
@@ -599,19 +599,19 @@ in opening/closing signals for the internal switch.</p>
           color={0,0,255},
           smooth=Smooth.None));
       connect(outletCapacitor.p, resistor.p) annotation (Line(
-          points={{84,-10},{80,-10},{80,-14},{74,-14},{74,-10},{62,-10}},
+          points={{84,-10},{84,-28},{62,-28},{62,-10}},
           color={0,0,255},
           smooth=Smooth.None));
       connect(outletCapacitor.n, resistor.n) annotation (Line(
-          points={{84,10},{80,10},{80,14},{74,14},{74,10},{62,10}},
+          points={{84,10},{84,28},{62,28},{62,10}},
           color={0,0,255},
           smooth=Smooth.None));
       connect(converter.p2, resistor.n) annotation (Line(
-          points={{18,9},{42,9},{42,10},{62,10}},
+          points={{18,9},{40,9},{40,28},{62,28},{62,10}},
           color={0,0,255},
           smooth=Smooth.None));
       connect(resistor.p, converter.n2) annotation (Line(
-          points={{62,-10},{41,-10},{41,-9},{18,-9}},
+          points={{62,-10},{62,-28},{40,-28},{40,-9},{18,-9}},
           color={0,0,255},
           smooth=Smooth.None));
       connect(cellEmulator.p, inletCapacitor.p) annotation (Line(
@@ -623,11 +623,11 @@ in opening/closing signals for the internal switch.</p>
           color={0,0,255},
           smooth=Smooth.None));
       connect(converter.n1, inletCapacitor.n) annotation (Line(
-          points={{-18,-9},{-34,-9},{-34,-10},{-50,-10}},
+          points={{-18,-9},{-40,-9},{-40,-28},{-50,-28},{-50,-10}},
           color={0,0,255},
           smooth=Smooth.None));
       connect(converter.p1, inletCapacitor.p) annotation (Line(
-          points={{-18,9},{-34,9},{-34,10},{-50,10}},
+          points={{-18,9},{-40,9},{-40,28},{-50,28},{-50,10}},
           color={0,0,255},
           smooth=Smooth.None));
       connect(converter.D, D.y) annotation (Line(
@@ -637,10 +637,11 @@ in opening/closing signals for the internal switch.</p>
     end TestConverter;
 
     model TestBuckBoost "Test for a buck-boost converter"
-      extends TestConverter(redeclare BuckBoost converter, D(startTime=0.05),
+      extends TestConverter(redeclare BuckBoost converter(pwm(T=1E-4)),
+                                                           D(startTime=0.5),
         inletCapacitor(C=10E-3),
         outletCapacitor(C=10E-3));
-      annotation (experiment(StopTime=0.1, Interval=1e-06));
+      annotation (experiment(Interval=1e-05));
     end TestBuckBoost;
 
     model TestIdealCuk "Test case for an ideal Cuk converter"

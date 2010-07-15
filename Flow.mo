@@ -2019,9 +2019,10 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
           "Whether to activate checks for some non-negative quantities";
       parameter MassTransportCoefficient k_m_333 = 8.05E-6
           "Mass transport coefficient at 333 K";
+      parameter Real k_d_303 = 4.2 "Drag factor at 303 K";
 
       // Parameters for N115 membrane.
-      Real k_d = 4.2 + (T-303.15)/40 "Drag factor for N115";
+      Real k_d = k_d_303 + (T-303.15)/40 "Drag factor for N115";
       MassTransportCoefficient k_m = k_m_333*exp(2436*(1/333-1/T))
           "Mass transport coefficient";
 
