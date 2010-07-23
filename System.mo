@@ -1,5 +1,5 @@
 within ;
-                                                                                            /**
+                                                                                                  /**
  * © Federico Zenith, 2008-2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,73 @@ within ;
 
 
 package System "DMFC systems"
+  partial model AbstractSystem "Cell, tank, environment and circuit"
+
+    import Modelica.SIunits.Efficiency;
+    import Units.MolarFlow;
+
+    inner parameter Modelica.SIunits.Pressure p_env = 101325;
+    inner parameter Modelica.SIunits.Temperature T_env = 298.15;
+    inner parameter Units.RelativeHumidity RH_env = 60;
+
+    Efficiency eta_to_cell "Fraction of methanol consumed in the cell";
+    Efficiency eta_system "Overall system efficiency";
+
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
+              -100},{100,100}}),      graphics),
+                         Documentation(info="<html>
+<p>This is a generic reference system, with no process integration
+whatsoever. Some components, such as the fuel cell, are abstract and
+must be specialised in subclasses.</p>
+</html>"));
+    Flow.Sources.Methanol pureMethanolSource "A substitute for an actual tank" 
+                                          annotation (Placement(transformation(
+            extent={{30,-96},{42,-84}}, rotation=0)));
+    replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
+                      annotation (Placement(transformation(extent={{-50,-12},{
+              -14,22}}, rotation=0)));
+    Flow.Sources.Environment environment "The air from the environment" 
+      annotation (Placement(transformation(extent={{-100,0},{-80,20}}, rotation=
+             0)));
+    Flow.Sink airSink "The gas outlet of the condenser" 
+                      annotation (Placement(transformation(extent={{92,64},{100,
+              72}}, rotation=0)));
+    replaceable Modelica.Electrical.Analog.Interfaces.TwoPin load
+      "Load connected to the cell"       annotation (Placement(transformation(
+            extent={{-52,84},{-40,96}}, rotation=0)));
+    Modelica.Electrical.Analog.Basic.Ground ground 
+      annotation (Placement(transformation(extent={{-8,24},{8,40}}, rotation=0)));
+    Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer
+      "Current in external circuit" annotation (Placement(transformation(extent=
+             {{-32,80},{-12,100}}, rotation=0)));
+
+  protected
+    MolarFlow inCell = fuelCell.anode_inlet.n[1] - (-fuelCell.anode_outlet.n[1])
+      "Methanol consumed in the cell";
+    MolarFlow outTank =  -pureMethanolSource.outlet.n[1]
+      "Methanol output by the tank";
+
+  public
+    Flow.Measurements.MethanolInAir emissions
+      "Measurement on methanol emissions" 
+      annotation (Placement(transformation(extent={{68,60},{88,80}})));
+  equation
+    eta_to_cell = inCell / outTank;
+    eta_system = eta_to_cell * fuelCell.eta_total;
+    connect(fuelCell.minus, ground.p) annotation (Line(points={{-21.2,15.2},{
+            -21.2,40},{1.22125e-16,40}}, color={0,0,255}));
+    connect(amperometer.p, load.n) 
+      annotation (Line(points={{-32,90},{-40,90}}, color={0,0,255}));
+    connect(fuelCell.minus, amperometer.n) annotation (Line(points={{-21.2,15.2},
+            {-21.2,40},{0,40},{0,90},{-12,90}}, color={0,0,255}));
+    connect(fuelCell.plus, load.p) annotation (Line(points={{-42.8,15.2},{-42.8,
+            40},{-64,40},{-64,90},{-52,90}}, color={0,0,255}));
+    connect(airSink.inlet, emissions.outlet) annotation (Line(
+        points={{92.4,68},{85,68}},
+        color={0,127,127},
+        smooth=Smooth.None));
+  end AbstractSystem;
+
   partial model Reference "The reference DMFC system"
 
     import Modelica.SIunits.Efficiency;
@@ -195,8 +262,10 @@ see what happens.</p>
   model Reference_Control
     "The reference DMFC system derived from the one to be presented at ASME FC09"
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
-        k_x=2E-6,
-        k_m_333=8E-6),
+        k_m_333=8E-6,
+        V0=2.1,
+        R=0.15,
+        k_x=2E-6),
       redeclare Load load(step(I=4, offset=3)),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
@@ -509,15 +578,16 @@ must be specialised in subclasses.</p>
     annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
               -100},{100,100}}),      graphics),
                           experiment(StopTime=10800));
-    Control.WaterControl K_cond annotation (Placement(transformation(extent={{0,
+    Control.WaterControl K_cond(T_0(displayUnit="K") = 320) 
+                                annotation (Placement(transformation(extent={{0,
               -32},{12,-20}}, rotation=0)));
     Control.MingledTemperatureControl K_T(
       n=3,
       c=900,
       aA=4.16E-9,
       b=0.2,
-      T_r(displayUnit="degC"),
-      V_cp(displayUnit="ml"))             annotation (Placement(transformation(
+      V_cp(displayUnit="ml"),
+      T_r(displayUnit="K"))               annotation (Placement(transformation(
             extent={{-70,-78},{-54,-60}}, rotation=0)));
     Control.MingledFuelControl K_fuel(
       cells=3,
