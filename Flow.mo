@@ -2013,18 +2013,20 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
       parameter Integer cells = 1 "Number of cells";
       parameter Area A = 26E-4 "Membrane active area";
       parameter HeatCapacity Cp = 24.7 "Overall heat capacity of the stack";
-      parameter MassTransportCoefficient k_x = 2.4E-6
-          "Mass transport coefficient across the membrane, D/d";
+      parameter MassTransportCoefficient k_x_333 = 2.27E-6
+          "Mass transport coefficient across the membrane at 333 K";
+      parameter MassTransportCoefficient k_m_333 = 5.86E-6
+          "Mass transport coefficient across the bulk at 333 K";
       parameter Boolean enableSanityChecks = true
           "Whether to activate checks for some non-negative quantities";
-      parameter MassTransportCoefficient k_m_333 = 8.05E-6
-          "Mass transport coefficient at 333 K";
       parameter Real k_d_303 = 4.2 "Drag factor at 303 K";
 
       // Parameters for N115 membrane.
       Real k_d = k_d_303 + (T-303.15)/40 "Drag factor for N115";
-      MassTransportCoefficient k_m = k_m_333*exp(2436*(1/333-1/T))
+      MassTransportCoefficient k_m = k_m_333*exp(1395*(1/333-1/T))
           "Mass transport coefficient";
+      MassTransportCoefficient k_x = k_x_333*exp(1395*(1/333-1/T))
+          "Cross-over Mass transport coefficient";
 
       Real a = k_m*b "Partial derivative of crossover flux wrt. concentration";
       Real aAn = a*A*cells

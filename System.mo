@@ -228,10 +228,8 @@ see what happens.</p>
   model Reference_Control
     "The reference DMFC system derived from the one to be presented at ASME FC09"
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
-        k_m_333=8E-6,
         V0=2.1,
-        R=0.15,
-        k_x=2E-6),
+        R=0.15),
       redeclare Load load(step(I=4, offset=3)),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
@@ -479,10 +477,8 @@ see what happens.</p>
       redeclare Flow.UnitOperations.Coolers.Simple cooler,
       redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
         V0=2.1,
-        R=.15,
-        k_x=2E-6,
-        k_m_333=8E-6,
-        T(start=303.15)),
+        T(start=303.15),
+        R=0.15),
       redeclare Load load(step(I=4, offset=3)),
       mixer(T(fixed=true), c(fixed=true)));
     Control.CathodeLambdaControl K_cath(
