@@ -1,5 +1,5 @@
 within ;
-    /**
+      /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -28,66 +28,62 @@ package Electrochemistry "Package containing electrochemical models"
     import Modelica.SIunits.Current;
     import Modelica.SIunits.Voltage;
 
-    annotation (Diagram, Icon(
-        Rectangle(extent=[-60,20; 60,-20], style(
-            color=3,
-            rgbcolor={0,0,255},
-            fillColor=7,
-            rgbfillColor={255,255,255})),
-        Line(points=[-100,0; -60,0], style(
-            color=3,
-            rgbcolor={0,0,255},
-            fillColor=7,
-            rgbfillColor={255,255,255},
-            fillPattern=1)),
-        Line(points=[60,0; 100,0], style(
-            color=3,
-            rgbcolor={0,0,255},
-            fillColor=7,
-            rgbfillColor={255,255,255},
-            fillPattern=1))));
+    annotation (Diagram(graphics),
+                         Icon(graphics={
+          Rectangle(
+            extent={{-60,20},{60,-20}},
+            lineColor={0,0,255},
+            fillColor={255,255,255},
+            fillPattern=FillPattern.Solid),
+          Line(points={{-100,0},{-60,0}}, color={0,0,255}),
+          Line(points={{60,0},{100,0}}, color={0,0,255})}));
     replaceable Electrode anode "Anodic model" 
-      annotation (extent=[-70,-10; -50,10]);
+      annotation (Placement(transformation(extent={{-70,-10},{-50,10}},
+            rotation=0)));
     Resistor R(R=0.005) "Ohmic resistance" 
-      annotation (extent=[-30,-10; -10,10]);
+      annotation (Placement(transformation(extent={{-30,-10},{-10,10}},
+            rotation=0)));
     replaceable Electrode cathode "Cathodic model" 
-      annotation (extent=[50,-10; 70,10]);
+      annotation (Placement(transformation(extent={{50,-10},{70,10}}, rotation=
+              0)));
     ConstantVoltage E(V=1.213) "Reversible voltage" 
-      annotation (extent=[10,10; 30,30]);
-    PositivePin p "Positive pin" annotation (extent=[-110,-10; -90,10]);
-    NegativePin n "Negative pin" annotation (extent=[90,-10; 110,10]);
+      annotation (Placement(transformation(extent={{10,10},{30,30}}, rotation=0)));
+    PositivePin p "Positive pin" annotation (Placement(transformation(extent={{
+              -110,-10},{-90,10}}, rotation=0)));
+    NegativePin n "Negative pin" annotation (Placement(transformation(extent={{
+              90,-10},{110,10}}, rotation=0)));
 
     Current I = -p.i;
     Voltage V = p.v - n.v;
 
   equation
     connect(R.p, anode.n) 
-      annotation (points=[-30,6.10623e-16; -42,-3.36456e-22; -42,6.10623e-16;
-          -50,6.10623e-16],                style(color=3, rgbcolor={0,0,255}));
-    connect(p, cathode.n) annotation (points=[-100,5.55112e-16; -96,5.55112e-16;
-          -96,0; -90,0; -90,-20; 80,-20; 80,6.10623e-16; 70,6.10623e-16],
-                                                                      style(
-          color=3, rgbcolor={0,0,255}));
-    connect(cathode.p, R.n) annotation (points=[50,6.10623e-16; 35,6.10623e-16;
-          35,6.10623e-16; 20,6.10623e-16; 20,6.10623e-16; -10,6.10623e-16],
-        style(color=3, rgbcolor={0,0,255}));
-    connect(anode.p, E.p) annotation (points=[-70,6.10623e-16; -80,6.10623e-16;
-          -80,20; 10,20], style(color=3, rgbcolor={0,0,255}));
-    connect(E.n, n) annotation (points=[30,20; 90,20; 90,5.55112e-16; 100,
-          5.55112e-16], style(color=3, rgbcolor={0,0,255}));
+      annotation (Line(points={{-30,6.10623e-16},{-42,-3.36456e-22},{-42,
+            6.10623e-16},{-50,6.10623e-16}}, color={0,0,255}));
+    connect(p, cathode.n) annotation (Line(points={{-100,5.55112e-16},{-96,
+            5.55112e-16},{-96,0},{-90,0},{-90,-20},{80,-20},{80,6.10623e-16},{
+            70,6.10623e-16}}, color={0,0,255}));
+    connect(cathode.p, R.n) annotation (Line(points={{50,6.10623e-16},{35,
+            6.10623e-16},{35,6.10623e-16},{20,6.10623e-16},{20,6.10623e-16},{
+            -10,6.10623e-16}}, color={0,0,255}));
+    connect(anode.p, E.p) annotation (Line(points={{-70,6.10623e-16},{-80,
+            6.10623e-16},{-80,20},{10,20}}, color={0,0,255}));
+    connect(E.n, n) annotation (Line(points={{30,20},{90,20},{90,5.55112e-16},{
+            100,5.55112e-16}}, color={0,0,255}));
   end DynamicModelling;
 
   partial model Electrode "Generic electrode"
     extends Modelica.Electrical.Analog.Interfaces.OnePort;
-    annotation (Icon(
-        Rectangle(extent=[-60,20; 60,-20], style(
-            color=3,
-            rgbcolor={0,0,255},
-            fillColor=7,
-            rgbfillColor={255,255,255})),
-        Line(points=[-100,0; -60,0], style(color=3, rgbcolor={0,0,255})),
-        Line(points=[60,0; 100,0], style(color=3, rgbcolor={0,0,255})),
-        Text(extent=[-100,60; 100,100],     string="%name")),
+    annotation (Icon(graphics={
+          Rectangle(
+            extent={{-60,20},{60,-20}},
+            lineColor={0,0,255},
+            fillColor={255,255,255},
+            fillPattern=FillPattern.Solid),
+          Line(points={{-100,0},{-60,0}}, color={0,0,255}),
+          Line(points={{60,0},{100,0}}, color={0,0,255}),
+          Text(extent={{-100,60},{100,100}}, textString=
+                                                   "%name")}),
         Documentation(info="<html>
 <p>The generic interface of an electrode (be it anode or cathode).
 </html>"));
@@ -223,7 +219,9 @@ amplified.</p>
 design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.</p>
 </html>"));
   end KrewerAnode;
-  annotation (uses(Modelica(version="2.2.1")));
+  annotation (uses(Modelica(version="3.1")),
+    version="1",
+    conversion(noneFromVersion=""));
 
   model KrewerCathode "Ulrike's model of a DMFC cathode"
     extends Electrode;
@@ -283,7 +281,8 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
   model KrewerModel "Ulrike's electrochemical model"
     extends DynamicModelling(redeclare KrewerAnode anode(AllowFrozenEta=true),redeclare
         KrewerCathode cathode);
-    annotation (Diagram, Documentation(info="<html>
+    annotation (Diagram(graphics),
+                         Documentation(info="<html>
 <p>This class implements the model by Krewer et al., with a voltage generator, a resistance,
 and the two electrodes. It also sets the anode's temperature equal to the cathode's.</p>
  
@@ -472,28 +471,30 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
     model KrewerAnodeTest
 
       KrewerAnode anode(AllowFrozenEta=true) 
-                        annotation (extent=[-20,-30; 40,30]);
+                        annotation (Placement(transformation(extent={{-20,-30},
+                {40,30}}, rotation=0)));
       Modelica.Electrical.Analog.Basic.Ground ground 
-        annotation (extent=[50,-20; 70,0]);
-      annotation (Diagram);
+        annotation (Placement(transformation(extent={{50,-20},{70,0}}, rotation
+              =0)));
+      annotation (Diagram(graphics));
       parameter Units.Temperature T = 343 "Electrode temperature";
       parameter Modelica.SIunits.Concentration c = 500 "Methanol concentration";
 
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
           startTime=10) 
-                    annotation (extent=[-92,-30; -32,30]);
+                    annotation (Placement(transformation(extent={{-92,-30},{-32,
+                30}}, rotation=0)));
     equation
       anode.c = c;
       anode.T = T;
 
-      connect(anode.n, ground.p) annotation (points=[40,-9.4369e-16; 31,
-            -9.4369e-16; 31,5.55112e-16; 60,5.55112e-16],    style(color=3,
-            rgbcolor={0,0,255}));
-      connect(pulseCurrent.n, anode.p) annotation (points=[-32,-9.4369e-16; -29,
-            -9.4369e-16; -29,-9.4369e-16; -26,-9.4369e-16; -26,-9.4369e-16; -20,
-            -9.4369e-16], style(color=3, rgbcolor={0,0,255}));
-      connect(pulseCurrent.p, anode.n) annotation (points=[-92,-9.4369e-16; -92,
-            60; 40,60; 40,-9.4369e-16], style(color=3, rgbcolor={0,0,255}));
+      connect(anode.n, ground.p) annotation (Line(points={{40,-9.4369e-16},{31,
+              -9.4369e-16},{31,5.55112e-16},{60,5.55112e-16}}, color={0,0,255}));
+      connect(pulseCurrent.n, anode.p) annotation (Line(points={{-32,
+              -9.4369e-16},{-29,-9.4369e-16},{-29,-9.4369e-16},{-26,-9.4369e-16},
+              {-26,-9.4369e-16},{-20,-9.4369e-16}}, color={0,0,255}));
+      connect(pulseCurrent.p, anode.n) annotation (Line(points={{-92,
+              -9.4369e-16},{-92,60},{40,60},{40,-9.4369e-16}}, color={0,0,255}));
     end KrewerAnodeTest;
 
     model KrewerCathodeTest
@@ -502,13 +503,16 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       import Modelica.SIunits.MoleFraction;
       import Units.MolarFlux;
       KrewerCathode cathode 
-                        annotation (extent=[-20,-30; 40,30]);
+                        annotation (Placement(transformation(extent={{-20,-30},
+                {40,30}}, rotation=0)));
       Modelica.Electrical.Analog.Basic.Ground ground 
-        annotation (extent=[50,-20; 70,0]);
-      annotation (Diagram);
+        annotation (Placement(transformation(extent={{50,-20},{70,0}}, rotation
+              =0)));
+      annotation (Diagram(graphics));
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
           startTime=10) 
-                    annotation (extent=[-92,-30; -32,30]);
+                    annotation (Placement(transformation(extent={{-92,-30},{-32,
+                30}}, rotation=0)));
       parameter Temperature T = 343 "Electrode temperature";
       parameter MoleFraction xO2 = 0.1 "Oxygen catalyst-layer concentration";
       parameter MolarFlux Nx = 0.0025 "Crossover methanol flux";
@@ -519,16 +523,15 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       cathode.T = T;
 
       connect(cathode.n, ground.p) 
-                                 annotation (points=[40,-9.4369e-16; 31,
-            -9.4369e-16; 31,5.55112e-16; 60,5.55112e-16],    style(color=3,
-            rgbcolor={0,0,255}));
+                                 annotation (Line(points={{40,-9.4369e-16},{31,
+              -9.4369e-16},{31,5.55112e-16},{60,5.55112e-16}}, color={0,0,255}));
       connect(pulseCurrent.n, cathode.p) 
-                                       annotation (points=[-32,-9.4369e-16; -26,
-            4.29069e-22; -26,-9.4369e-16; -20,-9.4369e-16],
-                          style(color=3, rgbcolor={0,0,255}));
+                                       annotation (Line(points={{-32,
+              -9.4369e-16},{-26,4.29069e-22},{-26,-9.4369e-16},{-20,-9.4369e-16}}, 
+            color={0,0,255}));
       connect(cathode.n, pulseCurrent.p) 
-                                       annotation (points=[40,-9.4369e-16; 40,
-            60; -92,60; -92,-9.4369e-16], style(color=3, rgbcolor={0,0,255}));
+                                       annotation (Line(points={{40,-9.4369e-16},
+              {40,60},{-92,60},{-92,-9.4369e-16}}, color={0,0,255}));
     end KrewerCathodeTest;
 
     model KrewerModelTest
@@ -538,14 +541,18 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       import Modelica.SIunits.Concentration;
       import Units.MolarFlux;
       Modelica.Electrical.Analog.Basic.Ground ground 
-        annotation (extent=[30,-40; 50,-20]);
-      annotation (Diagram, experiment(StopTime=50));
+        annotation (Placement(transformation(extent={{30,-40},{50,-20}},
+              rotation=0)));
+      annotation (Diagram(graphics),
+                           experiment(StopTime=50));
       KrewerModel km(anode(AllowFrozenEta=true)) 
-        annotation (extent=[-40,-50; 20,10]);
+        annotation (Placement(transformation(extent={{-40,-50},{20,10}},
+              rotation=0)));
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
           startTime=10,
         I=5,
-        offset=10)  annotation (extent=[-40,0; 20,60]);
+        offset=10)  annotation (Placement(transformation(extent={{-40,0},{20,60}}, 
+              rotation=0)));
       parameter Temperature T = 343 "Cell temperature";
       parameter MoleFraction xO2 = 0.1
         "Cathodic oxygen catalyst-layer concentration";
@@ -558,13 +565,12 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       km.anode.T = T;
       km.anode.c = c;
 
-      connect(km.n, ground.p)       annotation (points=[20,-20; 20,17.5; 20,
-            17.5; 20,5; 20,-20; 40,-20],
-                                   style(color=3, rgbcolor={0,0,255}));
-      connect(pulseCurrent.p, km.p) annotation (points=[-40,30; -40,-20],
-                                   style(color=3, rgbcolor={0,0,255}));
-      connect(pulseCurrent.n, km.n) annotation (points=[20,30; 20,17.5; 20,17.5;
-            20,5; 20,-20; 20,-20], style(color=3, rgbcolor={0,0,255}));
+      connect(km.n, ground.p)       annotation (Line(points={{20,-20},{20,17.5},
+              {20,17.5},{20,5},{20,-20},{40,-20}}, color={0,0,255}));
+      connect(pulseCurrent.p, km.p) annotation (Line(points={{-40,30},{-40,-20}}, 
+            color={0,0,255}));
+      connect(pulseCurrent.n, km.n) annotation (Line(points={{20,30},{20,17.5},
+              {20,17.5},{20,5},{20,-20},{20,-20}}, color={0,0,255}));
     end KrewerModelTest;
     annotation (Documentation(info="<html>
 <p>Test cases for the electrochemical models.</p>
