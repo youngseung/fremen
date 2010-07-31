@@ -1,5 +1,5 @@
 within ;
-      /**
+        /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -29,7 +29,8 @@ package Electrochemistry "Package containing electrochemical models"
     import Modelica.SIunits.Voltage;
 
     annotation (Diagram(graphics),
-                         Icon(graphics={
+                         Icon(coordinateSystem(preserveAspectRatio=false,
+            extent={{-100,-100},{100,100}}), graphics={
           Rectangle(
             extent={{-60,20},{60,-20}},
             lineColor={0,0,255},
@@ -74,7 +75,8 @@ package Electrochemistry "Package containing electrochemical models"
 
   partial model Electrode "Generic electrode"
     extends Modelica.Electrical.Analog.Interfaces.OnePort;
-    annotation (Icon(graphics={
+    annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}), graphics={
           Rectangle(
             extent={{-60,20},{60,-20}},
             lineColor={0,0,255},
@@ -82,8 +84,7 @@ package Electrochemistry "Package containing electrochemical models"
             fillPattern=FillPattern.Solid),
           Line(points={{-100,0},{-60,0}}, color={0,0,255}),
           Line(points={{60,0},{100,0}}, color={0,0,255}),
-          Text(extent={{-100,60},{100,100}}, textString=
-                                                   "%name")}),
+          Text(extent={{-100,60},{100,100}}, textString="%name")}),
         Documentation(info="<html>
 <p>The generic interface of an electrode (be it anode or cathode).
 </html>"));
@@ -219,7 +220,7 @@ amplified.</p>
 design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.</p>
 </html>"));
   end KrewerAnode;
-  annotation (uses(Modelica(version="3.1")),
+  annotation (uses(Modelica(version="3.1"), Units(version="1")),
     version="1",
     conversion(noneFromVersion=""));
 
@@ -474,9 +475,11 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
                         annotation (Placement(transformation(extent={{-20,-30},
                 {40,30}}, rotation=0)));
       Modelica.Electrical.Analog.Basic.Ground ground 
-        annotation (Placement(transformation(extent={{50,-20},{70,0}}, rotation
-              =0)));
-      annotation (Diagram(graphics));
+        annotation (Placement(transformation(extent={{50,-20},{70,0}}, rotation=
+               0)));
+      annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
+                -100,-100},{100,100}}),
+                          graphics), experiment(StopTime=100));
       parameter Units.Temperature T = 343 "Electrode temperature";
       parameter Modelica.SIunits.Concentration c = 500 "Methanol concentration";
 
@@ -491,8 +494,8 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       connect(anode.n, ground.p) annotation (Line(points={{40,-9.4369e-16},{31,
               -9.4369e-16},{31,5.55112e-16},{60,5.55112e-16}}, color={0,0,255}));
       connect(pulseCurrent.n, anode.p) annotation (Line(points={{-32,
-              -9.4369e-16},{-29,-9.4369e-16},{-29,-9.4369e-16},{-26,-9.4369e-16},
-              {-26,-9.4369e-16},{-20,-9.4369e-16}}, color={0,0,255}));
+              -9.4369e-16},{-29,-9.4369e-16},{-20,-9.4369e-16},{-20,-9.4369e-16}},
+                                                    color={0,0,255}));
       connect(pulseCurrent.p, anode.n) annotation (Line(points={{-92,
               -9.4369e-16},{-92,60},{40,60},{40,-9.4369e-16}}, color={0,0,255}));
     end KrewerAnodeTest;
@@ -506,9 +509,11 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
                         annotation (Placement(transformation(extent={{-20,-30},
                 {40,30}}, rotation=0)));
       Modelica.Electrical.Analog.Basic.Ground ground 
-        annotation (Placement(transformation(extent={{50,-20},{70,0}}, rotation
-              =0)));
-      annotation (Diagram(graphics));
+        annotation (Placement(transformation(extent={{50,-20},{70,0}}, rotation=
+               0)));
+      annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
+                -100,-100},{100,100}}),
+                          graphics));
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
           startTime=10) 
                     annotation (Placement(transformation(extent={{-92,-30},{-32,
@@ -527,7 +532,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
               -9.4369e-16},{31,5.55112e-16},{60,5.55112e-16}}, color={0,0,255}));
       connect(pulseCurrent.n, cathode.p) 
                                        annotation (Line(points={{-32,
-              -9.4369e-16},{-26,4.29069e-22},{-26,-9.4369e-16},{-20,-9.4369e-16}}, 
+              -9.4369e-16},{-26,4.29069e-22},{-26,-9.4369e-16},{-20,-9.4369e-16}},
             color={0,0,255}));
       connect(cathode.n, pulseCurrent.p) 
                                        annotation (Line(points={{40,-9.4369e-16},
@@ -543,7 +548,9 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       Modelica.Electrical.Analog.Basic.Ground ground 
         annotation (Placement(transformation(extent={{30,-40},{50,-20}},
               rotation=0)));
-      annotation (Diagram(graphics),
+      annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
+                -100,-100},{100,100}}),
+                          graphics),
                            experiment(StopTime=50));
       KrewerModel km(anode(AllowFrozenEta=true)) 
         annotation (Placement(transformation(extent={{-40,-50},{20,10}},
@@ -551,7 +558,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
       Modelica.Electrical.Analog.Sources.PulseCurrent pulseCurrent(period=30,
           startTime=10,
         I=5,
-        offset=10)  annotation (Placement(transformation(extent={{-40,0},{20,60}}, 
+        offset=10)  annotation (Placement(transformation(extent={{-40,0},{20,60}},
               rotation=0)));
       parameter Temperature T = 343 "Cell temperature";
       parameter MoleFraction xO2 = 0.1
@@ -567,7 +574,7 @@ design for direct methanol fuel cells, Journal of Power Sources, 760-772, 2008.<
 
       connect(km.n, ground.p)       annotation (Line(points={{20,-20},{20,17.5},
               {20,17.5},{20,5},{20,-20},{40,-20}}, color={0,0,255}));
-      connect(pulseCurrent.p, km.p) annotation (Line(points={{-40,30},{-40,-20}}, 
+      connect(pulseCurrent.p, km.p) annotation (Line(points={{-40,30},{-40,-20}},
             color={0,0,255}));
       connect(pulseCurrent.n, km.n) annotation (Line(points={{20,30},{20,17.5},
               {20,17.5},{20,5},{20,-20},{20,-20}}, color={0,0,255}));
