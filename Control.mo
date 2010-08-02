@@ -1,5 +1,5 @@
 within ;
-                                            /**
+                                                /**
  * © Federico Zenith, 2009.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -123,7 +123,8 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
             6.66134e-16},{50,6.10623e-16},{41,6.10623e-16}}, color={0,0,127}));
   end CoolerControl;
   annotation (uses(Modelica(version="3.1"), Flow(version="1"),
-      Units(version="1")),                     Documentation(info="<html>
+      Units(version="1"),
+      Thermo(version="1")),                    Documentation(info="<html>
 <p>A collection of controllers for system-wide control and for
 some particular units, such as coolers.</p>
 </html>"),
@@ -433,6 +434,65 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     end when;
 
   end WaterControl;
+
+  block FFWaterControl "Feedforward controller for solution level"
+    extends Modelica.Blocks.Interfaces.BlockIcon;
+
+    import Modelica.Math.log10;
+    import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.Pressure;
+    import Modelica.SIunits.MoleFraction;
+    import Units.RelativeHumidity;
+    import Thermo.p_vap;
+    import Thermo.Species;
+
+    outer RelativeHumidity RH_env "Environment relative humidity";
+    outer Pressure p_env "Environment pressure";
+    outer Temperature T_env "Environment temperature";
+
+    parameter Real lambda = 3 "The cathodic lambda value";
+    parameter Boolean safetyMargin = true
+      "Neglect humidity, use safe value = 0";
+
+    annotation (defaultComponentName="K", Diagram(coordinateSystem(
+            preserveAspectRatio=true,  extent={{-100,-100},{100,100}}), graphics),
+                                                   Icon(coordinateSystem(
+            preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+          graphics={Text(
+            extent={{-100,40},{100,0}},
+            lineColor={0,0,255},
+            textString="Autonomy"), Text(
+            extent={{-100,0},{100,-40}},
+            lineColor={0,0,255},
+            textString="Temperature")}),
+      Documentation(info="<html>
+</html>"));
+    Flow.IO.TemperatureOutput T_ref "Target condenser temperature" 
+      annotation (Placement(transformation(extent={{100,-20},{140,20}}, rotation=0)));
+
+  protected
+    constant MoleFraction y_O2 = 0.21 "Molar fraction of oxygen in dry air";
+    constant Real A = 4.6543 + 5 "Antoine constant A, corrected for pascals";
+    constant Temperature B = 1435.264 "Antoine constant B";
+    constant Temperature C = -64.848 "Antoine constant C";
+
+    RelativeHumidity RH = if safetyMargin then 0 else RH_env
+      "The relative humidity of the autonomy relationship";
+    Real r_cond "Mixing ratio of water in condenser outlet";
+    Real r_env "Mixing ratio of water in environment";
+    Pressure p_h2o_cond "Target water partial pressure in condenser";
+
+  equation
+    r_env = RH * p_vap(T_env, Species.Water) / (p_env - RH * p_vap(T_env, Species.Water));
+
+    // Autonomy relationship
+    r_env + 4/3 * y_O2/lambda - (1-y_O2/(3*lambda))*r_cond = 0;
+
+  algorithm
+    p_h2o_cond := p_env*r_cond/(1 + r_cond);
+    T_ref :=-C + B/(A - log10(p_h2o_cond));
+
+  end FFWaterControl;
 
   block TemperatureControl "PID for temperature control"
     extends Modelica.Blocks.Interfaces.BlockIcon;
