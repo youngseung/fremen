@@ -87,7 +87,7 @@ stack, its generic load, and the sources of methanol and environment air.</p>
   partial model Reference "The reference DMFC system"
     extends AbstractSystem;
 
-    Flow.UnitOperations.Mixer mixer 
+    replaceable Flow.UnitOperations.Mixer mixer 
                      annotation (Placement(transformation(extent={{-10,-70},{10,
               -50}}, rotation=0)));
     Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
@@ -119,7 +119,8 @@ must be specialised in subclasses.</p>
       "The cathode-side cooler" 
                   annotation (Placement(transformation(extent={{32,30},{52,50}},
             rotation=0)));
-    Flow.UnitOperations.Separator condenser "The water-recuperating unit" 
+    replaceable Flow.UnitOperations.AbstractSeparator condenser
+      "The water-recuperating unit" 
                         annotation (Placement(transformation(extent={{68,30},{
               86,50}}, rotation=0)));
 
@@ -190,7 +191,8 @@ must be specialised in subclasses.</p>
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       redeclare Flow.UnitOperations.Stack.ConstantVoltage fuelCell,
-                                                                mixer(c(fixed=true),T(fixed=true),V(fixed=true)));
+                                                                mixer(c(fixed=true),T(fixed=true),V(fixed=true)),
+      redeclare Flow.UnitOperations.Separator condenser);
 
     import Modelica.SIunits.VolumeFlowRate;
     import Modelica.SIunits.Temperature;
@@ -230,48 +232,13 @@ see what happens.</p>
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
         V0=2.1,
         R=0.15),
-      redeclare Load load(step(I=4, offset=3)),
+      redeclare ElectricLoad load(
+                          step(I=4, offset=3)),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
-      mixer(T(fixed=true), c(fixed=true)));
-
-      model Load
-        extends Modelica.Electrical.Analog.Interfaces.TwoPin;
-        annotation (Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,
-                -100},{100,100}}), graphics={Text(
-              extent={{-100,-20},{100,20}},
-              lineColor={0,0,255},
-              textString="Load")}),   Diagram(coordinateSystem(preserveAspectRatio=true,
-                extent={{-100,-100},{100,100}}), graphics),
-        experiment(StopTime=8000));
-        Modelica.Electrical.Analog.Sources.StepCurrent step(
-        I=2,
-        offset=5,
-        startTime(displayUnit="h") = 3600) 
-          annotation (Placement(transformation(extent={{-20,20},{20,60}})));
-      Modelica.Electrical.Analog.Sources.SineCurrent sine(
-        I=2,
-        freqHz=2E-3,
-        startTime(displayUnit="h") = 7200) 
-        annotation (Placement(transformation(extent={{-20,-60},{20,-20}})));
-      equation
-        connect(step.p, p)          annotation (Line(
-            points={{-20,40},{-60,40},{-60,5.55112e-16},{-100,5.55112e-16}},
-            color={0,0,255},
-            smooth=Smooth.None));
-        connect(sine.p, p) annotation (Line(
-          points={{-20,-40},{-60,-40},{-60,5.55112e-16},{-100,5.55112e-16}},
-          color={0,0,255},
-          smooth=Smooth.None));
-        connect(sine.n, n) annotation (Line(
-          points={{20,-40},{60,-40},{60,0},{100,0},{100,5.55112e-16}},
-          color={0,0,255},
-          smooth=Smooth.None));
-        connect(step.n, n) annotation (Line(
-          points={{20,40},{60,40},{60,5.55112e-16},{100,5.55112e-16}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      end Load;
+      redeclare Flow.UnitOperations.HydrostaticMixer mixer(
+            T(fixed=true), c(fixed=true)),
+      redeclare Flow.UnitOperations.Separator condenser);
 
   public
     Control.CathodeLambdaControl K_cath(
@@ -334,8 +301,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={255,0,0},
         pattern=LinePattern.Dot));
     connect(K_cond.p_mix, mixer.p) annotation (Line(
-        points={{26.8,12},{26.8,12},{4,12},{4,-36},{-14,-36},{-14,-68},{-4.7,
-            -68},{-4.7,-66.9}},
+        points={{26.8,12},{26.8,12},{4,12},{4,-36},{-24,-36},{-24,-72},{-4.7,
+            -72},{-4.7,-66.9}},
         color={127,0,127},
         pattern=LinePattern.Dot));
     connect(degasser.T, K_fuel.T_deg) annotation (Line(
@@ -369,16 +336,122 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={255,0,0},
         pattern=LinePattern.Dot));
     connect(cathodeCooler.T_process_out, K_cond.T_cond) annotation (Line(
-        points={{51.4,38.6},{60,38},{60,0},{20,0},{20,6},{26.8,6}},
+        points={{51.4,38.6},{52,38},{52,0},{20,0},{20,6},{26.8,6}},
         color={255,0,0},
         pattern=LinePattern.Dot));
 
   end Reference_Control;
 
+  model Stabilised_Control
+    "The reference DMFC system derived from the one to be presented at ASME FC09"
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
+        V0=2.1,
+        R=0.15),
+      redeclare ElectricLoad load(
+                          step(I=4, offset=3)),
+      redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
+      redeclare Flow.UnitOperations.ElasticMixer mixer(
+            T(fixed=true), c(fixed=true)),
+      redeclare Flow.UnitOperations.CapillarySeparator condenser);
+
+  public
+    Control.CathodeLambdaControl K_cath(
+      cells=3,
+      lambda=3,
+      c_est=1100,
+      aA=4.16E-9,
+      b=0.2) "Cathode lambda controller" 
+      annotation (Placement(transformation(
+          origin={-70,29},
+          extent={{-5,-4},{5,4}},
+          rotation=270)));
+    Control.ReferenceFuelControl K_fuel(
+      cells=3,
+      aA=4.16E-9,
+      b=0.2)                   annotation (Placement(transformation(extent={{
+              -16,-94},{-4,-86}}, rotation=0)));
+    Control.AnodeLambdaControl K_an(
+      cells=3,
+      c_est_an=1100,
+      aA=4.16E-9,
+      b=0.2,
+      c_est_mix=900)                annotation (Placement(transformation(extent=
+             {{-70,-64},{-60,-56}}, rotation=0)));
+    Control.TemperatureControl K_temp(
+      T_FC_ref(displayUnit="K"),
+      T_deg_0(displayUnit="degC"),
+      eps(displayUnit="degC"))   annotation (Placement(transformation(extent={{
+              -16,-34},{-4,-22}}, rotation=0)));
+    annotation (experiment(StopTime=700),  experimentSetupOutput,
+      Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
+              100,100}}), graphics),
+      Documentation(info="<html>
+<p>This specialisation of the reference system implements a series of
+controllers. Note that controller connections are dotted and colour-coded.</p>
+</html>"));
+
+    output Modelica.SIunits.HeatFlowRate crossover_heat = 725000 * fuelCell.n_x;
+    output Modelica.SIunits.HeatFlowRate heat_removal = - (fuelCell.cathode_outlet.H + fuelCell.anode_outlet.H);
+
+    Control.FFWaterControl K_auth
+      annotation (Placement(transformation(extent={{16,2},{34,18}})));
+  equation
+    connect(amperometer.i, K_cath.I) annotation (Line(
+        points={{-22,80},{-22,76},{-70,76},{-70,35}},
+        color={0,0,255},
+        pattern=LinePattern.Dot));
+    connect(K_fuel.I, amperometer.i) annotation (Line(
+        points={{-17.2,-87.6},{-18,-88},{-90,-88},{-90,40},{-70,40},{-70,76},{
+            -22,76},{-22,80}},
+        color={0,0,255},
+        pattern=LinePattern.Dot));
+    connect(blower.V, K_cath.V) annotation (Line(
+        points={{-70,16},{-70,23}},
+        color={0,255,0},
+        pattern=LinePattern.Dot));
+    connect(degasser.T, K_fuel.T_deg) annotation (Line(
+        points={{59,-20},{66,-20},{66,-98},{-30,-98},{-30,-92.4},{-17.2,-92.4}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+    connect(pump.V, K_an.V) annotation (Line(
+        points={{-42,-60},{-59,-60}},
+        color={0,255,0},
+        pattern=LinePattern.Dot));
+    connect(K_an.I, amperometer.i) annotation (Line(
+        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-22,76},{-22,80}},
+        color={0,0,255},
+        pattern=LinePattern.Dot));
+    connect(K_fuel.V, fuelPump.V) annotation (Line(
+        points={{-2.8,-90},{8,-90}},
+        color={0,255,0},
+        pattern=LinePattern.Dot));
+    connect(K_temp.T_m, fuelCell.T) 
+                               annotation (Line(
+        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-12.2,5.34}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+    connect(anodeCooler.T_ref, K_temp.T_deg_ref) 
+                                            annotation (Line(
+        points={{20,-23},{20,-28},{-2.8,-28}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+
+    connect(condenser.backPressure, mixer.pressure) annotation (Line(
+        points={{80.6,36},{80,36},{80,-52.2},{7.8,-52.2}},
+        color={85,255,255},
+        smooth=Smooth.None,
+        pattern=LinePattern.Dot));
+    connect(K_auth.T_ref, cathodeCooler.T_ref) annotation (Line(
+        points={{35.8,10},{42,10},{42,37}},
+        color={0,0,127},
+        smooth=Smooth.None));
+  end Stabilised_Control;
+
   partial model Mingled "A DMFC system with outlet mingling"
     extends AbstractSystem;
 
-    Flow.UnitOperations.Mixer mixer 
+    replaceable Flow.UnitOperations.Mixer mixer 
                      annotation (Placement(transformation(extent={{-10,-70},{10,
               -50}}, rotation=0)));
     Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
@@ -479,8 +552,10 @@ see what happens.</p>
         V0=2.1,
         T(start=303.15),
         R=0.15),
-      redeclare Load load(step(I=4, offset=3)),
-      mixer(T(fixed=true), c(fixed=true)));
+      redeclare ElectricLoad load(
+                          step(I=4, offset=3)),
+      redeclare Flow.UnitOperations.HydrostaticMixer mixer(
+            T(fixed=true), c(fixed=true)));
     Control.CathodeLambdaControl K_cath(
       cells=3,
       lambda=3,
@@ -516,47 +591,6 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
       b=0.2)                          annotation (Placement(transformation(
             extent={{-26,-98},{-12,-82}}, rotation=0)));
 
-    model Load
-      extends Modelica.Electrical.Analog.Interfaces.TwoPin;
-      annotation (
-        Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,-100},{
-                100,100}}), graphics={Text(
-              extent={{-100,-20},{100,20}},
-              lineColor={0,0,255},
-              textString="Load")}),
-        Diagram(coordinateSystem(preserveAspectRatio=true,
-                extent={{-100,-100},{100,100}}), graphics),
-        experiment(StopTime=8000));
-      Modelica.Electrical.Analog.Sources.StepCurrent step(
-        I=2,
-        offset=5,
-        startTime(displayUnit="h") = 3600) 
-        annotation (Placement(transformation(extent={{-20,20},{20,60}})));
-      Modelica.Electrical.Analog.Sources.SineCurrent sine(
-        I=2,
-        freqHz=2E-3,
-        startTime(displayUnit="h") = 7200) 
-        annotation (Placement(transformation(extent={{-20,-60},{20,-20}})));
-    equation
-      connect(step.p, p) annotation (Line(
-          points={{-20,40},{-60,40},{-60,5.55112e-16},{-100,5.55112e-16}},
-          color={0,0,255},
-          smooth=Smooth.None));
-
-      connect(sine.p, p) annotation (Line(
-          points={{-20,-40},{-60,-40},{-60,5.55112e-16},{-100,5.55112e-16}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      connect(sine.n, n) annotation (Line(
-          points={{20,-40},{60,-40},{60,0},{100,0},{100,5.55112e-16}},
-          color={0,0,255},
-          smooth=Smooth.None));
-      connect(step.n, n) annotation (Line(
-          points={{20,40},{60,40},{60,5.55112e-16},{100,5.55112e-16}},
-          color={0,0,255},
-          smooth=Smooth.None));
-    end Load;
-
   equation
     connect(K_cath.V, blower.V) annotation (Line(
         points={{-70,27},{-70,16}},
@@ -575,7 +609,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={255,0,0},
         pattern=LinePattern.Dot));
     connect(K_cond.p_mix, mixer.p) annotation (Line(
-        points={{-1.2,-22.4},{-1.2,-22},{-12,-22},{-12,-66.9},{-4.7,-66.9}},
+        points={{-1.2,-22.4},{-1.2,-22},{-18,-22},{-18,-66.9},{-4.7,-66.9}},
         color={128,0,255},
         pattern=LinePattern.Dot));
     connect(K_cond.T_cond, cooler.T_process_out) annotation (Line(
@@ -735,4 +769,64 @@ must be specialised in subclasses.</p>
         color={0,127,127},
         smooth=Smooth.None));
   end DoubleTank;
+
+    model ElectricLoad "The standard electric load for DMFC systems"
+      extends Modelica.Electrical.Analog.Interfaces.TwoPin;
+      annotation (Icon(coordinateSystem(preserveAspectRatio=true, extent={{-100,
+              -100},{100,100}}), graphics={
+          Line(points={{-90,0},{-50,0}}, color={0,0,0}),
+          Line(points={{0,-50},{0,50}}, color={0,0,0}),
+          Ellipse(
+            extent={{-50,50},{50,-50}},
+            lineColor={0,0,0},
+            fillColor={255,255,255},
+            fillPattern=FillPattern.Solid),
+          Polygon(
+            points={{90,0},{60,10},{60,-10},{90,0}},
+            lineColor={0,0,255},
+            fillColor={0,0,255},
+            fillPattern=FillPattern.Solid),
+          Line(points={{50,0},{90,0}}, color={0,0,0}),
+          Line(
+            points={{-86,-70},{-30,-70},{-30,60},{30,60},{32,72},{36,78},{40,80},
+                {44,78},{48,72},{52,48},{56,42},{60,40},{64,42},{68,48},{72,72},
+                {76,78},{80,80},{84,78},{88,72},{90,60}},
+            color={192,192,192},
+            thickness=0.5),
+          Text(
+            extent={{-150,120},{150,80}},
+            textString="%name",
+            lineColor={0,0,255}),
+          Line(points={{0,-50},{0,50}}, color={0,0,0})}),
+                                    Diagram(coordinateSystem(preserveAspectRatio=true,
+              extent={{-100,-100},{100,100}}), graphics),
+      experiment(StopTime=8000));
+      Modelica.Electrical.Analog.Sources.StepCurrent step(
+      I=2,
+      offset=5,
+      startTime(displayUnit="h") = 3600) 
+        annotation (Placement(transformation(extent={{-20,20},{20,60}})));
+    Modelica.Electrical.Analog.Sources.SineCurrent sine(
+      I=2,
+      freqHz=2E-3,
+      startTime(displayUnit="h") = 7200) 
+      annotation (Placement(transformation(extent={{-20,-60},{20,-20}})));
+    equation
+      connect(step.p, p)          annotation (Line(
+          points={{-20,40},{-60,40},{-60,5.55112e-16},{-100,5.55112e-16}},
+          color={0,0,255},
+          smooth=Smooth.None));
+      connect(sine.p, p) annotation (Line(
+        points={{-20,-40},{-60,-40},{-60,5.55112e-16},{-100,5.55112e-16}},
+        color={0,0,255},
+        smooth=Smooth.None));
+      connect(sine.n, n) annotation (Line(
+        points={{20,-40},{60,-40},{60,0},{100,0},{100,5.55112e-16}},
+        color={0,0,255},
+        smooth=Smooth.None));
+      connect(step.n, n) annotation (Line(
+        points={{20,40},{60,40},{60,5.55112e-16},{100,5.55112e-16}},
+        color={0,0,255},
+        smooth=Smooth.None));
+    end ElectricLoad;
 end System;
