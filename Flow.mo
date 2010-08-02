@@ -21,11 +21,8 @@ package Flow
 
   connector FlowPort "What passes through a control surface"
 
-    import Units.MolarFlow;
-    import Modelica.SIunits.EnthalpyFlowRate;
-
-    flow MolarFlow[Thermo.Species] n;
-    flow EnthalpyFlowRate H;
+    flow Units.MolarFlow[Thermo.Species] n;
+    flow Modelica.SIunits.EnthalpyFlowRate H;
 
     annotation (Documentation(info="<html>
 <p>This is a connector for the various tank units; it ensures continuity of enthalpy and
@@ -46,6 +43,22 @@ easy to model chemical reactions.</p>
             lineColor={0,127,127},
             textString="%name")}));
   end FlowPort;
+
+  connector PressurePort "Add pressure value to flows"
+
+    Modelica.SIunits.Pressure p "Pressure";
+    annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}), graphics={Rectangle(
+            extent={{-100,100},{100,-100}},
+            fillColor={85,255,255},
+            fillPattern=FillPattern.Solid,
+            pattern=LinePattern.None), Text(
+            extent={{-100,160},{100,100}},
+            lineColor={85,255,255},
+            textString="%name")}),       Documentation(info="<html>
+<p>Adds the value of pressure to the connection of molar and enthalpic flows.</p>
+</html>"));
+  end PressurePort;
 
   package IO "Input and output variables"
 
@@ -969,7 +982,154 @@ reported. An official one should be sought.</p>
   end Measurements;
 
   package UnitOperations "Unit operations"
-    model Separator "Splits a flow in two parts"
+    model Mixer "A unit mixing four molar flows."
+
+      import Modelica.SIunits.AmountOfSubstance;
+      import Modelica.SIunits.Concentration;
+      import Modelica.SIunits.InternalEnergy;
+      import Modelica.SIunits.Volume;
+      import Thermo.Species;
+      import Thermo.Incondensables;
+      import Thermo.Condensables;
+      import Thermo.Phases;
+      import Thermo.h;
+      import Thermo.mw;
+      import Thermo.rho;
+
+      FlowPort outlet "The mixer's outlet" 
+                            annotation (Placement(transformation(extent={{-90,
+                -10},{-70,10}}, rotation=0)));
+      FlowPort fuelInlet "The methanol-feed inlet" 
+                             annotation (Placement(transformation(extent={{-10,-10},
+                {10,10}},       rotation=180,
+            origin={0,-80})));
+      FlowPort loopInlet "The anode loop's inlet" 
+                             annotation (Placement(transformation(extent={{-10,
+                70},{10,90}}, rotation=0)));
+      FlowPort waterInlet "The water-recovery inlet" 
+                             annotation (Placement(transformation(extent={{70,
+                -10},{90,10}}, rotation=0)));
+      annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
+                -100},{100,100}}),
+                          graphics),
+                           Icon(coordinateSystem(preserveAspectRatio=false,
+              extent={{-100,-100},{100,100}}), graphics={
+            Ellipse(
+              extent={{-80,80},{80,-80}},
+              lineColor={0,0,0},
+              fillColor={255,255,255},
+              fillPattern=FillPattern.Solid),
+            Rectangle(
+              extent={{-80,0},{80,80}},
+              lineColor={0,0,255},
+              pattern=LinePattern.None,
+              lineThickness=1,
+              fillColor={255,255,255},
+              fillPattern=FillPattern.Solid),
+            Line(points={{-80,0},{-80,80},{80,80},{80,0}}, color={0,0,0}),
+            Line(points={{0,6},{0,-54}}, color={0,0,0}),
+            Line(points={{0,6},{-52,36}}, color={0,0,0}),
+            Line(points={{0,6},{52,36}}, color={0,0,0}),
+            Text(
+              extent={{-100,160},{100,100}},
+              lineColor={0,0,0},
+              fillColor={255,85,85},
+              fillPattern=FillPattern.Solid,
+              textString="%name")}),
+        Documentation(info="<html>
+<p>The mixer features three input flows, one for the anodic loop, one for recovered
+water and another for methanol inlet, and an output for the anodic loop. Its main
+role is thought to be the loop's main mass and energy balance.</p>
+<p>The outlet compositions are set to be the same as the mass balance's molar fractions, 
+implying a perfect mixing; the enthalpy flow is also proportional to the internal-energy
+holdup.</p>
+<p>It is possible to set the initial methanol concentration to some specific value, 
+by default it is 1 M.</p>
+</html>"));
+
+      AmountOfSubstance n[Species] "Molar holdup";
+      InternalEnergy U "Energy holdup";
+      Concentration c(start=1000) "Methanol concentration";
+      Volume V(start=5E-6, fixed=true) "Solution volume";
+
+      IO.TemperatureOutput T "Mixer temperature" 
+        annotation (Placement(transformation(extent={{-80,60},{-100,80}},
+              rotation=0)));
+    equation
+      der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
+      der(n) = fuelInlet.n + loopInlet.n + waterInlet.n + outlet.n;
+
+      // Bind outlet's n to composition in holdup
+      outlet.n[1:end-1] / sum(outlet.n) = n[1:end-1] / sum(n);
+      // Bind outlet's H to specific internal energy and outlet flow
+      outlet.H / sum(outlet.n) = U / sum(n);
+
+      U = sum(n[i]*h(T, i, Phases.Liquid) for i in Condensables);
+      V = sum(n[i]*mw(i)/rho(T, i, Phases.Liquid) for i in Condensables);
+      c = n[Species.Methanol] / V;
+
+      assert(V > sqrt(Modelica.Constants.eps), "==> Mixer ran out of solution");
+
+    initial equation
+      n[Incondensables] = zeros(size(Incondensables,1));
+
+    end Mixer;
+
+    model HydrostaticMixer
+      "A mixer producing a hydrostatic pressure for measurement"
+      extends Mixer;
+
+      import Thermo.Species;
+      import Thermo.Phases;
+      import Thermo.rho;
+      import g = Modelica.Constants.g_n;
+
+      IO.PressureOutput p
+        "Hydrostatic pressure measured at the bottom of the mixer" 
+                       annotation (Placement(transformation(extent={{-54,-78},{
+                -40,-60}}, rotation=0)));
+
+      parameter Modelica.SIunits.Area A = 50E-4 "Mixer cross-sectional area";
+
+    equation
+      p = rho(T,Species.Water,Phases.Liquid)*g*(V/A);
+
+      annotation (Documentation(info="<html>
+<p>This extension to the standard-issue Mixer class adds the possibility of inferring
+the amount of solution by measuring the hydrostatic pressure in the tank.</p>
+</html>"));
+    end HydrostaticMixer;
+
+    model ElasticMixer "Mixer with capability for volume expansion"
+      extends Mixer;
+
+      import Modelica.SIunits.Length;
+
+      parameter Modelica.SIunits.Volume V0 = 5E-6
+        "Maximum nominal volume at no pressure";
+      parameter Modelica.SIunits.Stress E = 1.9E6 "Young modulus";
+      parameter Length d_in = 3.2E-3 "Tubing internal diameter";
+      parameter Length d_out = 4.8E-3 "Tubing external diameter";
+
+      PressurePort pressure "The mixer's internal pressure" annotation (Placement(
+            transformation(extent={{68,68},{88,88}}), iconTransformation(extent={{68,
+                68},{88,88}})));
+    equation
+      pressure.p = max(0, (d_out/d_in - 1)*E*((V/V0)^(1/3) - 1));
+
+      annotation (Diagram(graphics), Icon(coordinateSystem(preserveAspectRatio=true,
+              extent={{-100,-100},{100,100}}), graphics),
+        Documentation(info="<html>
+<p>This mixer is a sort of \"balloon\" that can increase its volume when pressure is
+increased.</p>
+<p>It is assumed through a stretch of imagination that the tubing acts as a CSTR more than
+a PFR. Take concentration values with a grain of salt.</p>
+<p>The default numbers are related to the values for Tygon 3350 tubing, where
+an overpressure of 10 kPa results in a 3% volume increase.</p>
+</html>"));
+    end ElasticMixer;
+
+    model AbstractSeparator "Generic separator"
 
       import Thermo.Condensables;
       import Thermo.Phases;
@@ -982,8 +1142,9 @@ reported. An official one should be sought.</p>
                          annotation (Placement(transformation(extent={{60,30},{
                 80,50}}, rotation=0)));
       FlowPort liquidOutlet "Single-phase liquid outlet" 
-                            annotation (Placement(transformation(extent={{60,
-                -50},{80,-30}}, rotation=0)));
+                            annotation (Placement(transformation(extent={{-10,-10},{
+                10,10}},        rotation=180,
+            origin={70,-40})));
       annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
                 -100},{100,100}}), graphics={
             Ellipse(
@@ -1009,12 +1170,11 @@ reported. An official one should be sought.</p>
               fillColor={255,85,85},
               fillPattern=FillPattern.Solid,
               textString="%name")}),
-                              Diagram(coordinateSystem(preserveAspectRatio=
-                false, extent={{-100,-100},{100,100}}),
+                              Diagram(coordinateSystem(preserveAspectRatio=true,
+                       extent={{-100,-100},{100,100}}),
                                       graphics),
         Documentation(info="<html>
-<p>The separator unit simply splits a flow in its gaseous and liquid components. 
-The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
+<p>An abstract representation of the separation of a flow.</p>
 </html>"));
       IO.TemperatureOutput T "Separator temperature" 
                                                   annotation (Placement(
@@ -1025,8 +1185,66 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
                 {10,10}}, rotation=0)));
 
     equation
+      liquidOutlet.H = sum(h(T, i, Phases.Liquid) * liquidOutlet.n[i] for i in Condensables);
+      connect(ft.inlet, inlet) annotation (Line(points={{-8,6.10623e-16},{-54,
+              6.10623e-16},{-54,5.55112e-16},{-100,5.55112e-16}}, color={0,127,
+              127}));
+      connect(ft.outlet, gasOutlet) annotation (Line(points={{8,6.10623e-16},{
+              40,6.10623e-16},{40,40},{70,40}}, color={0,127,127}));
+      connect(ft.outlet, liquidOutlet) annotation (Line(points={{8,6.10623e-16},
+              {40,6.10623e-16},{40,-40},{70,-40}}, color={0,127,127}));
+      connect(T, ft.T) annotation (Line(points={{110,5.55112e-16},{78,0},{60,0},
+              {60,-20},{0,-20},{0,-8},{6.10623e-16,-8}},
+                                                       color={0,0,255}));
+    end AbstractSeparator;
+
+    model Separator "Splits a flow in two parts"
+      extends AbstractSeparator;
+
+    equation
       liquidOutlet.n = -ft.liquid;
-      liquidOutlet.H = sum(h(T, i, Phases.Liquid)* liquidOutlet.n[i] for i in Condensables);
+
+      annotation (Documentation(info="<html>
+<p>The separator unit simply splits a flow in its gaseous and liquid components. 
+The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
+</html>"));
+    end Separator;
+
+    model CapillarySeparator "Separates a flow depending on backpressure"
+      extends AbstractSeparator;
+
+      import Modelica.SIunits.Pressure;
+
+      parameter Modelica.SIunits.Length dh = 10E-6
+        "Hydraulic diameter of channels";
+      parameter Modelica.SIunits.Angle theta = 45
+        "Contact angle of hydrophilic channels";
+
+      Pressure pc "Capillary pressure";
+      Modelica.SIunits.SurfaceTension sigma "Surface tension of water with air";
+
+      PressurePort backPressure "Pressure from the liquid outlet" annotation (
+          Placement(transformation(
+            extent={{-10,-10},{10,10}},
+            rotation=180,
+            origin={40,-40}), iconTransformation(extent={{30,-50},{50,-30}})));
+    protected
+      Real fuzzifier "Continuous change between false (0) and true (1)";
+      parameter Pressure p_eps = 10 "Small value for pressure";
+
+    equation
+      sigma = 0.076 - 0.00017*(T-273.15); // From Microfluidics, it is in Celsius!
+      pc = 4 * sigma / dh * cos(theta);
+
+      if noEvent(backPressure.p + p_eps < pc) then // Good margin: flow from liquid outlet
+        fuzzifier = 1;
+      elseif noEvent(backPressure.p > pc + p_eps) then // Good margin: no flow from liquid outlet
+        fuzzifier = 0;
+      else // I am in the middle band, 2×p_eps wide, change gradually from 0 to 1
+        fuzzifier = (pc - backPressure.p + p_eps)/(2*p_eps);
+      end if;
+
+      liquidOutlet.n = -ft.liquid * fuzzifier;
 
       connect(ft.inlet, inlet) annotation (Line(points={{-8,6.10623e-16},{-54,
               6.10623e-16},{-54,5.55112e-16},{-100,5.55112e-16}}, color={0,127,
@@ -1038,7 +1256,8 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       connect(T, ft.T) annotation (Line(points={{110,5.55112e-16},{78,0},{60,0},
               {60,-20},{0,-20},{0,-8},{6.10623e-16,-8}},
                                                        color={0,0,255}));
-    end Separator;
+      annotation (Diagram(graphics));
+    end CapillarySeparator;
 
     model Burner "An adiabatic combustor"
 
@@ -1050,7 +1269,9 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       FlowPort outlet "Burner outlet" annotation (Placement(transformation(
               extent={{92,-10},{112,10}}, rotation=0)));
       annotation (
-        Diagram(graphics),
+        Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},
+                {100,100}}),
+                graphics),
         Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
                 100,100}}), graphics={
             Ellipse(
@@ -1121,109 +1342,6 @@ catalytic-bed converter.</p>
       connect(sink.inlet, inlet) annotation (Line(points={{1,-40},{-20,-40},{
               -20,5.55112e-16},{-98,5.55112e-16}}, color={0,127,127}));
     end Burner;
-
-    model Mixer "A unit mixing four molar flows."
-
-      import Modelica.SIunits.Area;
-      import Modelica.SIunits.AmountOfSubstance;
-      import Modelica.SIunits.Concentration;
-      import Modelica.SIunits.InternalEnergy;
-      import Modelica.SIunits.Volume;
-      import Thermo.Species;
-      import Thermo.Incondensables;
-      import Thermo.Condensables;
-      import Thermo.Phases;
-      import Thermo.h;
-      import Thermo.mw;
-      import Thermo.rho;
-
-      import g = Modelica.Constants.g_n;
-
-      FlowPort outlet "The mixer's outlet" 
-                            annotation (Placement(transformation(extent={{-90,
-                -10},{-70,10}}, rotation=0)));
-      FlowPort fuelInlet "The methanol-feed inlet" 
-                             annotation (Placement(transformation(extent={{-10,
-                -90},{10,-70}}, rotation=0)));
-      FlowPort loopInlet "The anode loop's inlet" 
-                             annotation (Placement(transformation(extent={{-10,
-                70},{10,90}}, rotation=0)));
-      FlowPort waterInlet "The water-recovery inlet" 
-                             annotation (Placement(transformation(extent={{70,
-                -10},{90,10}}, rotation=0)));
-      annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-                -100},{100,100}}),
-                          graphics),
-                           Icon(coordinateSystem(preserveAspectRatio=false,
-              extent={{-100,-100},{100,100}}), graphics={
-            Ellipse(
-              extent={{-80,80},{80,-80}},
-              lineColor={0,0,0},
-              fillColor={255,255,255},
-              fillPattern=FillPattern.Solid),
-            Rectangle(
-              extent={{-80,0},{80,80}},
-              lineColor={0,0,255},
-              pattern=LinePattern.None,
-              lineThickness=1,
-              fillColor={255,255,255},
-              fillPattern=FillPattern.Solid),
-            Line(points={{-80,0},{-80,80},{80,80},{80,0}}, color={0,0,0}),
-            Line(points={{0,6},{0,-54}}, color={0,0,0}),
-            Line(points={{0,6},{-52,36}}, color={0,0,0}),
-            Line(points={{0,6},{52,36}}, color={0,0,0}),
-            Text(
-              extent={{-100,160},{100,100}},
-              lineColor={0,0,0},
-              fillColor={255,85,85},
-              fillPattern=FillPattern.Solid,
-              textString="%name")}),
-        Documentation(info="<html>
-<p>The mixer features three input flows, one for the anodic loop, one for recovered
-water and another for methanol inlet, and an output for the anodic loop. Its main
-role is thought to be the loop's main mass and energy balance.</p>
-<p>The outlet compositions are set to be the same as the mass balance's molar fractions, 
-implying a perfect mixing; the enthalpy flow is also proportional to the internal-energy
-holdup.</p>
-<p>It is possible to set the initial methanol concentration to some specific value, 
-by default it is 1 M.</p>
-</html>"));
-      IO.PressureOutput p
-        "Hydrostatic pressure measured at the bottom of the mixer" 
-                       annotation (Placement(transformation(extent={{-54,-78},{
-                -40,-60}}, rotation=0)));
-
-      parameter Area A = 50E-4 "Mixer cross-sectional area";
-
-      AmountOfSubstance n[Species] "Molar holdup";
-      InternalEnergy U "Energy holdup";
-      Concentration c(start=1000) "Methanol concentration";
-      Volume V(start=5E-6, fixed=true) "Solution volume";
-
-      IO.TemperatureOutput T "Mixer temperature" 
-        annotation (Placement(transformation(extent={{-80,60},{-100,80}},
-              rotation=0)));
-    equation
-      der(U) = fuelInlet.H + loopInlet.H + waterInlet.H + outlet.H;
-      der(n) = fuelInlet.n + loopInlet.n + waterInlet.n + outlet.n;
-
-      // Bind outlet's n to composition in holdup
-      outlet.n[1:end-1] / sum(outlet.n) = n[1:end-1] / sum(n);
-      // Bind outlet's H to specific internal energy and outlet flow
-      outlet.H / sum(outlet.n) = U / sum(n);
-
-      U = sum(n[i]*h(T, i, Phases.Liquid) for i in Condensables);
-      V = sum( n[i]*mw(i)/rho(T, i, Phases.Liquid) for i in Condensables);
-      c = n[Species.Methanol] / V;
-
-      p = rho(T,Species.Water,Phases.Liquid)*g*(V/A);
-
-      assert(V > sqrt(Modelica.Constants.eps), "==> Mixer ran out of solution");
-
-    initial equation
-      n[Incondensables] = zeros(size(Incondensables,1));
-
-    end Mixer;
 
     package HeatExchangers "Various types of heat exchangers"
 
@@ -2277,17 +2395,20 @@ current.</p>
     end Stack;
 
     package Test
-      model SeparatorTest "Test case for the separator unit"
+      partial model AbstractSeparatorTest "Test case for the separator unit"
 
-        Separator separator annotation (Placement(transformation(extent={{-22,
+        replaceable AbstractSeparator separator 
+                                    annotation (Placement(transformation(extent={{-22,
                   -12},{26,38}}, rotation=0)));
       protected
         Flow.Sink liquidSink 
-                          annotation (Placement(transformation(extent={{46,-16},
-                  {54,-8}}, rotation=0)));
-        annotation (Diagram(graphics));
-        Sink gasSink       annotation (Placement(transformation(extent={{46,30},
-                  {54,38}}, rotation=0)));
+                          annotation (Placement(transformation(extent={{76,-14},
+                  {84,-6}}, rotation=0)));
+        annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
+                  -100},{100,100}}),
+                            graphics));
+        Sink gasSink       annotation (Placement(transformation(extent={{76,26},
+                  {84,34}}, rotation=0)));
         Sources.Environment env         annotation (Placement(transformation(
                 extent={{-54,22},{-34,42}}, rotation=0)));
         Sources.Solution solution         annotation (Placement(transformation(
@@ -2297,6 +2418,10 @@ current.</p>
         inner parameter Units.Temperature T_env = 298.15;
         inner parameter Units.RelativeHumidity RH_env = 60;
 
+        Measurements.FlowTemperature T_liquid
+          annotation (Placement(transformation(extent={{40,-20},{60,0}})));
+        Measurements.FlowTemperature T_gas
+          annotation (Placement(transformation(extent={{40,20},{60,40}})));
       equation
         sum(env.outlet.n) = -1;
         sum(solution.outlet.n) = -2;
@@ -2305,12 +2430,34 @@ current.</p>
                 -35,32},{-22,32},{-22,13}}, color={0,127,127}));
         connect(solution.outlet, separator.inlet) 
           annotation (Line(points={{-73,13},{-22,13}}, color={0,127,127}));
-        connect(separator.liquidOutlet, liquidSink.inlet) 
-          annotation (Line(points={{18.8,3},{18,3},{18,-12},{46.4,-12}}, color=
-                {0,127,127}));
-        connect(separator.gasOutlet, gasSink.inlet)    annotation (Line(points=
-                {{18.8,23},{18.4,23},{18.4,34},{46.4,34}}, color={0,127,127}));
+        connect(separator.gasOutlet, T_gas.inlet) annotation (Line(
+            points={{18.8,23},{20,23},{20,30},{42,30}},
+            color={0,127,127},
+            smooth=Smooth.None));
+        connect(T_gas.outlet, gasSink.inlet) annotation (Line(
+            points={{58,30},{76.4,30}},
+            color={0,127,127},
+            smooth=Smooth.None));
+        connect(separator.liquidOutlet, T_liquid.inlet) annotation (Line(
+            points={{18.8,3},{20,3},{20,-10},{42,-10}},
+            color={0,127,127},
+            smooth=Smooth.None));
+        connect(T_liquid.outlet, liquidSink.inlet) annotation (Line(
+            points={{58,-10},{76.4,-10}},
+            color={0,127,127},
+            smooth=Smooth.None));
+      end AbstractSeparatorTest;
+
+      model SeparatorTest
+        extends AbstractSeparatorTest(redeclare Separator separator);
       end SeparatorTest;
+
+      model CapillarySeparatorTest
+        extends AbstractSeparatorTest(redeclare CapillarySeparator separator);
+
+      equation
+        separator.backPressure.p = separator.pc - exp(-time*10) * 1000 * sin(time*100);
+      end CapillarySeparatorTest;
 
       model BurnerTest
 
@@ -2373,7 +2520,7 @@ current.</p>
         inner parameter Units.Temperature T_env = 298.15;
         inner parameter Units.RelativeHumidity RH_env = 60;
 
-        Mixer mixer(
+        replaceable Mixer mixer(
           c(fixed=true),
           T(fixed=true),
           V(fixed=true, start=500E-6)) 
@@ -2397,7 +2544,9 @@ current.</p>
                   {-20,-12}}, rotation=0)));
       equation
 
-        annotation (Diagram(graphics));
+        annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+                  -100},{100,100}}),
+                            graphics));
         sum(fuelTank.outlet.n) = -0.1;
         sum(anodicLoop.outlet.n) = -1;
         sum(condenser.outlet.n) = -0.4;
@@ -2416,6 +2565,13 @@ current.</p>
                 127}));
       end MixerTest;
 
+      model HydrostaticMixerTest
+        extends MixerTest(redeclare HydrostaticMixer mixer);
+      end HydrostaticMixerTest;
+
+      model ElasticMixerTest
+        extends MixerTest(redeclare ElasticMixer mixer(V0=5E-4));
+      end ElasticMixerTest;
     end Test;
   end UnitOperations;
 
@@ -2959,7 +3115,9 @@ numerically unstable. Finally, the concentration start value is strictly enforce
         Measurements.PeristalticPump pump_out 
                                annotation (Placement(transformation(extent={{
                   -40,4},{-28,16}}, rotation=0)));
-        annotation (Diagram(graphics),
+        annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent=
+                  {{-100,-100},{100,100}}),
+                            graphics),
                              experiment(StopTime=500));
         Measurements.LiquidPump pump_in 
                                annotation (Placement(transformation(
@@ -3000,8 +3158,8 @@ numerically unstable. Finally, the concentration start value is strictly enforce
                 14,24},{14,10},{-2,10}}, color={0,127,127}));
         connect(fuelTank.outlet, fuel_pump.inlet) annotation (Line(points={{10,
                 -30},{-10,-30}}, color={0,127,127}));
-        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (Line(points={{
-                -10,-24},{-10,2}}, color={0,127,127}));
+        connect(fuel_pump.outlet, mixer.fuelInlet) annotation (Line(points={{-10,-24},
+                {-10,2}},          color={0,127,127}));
         connect(mixer.envPort, Overflow.inlet) annotation (Line(points={{-10,18},
                 {-10,28.4}}, color={0,127,127}));
 
