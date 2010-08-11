@@ -1,6 +1,6 @@
 within ;
-                                                                                                    /**
- * © Federico Zenith, 2008-2009.
+/**
+ * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ stack, its generic load, and the sources of methanol and environment air.</p>
                                           annotation (Placement(transformation(
             extent={{30,-96},{42,-84}}, rotation=0)));
     replaceable Flow.UnitOperations.Stack.Abstract fuelCell 
-                      annotation (Placement(transformation(extent={{-50,-12},{
-              -14,22}}, rotation=0)));
+                      annotation (Placement(transformation(extent={{-48,-12},{
+              -12,22}}, rotation=0)));
     Flow.Sources.Environment environment "The air from the environment" 
       annotation (Placement(transformation(extent={{-100,0},{-80,20}}, rotation=
              0)));
@@ -50,12 +50,12 @@ stack, its generic load, and the sources of methanol and environment air.</p>
               72}}, rotation=0)));
     replaceable Modelica.Electrical.Analog.Interfaces.TwoPin load
       "Load connected to the cell"       annotation (Placement(transformation(
-            extent={{-52,84},{-40,96}}, rotation=0)));
+            extent={{-50,84},{-38,96}}, rotation=0)));
     Modelica.Electrical.Analog.Basic.Ground ground 
       annotation (Placement(transformation(extent={{-8,24},{8,40}}, rotation=0)));
     Modelica.Electrical.Analog.Sensors.CurrentSensor amperometer
-      "Current in external circuit" annotation (Placement(transformation(extent=
-             {{-32,80},{-12,100}}, rotation=0)));
+      "Current in external circuit" annotation (Placement(transformation(extent={{-30,80},
+              {-10,100}},          rotation=0)));
 
   protected
     MolarFlow inCell = fuelCell.anode_inlet.n[1] - (-fuelCell.anode_outlet.n[1])
@@ -70,14 +70,14 @@ stack, its generic load, and the sources of methanol and environment air.</p>
   equation
     eta_to_cell = inCell / outTank;
     eta_system = eta_to_cell * fuelCell.eta_total;
-    connect(fuelCell.minus, ground.p) annotation (Line(points={{-21.2,15.2},{
-            -21.2,40},{1.22125e-16,40}}, color={0,0,255}));
+    connect(fuelCell.minus, ground.p) annotation (Line(points={{-19.2,15.2},{
+            -19.2,40},{1.22125e-16,40}}, color={0,0,255}));
     connect(amperometer.p, load.n) 
-      annotation (Line(points={{-32,90},{-40,90}}, color={0,0,255}));
-    connect(fuelCell.minus, amperometer.n) annotation (Line(points={{-21.2,15.2},
-            {-21.2,40},{0,40},{0,90},{-12,90}}, color={0,0,255}));
-    connect(fuelCell.plus, load.p) annotation (Line(points={{-42.8,15.2},{-42.8,
-            40},{-64,40},{-64,90},{-52,90}}, color={0,0,255}));
+      annotation (Line(points={{-30,90},{-38,90}}, color={0,0,255}));
+    connect(fuelCell.minus, amperometer.n) annotation (Line(points={{-19.2,15.2},
+            {-19.2,40},{0,40},{0,90},{-10,90}}, color={0,0,255}));
+    connect(fuelCell.plus, load.p) annotation (Line(points={{-40.8,15.2},{-40.8,
+            40},{-60,40},{-60,90},{-50,90}}, color={0,0,255}));
     connect(airSink.inlet, emissions.outlet) annotation (Line(
         points={{92.4,68},{85,68}},
         color={0,127,127},
@@ -130,11 +130,11 @@ must be specialised in subclasses.</p>
         color={0,127,127},
         smooth=Smooth.None));
     connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(
-        points={{-64,10},{-60,10},{-60,10.1},{-50,10.1}},
+        points={{-64,10},{-60,10},{-60,10.1},{-48,10.1}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(fuelCell.cathode_outlet, cathodeCooler.inlet) annotation (Line(
-        points={{-14,10.1},{10,10.1},{10,40},{32.6,40}},
+        points={{-12,10.1},{10,10.1},{10,40},{32.6,40}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(cathodeCooler.outlet, condenser.inlet) annotation (Line(
@@ -146,7 +146,7 @@ must be specialised in subclasses.</p>
         color={0,127,127},
         smooth=Smooth.None));
     connect(fuelCell.anode_outlet, anodeCooler.inlet) annotation (Line(
-        points={{-14,-0.1},{-2,-0.1},{-2,-20},{10.6,-20}},
+        points={{-12,-0.1},{-2,-0.1},{-2,-20},{10.6,-20}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(anodeCooler.outlet, degasser.inlet) annotation (Line(
@@ -180,7 +180,7 @@ must be specialised in subclasses.</p>
         color={0,127,127},
         smooth=Smooth.None));
     connect(pump.outlet, fuelCell.anode_inlet) annotation (Line(
-        points={{-36,-54},{-60,-54},{-60,-0.1},{-50,-0.1}},
+        points={{-36,-54},{-60,-54},{-60,-0.1},{-48,-0.1}},
         color={0,127,127},
         smooth=Smooth.None));
   end Reference;
@@ -284,12 +284,12 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
 
   equation
     connect(amperometer.i, K_cath.I) annotation (Line(
-        points={{-22,80},{-22,76},{-70,76},{-70,35}},
+        points={{-20,80},{-20,76},{-70,76},{-70,35}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_fuel.I, amperometer.i) annotation (Line(
         points={{-17.2,-87.6},{-18,-88},{-90,-88},{-90,40},{-70,40},{-70,76},{
-            -22,76},{-22,80}},
+            -20,76},{-20,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(blower.V, K_cath.V) annotation (Line(
@@ -314,7 +314,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(K_an.I, amperometer.i) annotation (Line(
-        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-22,76},{-22,80}},
+        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-20,76},{-20,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_cath.V, K_cond.V_cath) annotation (Line(
@@ -327,7 +327,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         pattern=LinePattern.Dot));
     connect(K_temp.T_m, fuelCell.T) 
                                annotation (Line(
-        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-12.2,5.34}},
+        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-10.2,5.34}},
         color={255,0,0},
         pattern=LinePattern.Dot));
     connect(anodeCooler.T_ref, K_temp.T_deg_ref) 
@@ -383,7 +383,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
       T_deg_0(displayUnit="degC"),
       eps(displayUnit="degC"))   annotation (Placement(transformation(extent={{
               -16,-34},{-4,-22}}, rotation=0)));
-    annotation (experiment(StopTime=700),  experimentSetupOutput,
+    annotation (experiment(StopTime=10800),experimentSetupOutput,
       Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
               100,100}}), graphics),
       Documentation(info="<html>
@@ -391,19 +391,20 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
 controllers. Note that controller connections are dotted and colour-coded.</p>
 </html>"));
 
+    Control.FFWaterControl K_auth(dT=2) 
+      annotation (Placement(transformation(extent={{16,2},{34,18}})));
+
     output Modelica.SIunits.HeatFlowRate crossover_heat = 725000 * fuelCell.n_x;
     output Modelica.SIunits.HeatFlowRate heat_removal = - (fuelCell.cathode_outlet.H + fuelCell.anode_outlet.H);
 
-    Control.FFWaterControl K_auth
-      annotation (Placement(transformation(extent={{16,2},{34,18}})));
   equation
     connect(amperometer.i, K_cath.I) annotation (Line(
-        points={{-22,80},{-22,76},{-70,76},{-70,35}},
+        points={{-20,80},{-20,76},{-70,76},{-70,35}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_fuel.I, amperometer.i) annotation (Line(
         points={{-17.2,-87.6},{-18,-88},{-90,-88},{-90,40},{-70,40},{-70,76},{
-            -22,76},{-22,80}},
+            -20,76},{-20,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(blower.V, K_cath.V) annotation (Line(
@@ -419,7 +420,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(K_an.I, amperometer.i) annotation (Line(
-        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-22,76},{-22,80}},
+        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-20,76},{-20,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_fuel.V, fuelPump.V) annotation (Line(
@@ -428,12 +429,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         pattern=LinePattern.Dot));
     connect(K_temp.T_m, fuelCell.T) 
                                annotation (Line(
-        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-12.2,5.34}},
-        color={255,0,0},
-        pattern=LinePattern.Dot));
-    connect(anodeCooler.T_ref, K_temp.T_deg_ref) 
-                                            annotation (Line(
-        points={{20,-23},{20,-28},{-2.8,-28}},
+        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-10.2,5.34}},
         color={255,0,0},
         pattern=LinePattern.Dot));
 
@@ -444,7 +440,13 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         pattern=LinePattern.Dot));
     connect(K_auth.T_ref, cathodeCooler.T_ref) annotation (Line(
         points={{35.8,10},{42,10},{42,37}},
-        color={0,0,127},
+        color={255,0,0},
+        smooth=Smooth.None,
+        pattern=LinePattern.Dot));
+    connect(anodeCooler.T_ref, K_temp.T_deg_ref) annotation (Line(
+        points={{20,-23},{20,-36},{0,-36},{0,-28},{-2.8,-28}},
+        color={255,0,0},
+        pattern=LinePattern.Dot,
         smooth=Smooth.None));
   end Stabilised_Control;
 
@@ -488,21 +490,21 @@ must be specialised in subclasses.</p>
                                          annotation (Line(points={{-81,10},{-70,
             10}}, color={0,127,127}));
     connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(points={{-64,10},
-            {-50,10},{-50,10.1}},         color={0,127,127}));
+            {-48,10},{-48,10.1}},         color={0,127,127}));
     connect(fuelPump.outlet, mixer.fuelInlet) 
       annotation (Line(points={{14,-84},{0,-84},{0,-68},{6.10623e-16,-68}},
           color={0,127,127}));
     connect(cooler.outlet, separator.inlet) 
                                            annotation (Line(points={{31.46,5},{
             48,5}}, color={0,127,127}));
-    connect(fuelCell.anode_outlet, cooler.inlet) annotation (Line(points={{-14,
-            -0.1},{-14,0},{0,0},{0,5},{14.54,5}}, color={0,127,127}));
-    connect(fuelCell.anode_inlet, pump.outlet) annotation (Line(points={{-50,
-            -0.1},{-50,0},{-60,0},{-60,-54},{-36,-54}}, color={0,127,127}));
+    connect(fuelCell.anode_outlet, cooler.inlet) annotation (Line(points={{-12,
+            -0.1},{-12,0},{0,0},{0,5},{14.54,5}}, color={0,127,127}));
+    connect(fuelCell.anode_inlet, pump.outlet) annotation (Line(points={{-48,
+            -0.1},{-48,0},{-60,0},{-60,-54},{-36,-54}}, color={0,127,127}));
     connect(amperometer.p, load.n) 
-      annotation (Line(points={{-32,90},{-40,90}}, color={0,0,255}));
+      annotation (Line(points={{-30,90},{-38,90}}, color={0,0,255}));
     connect(cooler.inlet, fuelCell.cathode_outlet) annotation (Line(points={{14.54,5},
-            {0,5},{0,10.1},{-14,10.1}},          color={0,127,127}));
+            {0,5},{0,10.1},{-12,10.1}},          color={0,127,127}));
     connect(separator.liquidOutlet, mixer.waterInlet) annotation (Line(points={{65,0.6},
             {65,-60},{8,-60}},          color={0,127,127}));
     connect(separator.gasOutlet, emissions.inlet) annotation (Line(
@@ -597,7 +599,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(K_cath.I, amperometer.i) annotation (Line(
-        points={{-70,39},{-70,74},{-22,74},{-22,80}},
+        points={{-70,39},{-70,74},{-20,74},{-20,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_cath.V, K_cond.V_cath) annotation (Line(
@@ -622,11 +624,11 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(K_T.I, amperometer.i) annotation (Line(
-        points={{-71.6,-74.4},{-72,-74},{-80,-74},{-80,74},{-22,74},{-22,80}},
+        points={{-71.6,-74.4},{-72,-74},{-80,-74},{-80,74},{-20,74},{-20,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_T.T_stack, fuelCell.T) annotation (Line(
-        points={{-71.6,-63.6},{-76,-64},{-76,-18},{-4,-18},{-4,5.34},{-12.2,
+        points={{-71.6,-63.6},{-76,-64},{-76,-18},{-4,-18},{-4,5.34},{-10.2,
             5.34}},
         color={255,0,0},
         pattern=LinePattern.Dot));
@@ -644,7 +646,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         color={0,255,0},
         pattern=LinePattern.Dot));
     connect(K_fuel.I, amperometer.i) annotation (Line(
-        points={{-27.4,-90},{-80,-90},{-80,74},{-22,74},{-22,80}},
+        points={{-27.4,-90},{-80,-90},{-80,74},{-20,74},{-20,80}},
         color={0,0,255},
         pattern=LinePattern.Dot));
     connect(K_fuel.T_sep, cooler.T_process_out) annotation (Line(
@@ -713,22 +715,22 @@ must be specialised in subclasses.</p>
                                          annotation (Line(points={{-81,10},{-70,
             10}}, color={0,127,127}));
     connect(blower.outlet, fuelCell.cathode_inlet) annotation (Line(points={{-64,10},
-            {-50,10},{-50,10.1}},         color={0,127,127}));
+            {-48,10},{-48,10.1}},         color={0,127,127}));
     connect(cathodeCooler.outlet, condenser.inlet) 
       annotation (Line(points={{51.4,40},{68,40}}, color={0,127,127}));
     connect(anodeCooler.outlet, degasser.inlet) 
                                            annotation (Line(points={{29.4,-20},
             {38,-20}}, color={0,127,127}));
     connect(fuelCell.anode_outlet, anodeCooler.inlet) 
-                                                 annotation (Line(points={{-14,
-            -0.1},{-14,0},{0,0},{0,-20},{10.6,-20}},   color={0,127,127}));
+                                                 annotation (Line(points={{-12,
+            -0.1},{-12,0},{0,0},{0,-20},{10.6,-20}},   color={0,127,127}));
     connect(cathodeCooler.inlet, fuelCell.cathode_outlet) annotation (Line(
-          points={{32.6,40},{20,40},{20,10},{-14,10},{-14,10.1}}, color={0,127,
+          points={{32.6,40},{20,40},{20,10},{-12,10},{-12,10.1}}, color={0,127,
             127}));
-    connect(fuelCell.minus, ground.p) annotation (Line(points={{-21.2,15.2},{
-            -21.2,40},{1.22125e-16,40}}, color={0,0,255}));
+    connect(fuelCell.minus, ground.p) annotation (Line(points={{-19.2,15.2},{
+            -19.2,40},{1.22125e-16,40}}, color={0,0,255}));
     connect(amperometer.p, load.n) 
-      annotation (Line(points={{-32,90},{-40,90}}, color={0,0,255}));
+      annotation (Line(points={{-30,90},{-38,90}}, color={0,0,255}));
     connect(pump.inlet, solutionTank.outlet) 
       annotation (Line(points={{-20,-46},{-20,-46},{11.4,-46}},
                                                     color={0,127,127}));
@@ -753,7 +755,7 @@ must be specialised in subclasses.</p>
         color={0,127,127},
         smooth=Smooth.None));
     connect(FC6.inlet, fuelCell.anode_inlet) annotation (Line(
-        points={{-62.4,-60},{-80,-60},{-80,-0.1},{-50,-0.1}},
+        points={{-62.4,-60},{-80,-60},{-80,-0.1},{-48,-0.1}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(condenser.gasOutlet, emissions.inlet) annotation (Line(
