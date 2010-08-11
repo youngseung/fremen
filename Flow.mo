@@ -1,5 +1,5 @@
 within ;
-/**
+  /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1215,12 +1215,18 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
 
       import Modelica.SIunits.Pressure;
 
-      parameter Modelica.SIunits.Length dh = 10E-6
-        "Hydraulic diameter of channels";
-      parameter Modelica.SIunits.Angle theta = 45
+      parameter Modelica.SIunits.Length dh_flow = 200E-6
+        "Hydraulic diameter of hydrophobic channels";
+      parameter Modelica.SIunits.Length dh_sep = 10E-6
+        "Hydraulic diameter of hydrophilic channels";
+      parameter Modelica.SIunits.Angle theta_flow = 2.2
+        "Contact angle of hydrophobic channels";
+      parameter Modelica.SIunits.Angle theta_sep = 0.35
         "Contact angle of hydrophilic channels";
 
-      Pressure pc "Capillary pressure";
+      Pressure pc_flow "Capillary pressure in hydrophobic channels";
+      Pressure pc_sep "Capillary pressure in hydrophilic channels";
+      Pressure delta_pc "Capillary pressure difference";
       Modelica.SIunits.SurfaceTension sigma "Surface tension of water with air";
 
       PressurePort backPressure "Pressure from the liquid outlet" annotation (
@@ -1233,15 +1239,17 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       parameter Pressure p_eps = 5 "Small value for pressure";
 
     equation
-      sigma = 0.076 - 0.00017*(T-273.15); // From Microfluidics, it is in Celsius!
-      pc = 4 * sigma / dh * cos(theta);
+      sigma = 0.076 - 0.00017*(T-273.15); // From Microfluidics, it is in Celsius there!
+      pc_flow = - 4 * sigma / dh_flow * cos(theta_flow);
+      pc_sep  = - 4 * sigma / dh_sep  * cos(theta_sep);
+      delta_pc = pc_flow - pc_sep;
 
-      if noEvent(backPressure.p + p_eps < pc) then // Good margin: flow from liquid outlet
+      if noEvent(backPressure.p + p_eps < delta_pc) then // Good margin: flow from liquid outlet
         fuzzifier = 1;
-      elseif noEvent(backPressure.p > pc + p_eps) then // Good margin: no flow from liquid outlet
+      elseif noEvent(backPressure.p > delta_pc + p_eps) then // Good margin: no flow from liquid outlet
         fuzzifier = 0;
       else // I am in the middle band, 2×p_eps wide, change gradually from 0 to 1
-        fuzzifier = (pc - backPressure.p + p_eps)/(2*p_eps);
+        fuzzifier = (delta_pc - backPressure.p + p_eps)/(2*p_eps);
       end if;
 
       liquidOutlet.n = -ft.liquid * fuzzifier;
@@ -2456,7 +2464,7 @@ current.</p>
         extends AbstractSeparatorTest(redeclare CapillarySeparator separator);
 
       equation
-        separator.backPressure.p = separator.pc - exp(-time*10) * 1000 * sin(time*100);
+        separator.backPressure.p = separator.delta_pc - exp(-time*10) * 1000 * sin(time*100);
       end CapillarySeparatorTest;
 
       model BurnerTest
