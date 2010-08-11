@@ -1,6 +1,6 @@
 within ;
-                                                                                                    /**
- * Â© Federico Zenith, 2008-2009.
+/**
+ * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1230,7 +1230,7 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
             origin={40,-40}), iconTransformation(extent={{30,-50},{50,-30}})));
     protected
       Real fuzzifier "Continuous change between false (0) and true (1)";
-      parameter Pressure p_eps = 10 "Small value for pressure";
+      parameter Pressure p_eps = 5 "Small value for pressure";
 
     equation
       sigma = 0.076 - 0.00017*(T-273.15); // From Microfluidics, it is in Celsius!
@@ -2418,9 +2418,9 @@ current.</p>
         inner parameter Units.Temperature T_env = 298.15;
         inner parameter Units.RelativeHumidity RH_env = 60;
 
-        Measurements.FlowTemperature T_liquid
+        Measurements.FlowTemperature T_liquid 
           annotation (Placement(transformation(extent={{40,-20},{60,0}})));
-        Measurements.FlowTemperature T_gas
+        Measurements.FlowTemperature T_gas 
           annotation (Placement(transformation(extent={{40,20},{60,40}})));
       equation
         sum(env.outlet.n) = -1;
