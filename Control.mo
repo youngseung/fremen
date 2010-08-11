@@ -1,6 +1,6 @@
 within ;
-                                                /**
- * Â© Federico Zenith, 2009.
+/**
+ * © Federico Zenith, 2009-2010.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -440,6 +440,7 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
 
     import Modelica.Math.log10;
     import Modelica.SIunits.Temperature;
+    import Modelica.SIunits.TemperatureDifference;
     import Modelica.SIunits.Pressure;
     import Modelica.SIunits.MoleFraction;
     import Units.RelativeHumidity;
@@ -451,8 +452,9 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     outer Temperature T_env "Environment temperature";
 
     parameter Real lambda = 3 "The cathodic lambda value";
-    parameter Boolean safetyMargin = true
+    parameter Boolean calculateWithoutRH = true
       "Neglect humidity, use safe value = 0";
+    parameter TemperatureDifference dT = 3 "Additional temperature margin";
 
     annotation (defaultComponentName="K", Diagram(coordinateSystem(
             preserveAspectRatio=true,  extent={{-100,-100},{100,100}}), graphics),
@@ -476,21 +478,22 @@ tuning</em>, Journal of Process Control, 13 (2003) 291-309.</p>
     constant Temperature B = 1435.264 "Antoine constant B";
     constant Temperature C = -64.848 "Antoine constant C";
 
-    RelativeHumidity RH = if safetyMargin then 0 else RH_env
+    RelativeHumidity RH = if calculateWithoutRH then 0 else RH_env
       "The relative humidity of the autonomy relationship";
     Real r_cond "Mixing ratio of water in condenser outlet";
     Real r_env "Mixing ratio of water in environment";
     Pressure p_h2o_cond "Target water partial pressure in condenser";
 
   equation
-    r_env = RH * p_vap(T_env, Species.Water) / (p_env - RH * p_vap(T_env, Species.Water));
+    r_env = RH/100 * p_vap(T_env, Species.Water) / (p_env - RH/100 * p_vap(T_env, Species.Water));
 
     // Autonomy relationship
     r_env + 4/3 * y_O2/lambda - (1-y_O2/(3*lambda))*r_cond = 0;
 
+    p_h2o_cond = p_env*r_cond/(1 + r_cond);
+
   algorithm
-    p_h2o_cond := p_env*r_cond/(1 + r_cond);
-    T_ref :=-C + B/(A - log10(p_h2o_cond));
+    T_ref := -C + B/(A - log10(p_h2o_cond)) - dT;
 
   end FFWaterControl;
 
