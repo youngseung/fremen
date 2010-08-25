@@ -1,5 +1,5 @@
 within ;
-/**
+    /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -347,13 +347,12 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
         V0=2.1,
         R=0.15),
-      redeclare ElectricLoad load(
-                          step(I=4, offset=3)),
+      redeclare Modelica.Electrical.Analog.Sources.ConstantCurrent load(I=2),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       redeclare Flow.UnitOperations.ElasticMixer mixer(
             T(fixed=true), c(fixed=true)),
-      redeclare Flow.UnitOperations.CapillarySeparator condenser);
+      redeclare Flow.UnitOperations.CapillarySeparator condenser(dh_sep=100E-6));
 
   public
     Control.CathodeLambdaControl K_cath(
@@ -383,7 +382,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
       T_deg_0(displayUnit="degC"),
       eps(displayUnit="degC"))   annotation (Placement(transformation(extent={{
               -16,-34},{-4,-22}}, rotation=0)));
-    annotation (experiment(StopTime=10800),experimentSetupOutput,
+    annotation (experiment(StopTime=3600), experimentSetupOutput,
       Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
               100,100}}), graphics),
       Documentation(info="<html>
