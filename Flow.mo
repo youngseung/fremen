@@ -1,5 +1,5 @@
 within ;
-  /**
+    /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1264,7 +1264,10 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       connect(T, ft.T) annotation (Line(points={{110,5.55112e-16},{78,0},{60,0},
               {60,-20},{0,-20},{0,-8},{6.10623e-16,-8}},
                                                        color={0,0,255}));
-      annotation (Diagram(graphics));
+      annotation (Diagram(graphics), Documentation(info="<html>
+<p>This separator will produce a liquid phase only if the capillary pressure
+difference is higher than the backpressure.</p>
+</html>"));
     end CapillarySeparator;
 
     model Burner "An adiabatic combustor"
@@ -2063,23 +2066,18 @@ to the crossover current.</li>
 0.025 K<sup>-1</sup> from Ren and Gottesfeld. Although we have a N115 membrane, Ren and Gottesfeld
 did not investigate these, so this is a bit of a leap of faith.</p>
  
-<p>The methanol diffusion through the membrane is assumed to be constant, as Kallio et al. did not
-report a particularly strong dependence; though they did not have many points, they did indeed
-cover most of our range of interest.</p>
+<p>The methanol diffusion through membrane and diffusion layer are taken from our results for
+Johnson-Matthey MEAs.</p>
  
 <p>The crossover current is calculated as proportional to the catalyst-layer concentration of
-methanol on the anode, the methanol diffusion coefficient in the membrane and the inverse of the 
-membrane's thickness. In turn, the difference between bulk and catalyst-layer concentration of 
+methanol on the anode. In turn, the difference between bulk and catalyst-layer concentration of 
 methanol is proportional to the sum of crossover and reaction current densities.</p>
  
 <p>The class calculates some quantities of interest, such as the anodic methanol 
 concentration, and the cathodic partial pressures of oxygen and water. Note that all these are
 based on the <em>exiting</em> flow.</p>
  
-<p>In order to calculate the catalyst-layer methanol anodic concentration, the methanol diffusion 
-coefficient in water is required. It is assumed to vary exponentially with temperature.</p>
- 
-<p>Parameters have been taken from Krewer et al., unless differently stated.</p>
+<p>Parameters have been taken from our publication about parameter regression, unless differently stated.</p>
 
 <h3>Implementation details</h3>
 <p>The two inlets and the two outlets are connected to the \"nexus\", an internal protected

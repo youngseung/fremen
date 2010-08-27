@@ -1,5 +1,5 @@
 within ;
-    /**
+      /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -227,8 +227,7 @@ see what happens.</p>
     version="1",
     conversion(noneFromVersion=""));
 
-  model Reference_Control
-    "The reference DMFC system derived from the one to be presented at ASME FC09"
+  model Reference_Control "The reference DMFC system with control loops"
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
         V0=2.1,
         R=0.15),
@@ -343,7 +342,7 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
   end Reference_Control;
 
   model Stabilised_Control
-    "The reference DMFC system derived from the one to be presented at ASME FC09"
+    "The DMFC system with control loops and capillary separator"
     extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
         V0=2.1,
         R=0.15),
@@ -386,8 +385,10 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
       Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
               100,100}}), graphics),
       Documentation(info="<html>
-<p>This specialisation of the reference system implements a series of
-controllers. Note that controller connections are dotted and colour-coded.</p>
+<p>This specialisation of the reference system implements a pressure-expandable 
+mixer and a pressure-determined separator, other than a series of
+controllers. Solution level is controlled in feedforward.
+Note that controller connections are dotted and colour-coded.</p>
 </html>"));
 
     Control.FFWaterControl K_auth(dT=2) 
@@ -655,7 +656,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
 
   end Mingled_Control;
 
-  partial model DoubleTank "DMFC system with tanks for water and solution"
+  partial model DoubleTank
+    "DMFC system with multiple tanks for water and solution"
     extends AbstractSystem;
 
     Flow.UnitOperations.Mixer waterTank(c(start=0))
@@ -668,9 +670,10 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
     annotation (Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
               -100},{100,100}}),      graphics),
                          Documentation(info="<html>
-<p>This is a generic reference system, with no process integration
-whatsoever. Some components, such as the fuel cell, are abstract and
-must be specialised in subclasses.</p>
+<p>This is a system with two separate tanks, with no particular process 
+integration. One tank is for the solution and one is for the water 
+recovered from the cathode. Some components, such as the fuel cell, are 
+abstract and must be specialised in subclasses.</p>
 </html>"));
     replaceable Flow.UnitOperations.Coolers.Abstract anodeCooler
       "The solution-loop cooler" 
