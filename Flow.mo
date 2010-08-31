@@ -1,5 +1,5 @@
 within ;
-    /**
+      /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -534,7 +534,9 @@ necessary to provide the reference temperature; the default assumes zero Celsius
 <p>The flow assumes that all components are in gas phase and takes their density from
 the Thermo library, where the ideal gas law is (usually) assumed.</p>
 </html>"),
-      Diagram(graphics));
+      Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+                100,100}}),
+              graphics));
     IO.VolumeFlowRateInput V "Volumetric flow rate" 
       annotation (Placement(transformation(extent={{110,-10},{90,10}}, rotation=
                0)));
@@ -558,9 +560,19 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
       import Modelica.SIunits.VolumeFlowRate;
       import Units.Temperature;
 
-    annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+    annotation (Icon(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
                 -100},{100,100}}),
-                     graphics),
+                     graphics={Polygon(
+              points={{-100,-100},{-80,-40},{80,-40},{100,-100},{-100,-100}},
+              smooth=Smooth.None,
+              pattern=LinePattern.None,
+              lineColor={0,0,0},
+              fillColor={0,0,0},
+              fillPattern=FillPattern.Solid), Ellipse(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              fillColor={255,255,255},
+              fillPattern=FillPattern.Solid)}),
                              Documentation(info="<html>
 <p>This class implements a liquid pump.</p>
 <p>The pump takes density values from the Thermo library, and assumes only water and methanol
@@ -594,7 +606,17 @@ are present and in liquid phase.</p>
 
     annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
                 -100},{100,100}}),
-                     graphics),
+                     graphics={Polygon(
+              points={{-100,-100},{-80,-40},{80,-40},{100,-100},{-100,-100}},
+              smooth=Smooth.None,
+              pattern=LinePattern.None,
+              lineColor={0,0,0},
+              fillColor={0,0,0},
+              fillPattern=FillPattern.Solid), Ellipse(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              fillColor={255,255,255},
+              fillPattern=FillPattern.Solid)}),
                              Documentation(info="<html>
 <p>This class implements a peristaltic pump, which can handle two phases.</p>
 <p>The pump takes density values from the Thermo library.</p>
