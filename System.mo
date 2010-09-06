@@ -1,5 +1,5 @@
 within ;
-      /**
+        /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -660,9 +660,10 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
     "DMFC system with multiple tanks for water and solution"
     extends AbstractSystem;
 
-    Flow.UnitOperations.Mixer waterTank(c(start=0))
+    replaceable Flow.UnitOperations.Mixer waterTank(
+                                        c(start=0))
       "Tank containing the make-up water" 
-                     annotation (Placement(transformation(extent={{30,-74},{44,
+                     annotation (Placement(transformation(extent={{30,-74},{46,
               -58}}, rotation=0)));
     Flow.Measurements.LiquidPump waterPump "The pure-water pump" 
               annotation (Placement(transformation(extent={{-14,-72},{-26,-60}},
@@ -700,8 +701,9 @@ abstract and must be specialised in subclasses.</p>
               86,50}}, rotation=0)));
 
   public
-    Flow.UnitOperations.Mixer solutionTank "Tank to gather the outlet solution"
-                     annotation (Placement(transformation(extent={{10,-54},{24,
+    replaceable Flow.UnitOperations.Mixer solutionTank
+      "Tank to gather the outlet solution" 
+                     annotation (Placement(transformation(extent={{10,-54},{26,
               -38}}, rotation=0)));
     Flow.Measurements.LiquidPump pump "The anodic-loop pump" 
               annotation (Placement(transformation(extent={{-14,-52},{-26,-40}},
@@ -711,7 +713,7 @@ abstract and must be specialised in subclasses.</p>
       annotation (Placement(transformation(extent={{-64,-68},{-48,-52}})));
   equation
     connect(waterPump.inlet, waterTank.outlet) 
-      annotation (Line(points={{-20,-66},{-20,-66},{31.4,-66}},
+      annotation (Line(points={{-20,-66},{-20,-66},{31.6,-66}},
                                                     color={0,127,127}));
     connect(environment.outlet, blower.inlet) 
                                          annotation (Line(points={{-81,10},{-70,
@@ -734,14 +736,14 @@ abstract and must be specialised in subclasses.</p>
     connect(amperometer.p, load.n) 
       annotation (Line(points={{-30,90},{-38,90}}, color={0,0,255}));
     connect(pump.inlet, solutionTank.outlet) 
-      annotation (Line(points={{-20,-46},{-20,-46},{11.4,-46}},
+      annotation (Line(points={{-20,-46},{-20,-46},{11.6,-46}},
                                                     color={0,127,127}));
     connect(solutionTank.waterInlet, degasser.liquidOutlet) annotation (Line(
-        points={{22.6,-46},{56,-46},{56,-24},{55,-24}},
+        points={{24.4,-46},{56,-46},{56,-24},{55,-24}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(waterTank.waterInlet, condenser.liquidOutlet) annotation (Line(
-        points={{42.6,-66},{84,-66},{84,36},{83.3,36}},
+        points={{44.4,-66},{84,-66},{84,36},{83.3,36}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(pump.outlet, FC6.outlet) annotation (Line(
@@ -773,6 +775,54 @@ abstract and must be specialised in subclasses.</p>
         color={0,127,127},
         smooth=Smooth.None));
   end DoubleTank;
+
+  model DoubleTank_Control "2-tank system with control loops"
+    extends DoubleTank(
+      redeclare ElectricLoad load,
+      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
+      redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
+      redeclare Flow.UnitOperations.HydrostaticMixer waterTank);
+  public
+    Control.CathodeLambdaControl K_cath(
+      cells=3,
+      lambda=3,
+      c_est=1100,
+      aA=4.16E-9,
+      b=0.2) "Cathode lambda controller" 
+      annotation (Placement(transformation(
+          origin={-70,29},
+          extent={{-5,-4},{5,4}},
+          rotation=270)));
+    annotation (Diagram(graphics));
+    Control.TemperatureControl K_temp(
+      T_FC_ref(displayUnit="K"),
+      eps(displayUnit="degC"),
+      T_deg_0(displayUnit="K"))  annotation (Placement(transformation(extent={{-16,-34},
+              {-4,-22}},          rotation=0)));
+  equation
+    connect(K_cath.I, amperometer.i) annotation (Line(
+        points={{-70,35},{-70,76},{-20,76},{-20,80}},
+        color={0,0,255},
+        smooth=Smooth.None,
+        pattern=LinePattern.Dot));
+    connect(K_cath.V, blower.V) annotation (Line(
+        points={{-70,23},{-70,16}},
+        color={85,255,85},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(K_temp.T_deg_ref, anodeCooler.T_ref) annotation (Line(
+        points={{-2.8,-28},{20,-28},{20,-23}},
+        color={255,0,0},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(K_temp.T_m, fuelCell.T) annotation (Line(
+        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-10.2,5.34}}, 
+
+        color={255,0,0},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+  end DoubleTank_Control;
 
     model ElectricLoad "The standard electric load for DMFC systems"
       extends Modelica.Electrical.Analog.Interfaces.TwoPin;
