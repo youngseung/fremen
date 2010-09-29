@@ -1,5 +1,5 @@
 within ;
-/**
+    /**
  * © Federico Zenith, 2009-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -759,4 +759,97 @@ to estimate the extent of cross-over current in the cell to compensate for.</p>
     V = n_to_V * ((1-b)/6/F*I + aA*c_ref)*cells + n_to_V * fM*n_cath*x;
 
   end MingledFuelControl;
+
+  block Anode2TankControl
+    "Feedforward controller for anodic flow and composition"
+    extends Modelica.Blocks.Interfaces.BlockIcon;
+
+    import Modelica.SIunits.Concentration;
+    import g = Modelica.Constants.g_n;
+    import Units.F;
+    import Thermo.rho;
+    import Thermo.Species;
+    import Thermo.Phases;
+
+    parameter Integer cells = 1 "Number of cells in the stack";
+    parameter Real lambda = 5 "Reactant excess ratio";
+
+    parameter Modelica.SIunits.VolumeFlowRate aA(min=0) = 8.5E-9
+      "Partial derivative of n_x wrt. c";
+    parameter Real b(min=0, max=1) = 0.21 "Partial derivative of n_x wrt. n_H";
+
+    parameter Modelica.SIunits.Area A_tank = 50E-4
+      "Solution tank's cross-sectional area";
+
+    annotation (defaultComponentName="K", Diagram(coordinateSystem(
+            preserveAspectRatio=true,  extent={{-100,-100},{100,100}}),
+          graphics),                               Icon(graphics={
+          Text(
+            extent={{98,18},{-98,-12}},
+            lineColor={0,0,255},
+            textString="Concentration"),
+          Text(
+            extent={{100,-40},{-100,-74}},
+            lineColor={0,0,255},
+            textString="Controller"),
+          Text(
+            extent={{100,80},{-100,44}},
+            lineColor={0,0,255},
+            textString="Feedforward")}),
+      Documentation(info="<html>
+<p>This feedforward controller uses the current and the anodic 
+methanol concentration (either a measurement or a value) to set
+the volumetric anodic inflow to a fuel cell.</p>
+<p>The provided concentration value is supposed to be the one
+in the anodic bulk, usually assumed to be the outlet one.</p>
+<p>The controller allows to set an excess ratio &lambda;; other
+parameters are the estimates for <tt>aA</tt> and <tt>b</tt>, necessary
+to estimate the extent of cross-over current in the cell to compensate
+for.</p>
+</html>"));
+    Flow.IO.CurrentInput I "Current measurement" 
+      annotation (Placement(transformation(extent={{-140,40},{-100,80}},
+            rotation=0)));
+    Flow.IO.VolumeFlowRateOutput Vs "Flow of spent solution" 
+                                annotation (Placement(transformation(extent={{100,40},
+              {140,80}},          rotation=0)));
+    Flow.IO.PressureInput p "Pressure from bottom of solution tank" 
+      annotation (Placement(transformation(extent={{-140,-80},{-100,-40}})));
+    Flow.IO.VolumeFlowRateOutput Vw "Flow of recovered water" 
+                                annotation (Placement(transformation(extent={{100,-20},
+              {140,20}},          rotation=0)));
+    Flow.IO.VolumeFlowRateOutput Vf "Flow of fresh fuel" 
+                                annotation (Placement(transformation(extent={{100,-80},
+              {140,-40}},         rotation=0)));
+    Flow.IO.ConcentrationInput c_ref "Reference value of concentration" 
+      annotation (Placement(transformation(extent={{-140,-20},{-100,20}})));
+
+  protected
+    Modelica.SIunits.AmountOfSubstance n_est
+      "Estimated amount of methanol in solution tank";
+    Modelica.SIunits.Volume V_tank "Solution volume in tank";
+    Concentration c_est(start = 1000) = n_est / V_tank
+      "Estimated concentration in tank";
+    Modelica.SIunits.Density rho_w = rho(298.15, Species.Water, Phases.Liquid)
+      "Density of water, assumed representative of solution";
+    Units.MolarFlow reaction = cells * (I/(6*F)*(1-b) + aA*c_ref)
+      "Reacted methanol in stack";
+    constant Concentration c_meoh = 24E3 "Concentration of pure methanol";
+
+  equation
+    der(n_est) = (lambda-1)*reaction - c_est*Vs;
+
+    V_tank = A_tank * p / rho_w / g;
+
+    if c_est > c_ref then
+      Vw = Vs * ( c_est/c_ref - 1);
+      Vf = 0; // FIXME maybe der(Vf) = 0 is more stable. Check later.
+    else
+      Vw = 0;
+      Vf = Vs * ( c_ref - c_est)  / ( c_meoh - c_ref);
+    end if;
+
+    Vs + Vf + Vw = lambda * reaction / c_ref;
+
+  end Anode2TankControl;
 end Control;

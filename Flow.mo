@@ -1,5 +1,5 @@
 within ;
-      /**
+        /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -561,8 +561,7 @@ the Thermo library, where the ideal gas law is (usually) assumed.</p>
       import Units.Temperature;
 
     annotation (Icon(coordinateSystem(preserveAspectRatio=true,  extent={{-100,
-                -100},{100,100}}),
-                     graphics={Polygon(
+                -100},{100,100}}), graphics={Polygon(
               points={{-100,-100},{-80,-40},{80,-40},{100,-100},{-100,-100}},
               smooth=Smooth.None,
               pattern=LinePattern.None,
@@ -1101,10 +1100,11 @@ by default it is 1 M.</p>
       "A mixer producing a hydrostatic pressure for measurement"
       extends Mixer;
 
-      import Thermo.Species;
-      import Thermo.Phases;
-      import Thermo.rho;
+      import Thermo.mw;
+      import Thermo.Condensables;
       import g = Modelica.Constants.g_n;
+
+      Modelica.SIunits.Mass m;
 
       IO.PressureOutput p
         "Hydrostatic pressure measured at the bottom of the mixer" 
@@ -1114,7 +1114,8 @@ by default it is 1 M.</p>
       parameter Modelica.SIunits.Area A = 50E-4 "Mixer cross-sectional area";
 
     equation
-      p = rho(T,Species.Water,Phases.Liquid)*g*(V/A);
+      m = sum( n[i]*mw(i) for i in Condensables);
+      p = m * g / A;
 
       annotation (Documentation(info="<html>
 <p>This extension to the standard-issue Mixer class adds the possibility of inferring

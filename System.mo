@@ -1,5 +1,5 @@
 within ;
-        /**
+              /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -735,9 +735,6 @@ abstract and must be specialised in subclasses.</p>
             -19.2,40},{1.22125e-16,40}}, color={0,0,255}));
     connect(amperometer.p, load.n) 
       annotation (Line(points={{-30,90},{-38,90}}, color={0,0,255}));
-    connect(pump.inlet, solutionTank.outlet) 
-      annotation (Line(points={{-20,-46},{-20,-46},{11.6,-46}},
-                                                    color={0,127,127}));
     connect(solutionTank.waterInlet, degasser.liquidOutlet) annotation (Line(
         points={{24.4,-46},{56,-46},{56,-24},{55,-24}},
         color={0,127,127},
@@ -746,20 +743,12 @@ abstract and must be specialised in subclasses.</p>
         points={{44.4,-66},{84,-66},{84,36},{83.3,36}},
         color={0,127,127},
         smooth=Smooth.None));
-    connect(pump.outlet, FC6.outlet) annotation (Line(
-        points={{-20,-40},{-40,-40},{-40,-60},{-49.6,-60}},
-        color={0,127,127},
-        smooth=Smooth.None));
     connect(waterPump.outlet, FC6.outlet) annotation (Line(
         points={{-20,-60},{-49.6,-60}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(fuelPump.outlet, FC6.outlet) annotation (Line(
         points={{-20,-84},{-40,-84},{-40,-60},{-49.6,-60}},
-        color={0,127,127},
-        smooth=Smooth.None));
-    connect(FC6.inlet, fuelCell.anode_inlet) annotation (Line(
-        points={{-62.4,-60},{-80,-60},{-80,-0.1},{-48,-0.1}},
         color={0,127,127},
         smooth=Smooth.None));
     connect(condenser.gasOutlet, emissions.inlet) annotation (Line(
@@ -774,7 +763,155 @@ abstract and must be specialised in subclasses.</p>
         points={{36,-90},{-20,-90}},
         color={0,127,127},
         smooth=Smooth.None));
+    connect(pump.inlet, solutionTank.outlet) annotation (Line(
+        points={{-20,-46},{11.6,-46}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(pump.outlet, FC6.outlet) annotation (Line(
+        points={{-20,-40},{-40,-40},{-40,-60},{-49.6,-60}},
+        color={0,127,127},
+        smooth=Smooth.None));
+    connect(FC6.inlet, fuelCell.anode_inlet) annotation (Line(
+        points={{-62.4,-60},{-70,-60},{-70,-0.1},{-48,-0.1}},
+        color={0,127,127},
+        smooth=Smooth.None));
   end DoubleTank;
+
+  model DoubleTank_NoControl "2-tank system with control loops"
+    extends DoubleTank(
+      redeclare ElectricLoad load,
+      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
+      redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
+      redeclare Flow.UnitOperations.HydrostaticMixer waterTank(T(fixed=true), c(
+            fixed=true)),
+      redeclare Flow.UnitOperations.HydrostaticMixer solutionTank(T(fixed=true),
+          c(fixed=true)));
+
+    import Modelica.SIunits.VolumeFlowRate;
+    import Modelica.SIunits.Temperature;
+    annotation (Diagram(graphics), experiment(StopTime=10800));
+
+    parameter VolumeFlowRate V_fuel = 4.5E-8/60;
+    parameter VolumeFlowRate V_anode = 10E-6/60;
+    parameter VolumeFlowRate V_water = 0.4E-6/60;
+    parameter VolumeFlowRate V_cathode = 500E-6/60;
+    parameter Temperature T_cooler = 310;
+    parameter Temperature T_condenser = 320;
+
+  equation
+    V_fuel = fuelPump.V;
+    V_anode = pump.V;
+    V_water = waterPump.V;
+    V_cathode = blower.V;
+    T_cooler = anodeCooler.T_ref;
+    T_condenser = cathodeCooler.T_ref;
+
+  end DoubleTank_NoControl;
+
+  model DoubleTank_Fader "2-tank system with control loops"
+    extends DoubleTank(
+      redeclare ElectricLoad load,
+      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
+      redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
+      redeclare Flow.UnitOperations.HydrostaticMixer waterTank(T(fixed=true), c(
+            fixed=true)),
+      redeclare Flow.UnitOperations.HydrostaticMixer solutionTank(T(fixed=true),
+          c(fixed=true)));
+
+    import Modelica.SIunits.VolumeFlowRate;
+    import Modelica.SIunits.Temperature;
+    annotation (Diagram(graphics), experiment(StopTime=2000),
+      experimentSetupOutput);
+
+    parameter VolumeFlowRate V_fuel = 3E-8/60;
+    parameter VolumeFlowRate V_water = 0.25E-6/60;
+
+  public
+    Control.CathodeLambdaControl K_cath(
+      cells=3,
+      lambda=3,
+      c_est=1100,
+      aA=4.16E-9,
+      b=0.2) "Cathode lambda controller" 
+      annotation (Placement(transformation(
+          origin={-70,33},
+          extent={{-5,-4},{5,4}},
+          rotation=270)));
+    Control.WaterControl K_cond(T_0(displayUnit="K")) 
+                                annotation (Placement(transformation(extent={{30,8},{
+              42,18}},        rotation=0)));
+    Control.TemperatureControl K_temp(
+      T_FC_ref(displayUnit="K"),
+      eps(displayUnit="degC"),
+      T_deg_0(displayUnit="K"))  annotation (Placement(transformation(extent={{-20,-32},
+              {-8,-20}},          rotation=0)));
+    Control.Anode2TankControl K 
+      annotation (Placement(transformation(extent={{-72,-90},{-52,-70}})));
+    Modelica.Blocks.Sources.Sine sine(
+      offset=1000,
+      startTime=600,
+      amplitude=0,
+      freqHz=0) 
+      annotation (Placement(transformation(extent={{-96,-86},{-84,-74}})));
+  equation
+    //V_fuel = fuelPump.V;
+    V_water = waterPump.V;
+    connect(K_cath.V, blower.V) annotation (Line(
+        points={{-70,27},{-70,16}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K_cath.I, amperometer.i) annotation (Line(
+        points={{-70,39},{-46,39},{-46,80},{-20,80}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K_cond.T_ref, cathodeCooler.T_ref) annotation (Line(
+        points={{43.2,13},{43.2,24.5},{42,24.5},{42,37}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(cathodeCooler.T_process_out, K_cond.T_cond) annotation (Line(
+        points={{51.4,38.6},{51.4,4},{22,4},{28,8},{28.8,10}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K_cond.p_mix, waterTank.p) annotation (Line(
+        points={{28.8,16},{-2,16},{-2,-71.52},{34.24,-71.52}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K_cond.V_cath, K_cath.V) annotation (Line(
+        points={{28.8,13},{-8,13},{-8,30},{-54,30},{-54,22},{-70,22},{-70,27}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K_temp.T_m, fuelCell.T) annotation (Line(
+        points={{-21.2,-26},{-28,-26},{-28,-16},{-6,-16},{-6,5.34},{-10.2,5.34}},
+        color={0,0,127},
+        smooth=Smooth.None));
+
+    connect(K_temp.T_deg_ref, anodeCooler.T_ref) annotation (Line(
+        points={{-6.8,-26},{20,-26},{20,-23}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(sine.y, K.c_ref) annotation (Line(
+        points={{-83.4,-80},{-74,-80}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K.I, amperometer.i) annotation (Line(
+        points={{-74,-74},{-82,-74},{-82,80},{-20,80}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K.p, solutionTank.p) annotation (Line(
+        points={{-74,-86},{-80,-86},{-80,-98},{14.24,-98},{14.24,-51.52}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K.Vs, pump.V) annotation (Line(
+        points={{-50,-74},{-44,-74},{-44,-46},{-26,-46}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(K.Vf, fuelPump.V) annotation (Line(
+        points={{-50,-86},{-38,-86},{-38,-90},{-26,-90}},
+        color={0,0,127},
+        smooth=Smooth.None));
+  end DoubleTank_Fader;
 
   model DoubleTank_Control "2-tank system with control loops"
     extends DoubleTank(
@@ -782,7 +919,10 @@ abstract and must be specialised in subclasses.</p>
       redeclare Flow.UnitOperations.Stack.Thevenin fuelCell,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
-      redeclare Flow.UnitOperations.HydrostaticMixer waterTank);
+      redeclare Flow.UnitOperations.HydrostaticMixer waterTank(T(fixed=true), c(
+            fixed=true)),
+      redeclare Flow.UnitOperations.HydrostaticMixer solutionTank(T(fixed=true),
+          c(fixed=true)));
   public
     Control.CathodeLambdaControl K_cath(
       cells=3,
@@ -800,6 +940,18 @@ abstract and must be specialised in subclasses.</p>
       eps(displayUnit="degC"),
       T_deg_0(displayUnit="K"))  annotation (Placement(transformation(extent={{-16,-34},
               {-4,-22}},          rotation=0)));
+    Control.WaterControl K_cond(T_0(displayUnit="K")) 
+                                annotation (Placement(transformation(extent={{26,8},{
+              38,18}},        rotation=0)));
+    Control.Anode2TankControl K_V(cells=3, aA=4.16E-9)
+      "Controller for anodic flows" 
+      annotation (Placement(transformation(extent={{-72,-94},{-52,-74}})));
+    Modelica.Blocks.Sources.Sine sine(
+      amplitude=500,
+      freqHz=1E-3,
+      offset=1000,
+      startTime=600) 
+      annotation (Placement(transformation(extent={{-96,-90},{-84,-78}})));
   equation
     connect(K_cath.I, amperometer.i) annotation (Line(
         points={{-70,35},{-70,76},{-20,76},{-20,80}},
@@ -817,9 +969,59 @@ abstract and must be specialised in subclasses.</p>
         pattern=LinePattern.Dot,
         smooth=Smooth.None));
     connect(K_temp.T_m, fuelCell.T) annotation (Line(
-        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-10.2,5.34}}, 
-
+        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-10.2,5.34}},
         color={255,0,0},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+
+    connect(K_cond.T_cond, cathodeCooler.T_process_out) annotation (Line(
+        points={{24.8,10},{22,10},{22,0},{56,0},{56,38.6},{51.4,38.6}},
+        color={255,0,0},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(K_cond.T_ref, cathodeCooler.T_ref) annotation (Line(
+        points={{39.2,13},{42,13},{42,37}},
+        color={255,0,0},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(K_cath.V, K_cond.V_cath) annotation (Line(
+        points={{-70,23},{-70,20},{-60,20},{-60,26},{0,26},{0,13},{24.8,13}},
+        color={0,255,128},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(waterTank.p, K_cond.p_mix) annotation (Line(
+        points={{34.24,-71.52},{4,-71.52},{4,16},{24.8,16}},
+        color={0,0,127},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(K_V.Vs, pump.V) annotation (Line(
+        points={{-50,-78},{-44,-78},{-44,-46},{-26,-46}},
+        color={0,255,0},
+        smooth=Smooth.None,
+        pattern=LinePattern.Dot));
+    connect(K_V.Vw, waterPump.V) annotation (Line(
+        points={{-50,-84},{-42,-84},{-42,-66},{-26,-66}},
+        color={0,255,0},
+        smooth=Smooth.None,
+        pattern=LinePattern.Dot));
+    connect(K_V.Vf, fuelPump.V) annotation (Line(
+        points={{-50,-90},{-26,-90}},
+        color={0,255,0},
+        smooth=Smooth.None,
+        pattern=LinePattern.Dot));
+    connect(amperometer.i, K_V.I) annotation (Line(
+        points={{-20,80},{-20,76},{-78,76},{-78,-78},{-74,-78}},
+        color={0,0,255},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(K_V.p, solutionTank.p) annotation (Line(
+        points={{-74,-90},{-78,-90},{-78,-98},{14.24,-98},{14.24,-51.52}},
+        color={0,0,127},
+        pattern=LinePattern.Dot,
+        smooth=Smooth.None));
+    connect(sine.y, K_V.c_ref) annotation (Line(
+        points={{-83.4,-84},{-74,-84}},
+        color={0,0,127},
         pattern=LinePattern.Dot,
         smooth=Smooth.None));
   end DoubleTank_Control;
