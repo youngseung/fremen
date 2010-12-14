@@ -1,6 +1,6 @@
 within ;
-        /**
- * © Federico Zenith, 2008-2010.
+/**
+ * (c) Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -604,8 +604,7 @@ are present and in liquid phase.</p>
     import Thermo.Species;
 
     annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-                -100},{100,100}}),
-                     graphics={Polygon(
+                -100},{100,100}}), graphics={Polygon(
               points={{-100,-100},{-80,-40},{80,-40},{100,-100},{-100,-100}},
               smooth=Smooth.None,
               pattern=LinePattern.None,
@@ -1237,6 +1236,11 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       extends AbstractSeparator;
 
       import Modelica.SIunits.Pressure;
+      import Thermo.rho;
+      import Thermo.mw;
+      import Thermo.Phases;
+      import Thermo.Species;
+      import Thermo.Condensables;
 
       parameter Modelica.SIunits.Length dh_flow = 200E-6
         "Hydraulic diameter of hydrophobic channels";
@@ -1252,6 +1256,8 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       Pressure delta_pc "Capillary pressure difference";
       Modelica.SIunits.SurfaceTension sigma "Surface tension of water with air";
 
+      Real R_gl "Gas-liquid volumetric ratio";
+
       PressurePort backPressure "Pressure from the liquid outlet" annotation (
           Placement(transformation(
             extent={{-10,-10},{10,10}},
@@ -1266,6 +1272,9 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       pc_flow = - 4 * sigma / dh_flow * cos(theta_flow);
       pc_sep  = - 4 * sigma / dh_sep  * cos(theta_sep);
       delta_pc = pc_flow - pc_sep;
+
+      R_gl = sum( ft.vapour[i] * mw(i) / rho(ft.T, i, Phases.Gas) for i in Species)  /
+             sum( ft.liquid[i] * mw(i) / rho(ft.T, i, Phases.Liquid) for i in Condensables);
 
       if noEvent(backPressure.p + p_eps < delta_pc) then // Good margin: flow from liquid outlet
         fuzzifier = 1;
