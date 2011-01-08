@@ -1,5 +1,5 @@
 within ;
-/**
+  /**
  * (c) Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1253,7 +1253,6 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
 
       Pressure pc_flow "Capillary pressure in hydrophobic channels";
       Pressure pc_sep "Capillary pressure in hydrophilic channels";
-      Pressure delta_pc "Capillary pressure difference";
       Modelica.SIunits.SurfaceTension sigma "Surface tension of water with air";
 
       Real R_gl "Gas-liquid volumetric ratio";
@@ -1271,18 +1270,11 @@ The separation criterion is straightforwardly the liquid-vapor equilibrium.</p>
       sigma = 0.076 - 0.00017*(T-273.15); // From Microfluidics, it is in Celsius there!
       pc_flow = - 4 * sigma / dh_flow * cos(theta_flow);
       pc_sep  = - 4 * sigma / dh_sep  * cos(theta_sep);
-      delta_pc = pc_flow - pc_sep;
 
       R_gl = sum( ft.vapour[i] * mw(i) / rho(ft.T, i, Phases.Gas) for i in Species)  /
              sum( ft.liquid[i] * mw(i) / rho(ft.T, i, Phases.Liquid) for i in Condensables);
 
-      if noEvent(backPressure.p + p_eps < delta_pc) then // Good margin: flow from liquid outlet
-        fuzzifier = 1;
-      elseif noEvent(backPressure.p > delta_pc + p_eps) then // Good margin: no flow from liquid outlet
-        fuzzifier = 0;
-      else // I am in the middle band, 2×p_eps wide, change gradually from 0 to 1
-        fuzzifier = (delta_pc - backPressure.p + p_eps)/(2*p_eps);
-      end if;
+      fuzzifier = min(1, max(0, (pc_flow - backPressure.p + p_eps)/(2*p_eps)));
 
       liquidOutlet.n = -ft.liquid * fuzzifier;
 
