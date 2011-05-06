@@ -1,5 +1,5 @@
 within ;
-              /**
+                /**
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -381,7 +381,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
       T_deg_0(displayUnit="degC"),
       eps(displayUnit="degC"))   annotation (Placement(transformation(extent={{
               -16,-34},{-4,-22}}, rotation=0)));
-    annotation (experiment(StopTime=600), experimentSetupOutput,
+    annotation (experiment(StopTime=1200, NumberOfIntervals=5000),
+                                          experimentSetupOutput,
       Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
               100,100}}), graphics),
       Documentation(info="<html>
