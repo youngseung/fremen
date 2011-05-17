@@ -1,5 +1,5 @@
 within ;
-/*
+  /*
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -551,20 +551,22 @@ see what happens.</p>
   model Mingled_Control
     extends Mingled(
       redeclare Flow.UnitOperations.Coolers.Simple cooler,
-      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
-        V0=2.1,
-        T(start=303.15),
-        R=0.15),
+      redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
+        cells=20,
+        V0=14,
+        R=1,
+        Cp=500,
+        T(start=303.15)),
       redeclare ElectricLoad load(
                           step(I=4, offset=3)),
       redeclare Flow.UnitOperations.HydrostaticMixer mixer(
             T(fixed=true), c(fixed=true)));
     Control.CathodeLambdaControl K_cath(
-      cells=3,
       lambda=3,
       c_est=1100,
       aA=4.16E-9,
-      b=0.2) 
+      b=0.2,
+      cells=20) 
       annotation (Placement(transformation(
           origin={-70,33},
           extent={{-5,-6},{5,6}},
@@ -580,18 +582,18 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
                                 annotation (Placement(transformation(extent={{0,
               -32},{12,-20}}, rotation=0)));
     Control.MingledTemperatureControl K_T(
-      n=3,
       c=900,
       aA=4.16E-9,
       b=0.2,
       V_cp(displayUnit="ml"),
-      T_r(displayUnit="K"))               annotation (Placement(transformation(
+      T_r(displayUnit="K"),
+      n=20)                               annotation (Placement(transformation(
             extent={{-70,-78},{-54,-60}}, rotation=0)));
     Control.MingledFuelControl K_fuel(
-      cells=3,
       lambda=3,
       aA=4.16E-9,
-      b=0.2)                          annotation (Placement(transformation(
+      b=0.2,
+      cells=20)                       annotation (Placement(transformation(
             extent={{-26,-98},{-12,-82}}, rotation=0)));
 
   equation
