@@ -1,5 +1,5 @@
 within ;
-        /**
+          /**
  * (c) Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -2106,6 +2106,12 @@ based on the <em>exiting</em> flow.</p>
  
 <p>Parameters have been taken from our publication about parameter regression, unless differently stated.</p>
 
+<p>Stack heat capacity is given as 25 J/K, that corresponds to the heat capacity of two graphite monopolar
+plates as used in our laboratory, weighing 53 g together, with a heat capacity of 466.25 J/kgK.
+Remember to adjust this parameter if you change the number of cells, or temperature transients will become
+very fast for no particular reason.</p>
+
+
 <h3>Implementation details</h3>
 <p>The two inlets and the two outlets are connected to the \"nexus\", an internal protected
 (i.e. invisible to the user) object, that accounts for components lost in reactions and
@@ -2163,7 +2169,7 @@ Fundamentals to Systems 4(4), 328-336, December 2004.</li>
 
       parameter Integer cells = 1 "Number of cells";
       parameter Area A = 26E-4 "Membrane active area";
-      parameter HeatCapacity Cp = 24.7 "Overall heat capacity of the stack";
+      parameter HeatCapacity Cp = 25 "Overall heat capacity of the stack";
       parameter MassTransportCoefficient k_x_333 = 2.27E-6
           "Mass transport coefficient across the membrane at 333 K";
       parameter MassTransportCoefficient k_m_333 = 5.86E-6
