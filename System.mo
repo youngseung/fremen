@@ -1,5 +1,5 @@
 within ;
-  /*
+        /*
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -228,11 +228,13 @@ see what happens.</p>
     conversion(noneFromVersion=""));
 
   model Reference_Control "The reference DMFC system with control loops"
-    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(cells=3,
-        V0=2.1,
-        R=0.15),
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
+        V0=14,
+        R=1,
+        cells=20,
+        Cp=500),
       redeclare ElectricLoad load(
-                          step(I=4, offset=3)),
+                          step(     offset=3, I=2)),
       redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
       redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
       redeclare Flow.UnitOperations.HydrostaticMixer mixer(
@@ -241,29 +243,29 @@ see what happens.</p>
 
   public
     Control.CathodeLambdaControl K_cath(
-      cells=3,
       lambda=3,
       c_est=1100,
-      aA=4.16E-9,
-      b=0.2) "Cathode lambda controller" 
+      aA=4.25E-9,
+      b=0.279,
+      cells=20) "Cathode lambda controller" 
       annotation (Placement(transformation(
           origin={-70,29},
           extent={{-5,-4},{5,4}},
           rotation=270)));
     Control.ReferenceFuelControl K_fuel(
-      cells=3,
-      aA=4.16E-9,
-      b=0.2)                   annotation (Placement(transformation(extent={{
+      aA=4.25E-9,
+      b=0.279,
+      cells=20)                annotation (Placement(transformation(extent={{
               -16,-94},{-4,-86}}, rotation=0)));
     Control.WaterControl K_cond(T_0(displayUnit="K") = 320) 
                                 annotation (Placement(transformation(extent={{28,4},{
               40,14}},        rotation=0)));
     Control.AnodeLambdaControl K_an(
-      cells=3,
       c_est_an=1100,
-      aA=4.16E-9,
-      b=0.2,
-      c_est_mix=900)                annotation (Placement(transformation(extent=
+      c_est_mix=900,
+      aA=4.25E-9,
+      b=0.279,
+      cells=20)                     annotation (Placement(transformation(extent=
              {{-70,-64},{-60,-56}}, rotation=0)));
     Control.TemperatureControl K_temp(
       T_FC_ref(displayUnit="K"),
@@ -340,6 +342,132 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         pattern=LinePattern.Dot));
 
   end Reference_Control;
+
+  model Reference_Oversize
+    "A reference DMFC system used for cooler-oversizing estimation"
+    extends Reference(redeclare Flow.UnitOperations.Stack.Thevenin fuelCell(
+        T(start=333, displayUnit="K"),
+        cells=20,
+        V0=14,
+        R=1),
+      redeclare ElectricLoad load(
+                          step(
+          I=0,
+          offset=7,
+          startTime=0), sine(I=0)),
+      redeclare Flow.UnitOperations.Coolers.Simple cathodeCooler,
+      redeclare Flow.UnitOperations.Coolers.Simple anodeCooler,
+      redeclare Flow.UnitOperations.HydrostaticMixer mixer(
+            T(fixed=true), c(fixed=true)),
+      redeclare Flow.UnitOperations.Separator condenser,
+      T_env = 310);
+
+  public
+    Control.CathodeLambdaControl K_cath(
+      lambda=3,
+      cells=20,
+      c_est=1000,
+      aA=4.25E-9,
+      b=0.279) "Cathode lambda controller" 
+      annotation (Placement(transformation(
+          origin={-70,29},
+          extent={{-5,-4},{5,4}},
+          rotation=270)));
+    Control.ReferenceFuelControl K_fuel(
+      cells=20,
+      aA=4.25E-9,
+      b=0.279)                 annotation (Placement(transformation(extent={{
+              -16,-94},{-4,-86}}, rotation=0)));
+    Control.WaterControl K_cond(T_0(displayUnit="K") = 320) 
+                                annotation (Placement(transformation(extent={{28,4},{
+              40,14}},        rotation=0)));
+    Control.AnodeLambdaControl K_an(
+      cells=20,
+      c_est_an=1000,
+      c_est_mix=1000,
+      aA=4.25E-9,
+      b=0.279)                      annotation (Placement(transformation(extent=
+             {{-70,-64},{-60,-56}}, rotation=0)));
+    Control.TemperatureControl K_temp(
+      T_FC_ref(displayUnit="K"),
+      T_deg_0(displayUnit="degC"),
+      eps(displayUnit="degC"))   annotation (Placement(transformation(extent={{
+              -16,-34},{-4,-22}}, rotation=0)));
+    annotation (experiment(StopTime=10800),experimentSetupOutput,
+      Diagram(coordinateSystem(preserveAspectRatio=true,  extent={{-100,-100},{
+              100,100}}), graphics),
+      Documentation(info="<html>
+<p>This specialisation of the reference system implements a series of
+controllers and is used to study the oversizing of cooling duties.</p>
+<p>The main difference from <tt>Reference_Control</tt> is that there is
+no accounting for safety margins in &lambda; control, i.e. it is 
+perfectly implemented for both cathode and anode.</p>
+</html>"));
+
+    output Modelica.SIunits.HeatFlowRate crossover_heat = 725000 * fuelCell.n_x;
+    output Modelica.SIunits.HeatFlowRate heat_removal = - (fuelCell.cathode_outlet.H + fuelCell.anode_outlet.H);
+
+    Modelica.SIunits.HeatFlowRate totalCooling = anodeCooler.Q + cathodeCooler.Q;
+
+  equation
+    connect(amperometer.i, K_cath.I) annotation (Line(
+        points={{-20,80},{-20,76},{-70,76},{-70,35}},
+        color={0,0,255},
+        pattern=LinePattern.Dot));
+    connect(K_fuel.I, amperometer.i) annotation (Line(
+        points={{-17.2,-87.6},{-18,-88},{-90,-88},{-90,40},{-70,40},{-70,76},{
+            -20,76},{-20,80}},
+        color={0,0,255},
+        pattern=LinePattern.Dot));
+    connect(blower.V, K_cath.V) annotation (Line(
+        points={{-70,16},{-70,23}},
+        color={0,255,0},
+        pattern=LinePattern.Dot));
+    connect(cathodeCooler.T_ref, K_cond.T_ref) annotation (Line(
+        points={{42,37},{42,9},{41.2,9}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+    connect(K_cond.p_mix, mixer.p) annotation (Line(
+        points={{26.8,12},{26.8,12},{4,12},{4,-36},{-24,-36},{-24,-72},{-4.7,
+            -72},{-4.7,-66.9}},
+        color={127,0,127},
+        pattern=LinePattern.Dot));
+    connect(degasser.T, K_fuel.T_deg) annotation (Line(
+        points={{59,-20},{66,-20},{66,-98},{-30,-98},{-30,-92.4},{-17.2,-92.4}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+    connect(pump.V, K_an.V) annotation (Line(
+        points={{-42,-60},{-59,-60}},
+        color={0,255,0},
+        pattern=LinePattern.Dot));
+    connect(K_an.I, amperometer.i) annotation (Line(
+        points={{-71,-60},{-90,-60},{-90,40},{-70,40},{-70,76},{-20,76},{-20,80}},
+        color={0,0,255},
+        pattern=LinePattern.Dot));
+    connect(K_cath.V, K_cond.V_cath) annotation (Line(
+        points={{-70,23},{-70,18},{16,18},{16,9},{26.8,9}},
+        color={0,255,0},
+        pattern=LinePattern.Dot));
+    connect(K_fuel.V, fuelPump.V) annotation (Line(
+        points={{-2.8,-90},{8,-90}},
+        color={0,255,0},
+        pattern=LinePattern.Dot));
+    connect(K_temp.T_m, fuelCell.T) 
+                               annotation (Line(
+        points={{-17.2,-28},{-20,-28},{-20,-16},{-8,-16},{-8,5.34},{-10.2,5.34}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+    connect(anodeCooler.T_ref, K_temp.T_deg_ref) 
+                                            annotation (Line(
+        points={{20,-23},{20,-28},{-2.8,-28}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+    connect(cathodeCooler.T_process_out, K_cond.T_cond) annotation (Line(
+        points={{51.4,38.6},{52,38},{52,0},{20,0},{20,6},{26.8,6}},
+        color={255,0,0},
+        pattern=LinePattern.Dot));
+
+  end Reference_Oversize;
 
   model Stabilised_Control
     "The DMFC system with control loops and capillary separator"
@@ -558,15 +686,15 @@ see what happens.</p>
         Cp=500,
         T(start=303.15)),
       redeclare ElectricLoad load(
-                          step(I=4, offset=3)),
+                          step(     offset=3, I=2)),
       redeclare Flow.UnitOperations.HydrostaticMixer mixer(
             T(fixed=true), c(fixed=true)));
     Control.CathodeLambdaControl K_cath(
       lambda=3,
       c_est=1100,
-      aA=4.16E-9,
-      b=0.2,
-      cells=20) 
+      cells=20,
+      aA=4.25E-9,
+      b=0.279) 
       annotation (Placement(transformation(
           origin={-70,33},
           extent={{-5,-6},{5,6}},
@@ -583,17 +711,17 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
               -32},{12,-20}}, rotation=0)));
     Control.MingledTemperatureControl K_T(
       c=900,
-      aA=4.16E-9,
-      b=0.2,
       V_cp(displayUnit="ml"),
       T_r(displayUnit="K"),
-      n=20)                               annotation (Placement(transformation(
+      n=20,
+      aA=4.25E-9,
+      b=0.279)                            annotation (Placement(transformation(
             extent={{-70,-78},{-54,-60}}, rotation=0)));
     Control.MingledFuelControl K_fuel(
       lambda=3,
-      aA=4.16E-9,
-      b=0.2,
-      cells=20)                       annotation (Placement(transformation(
+      cells=20,
+      aA=4.25E-9,
+      b=0.279)                        annotation (Placement(transformation(
             extent={{-26,-98},{-12,-82}}, rotation=0)));
 
   equation
