@@ -1,5 +1,5 @@
 within ;
-        /*
+          /*
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -724,6 +724,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
       b=0.279)                        annotation (Placement(transformation(
             extent={{-26,-98},{-12,-82}}, rotation=0)));
 
+    Modelica.SIunits.Mass lostMethanol(start = 0);
+
   equation
     connect(K_cath.V, blower.V) annotation (Line(
         points={{-70,27},{-70,16}},
@@ -784,6 +786,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         points={{-27.4,-94.8},{-40,-94},{-40,-98},{40,-98},{40,4},{31.46,3.74}},
         color={255,0,0},
         pattern=LinePattern.Dot));
+
+    der(lostMethanol) = emissions.inlet.n[Thermo.Species.Methanol] * Thermo.mw(Thermo.Species.Methanol);
 
   end Mingled_Control;
 
