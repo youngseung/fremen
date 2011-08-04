@@ -1,5 +1,5 @@
 within ;
-          /*
+            /*
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -283,6 +283,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
     output Modelica.SIunits.HeatFlowRate crossover_heat = 725000 * fuelCell.n_x;
     output Modelica.SIunits.HeatFlowRate heat_removal = - (fuelCell.cathode_outlet.H + fuelCell.anode_outlet.H);
 
+    Modelica.SIunits.Mass lostMethanol(start = 0);
+
   equation
     connect(amperometer.i, K_cath.I) annotation (Line(
         points={{-20,80},{-20,76},{-70,76},{-70,35}},
@@ -340,6 +342,8 @@ controllers. Note that controller connections are dotted and colour-coded.</p>
         points={{51.4,38.6},{52,38},{52,0},{20,0},{20,6},{26.8,6}},
         color={255,0,0},
         pattern=LinePattern.Dot));
+
+    der(lostMethanol) = emissions.inlet.n[Thermo.Species.Methanol] * Thermo.mw(Thermo.Species.Methanol);
 
   end Reference_Control;
 
