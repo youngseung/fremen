@@ -1,5 +1,5 @@
 within ;
-            /*
+              /*
  * © Federico Zenith, 2008-2010.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -406,6 +406,15 @@ controllers and is used to study the oversizing of cooling duties.</p>
 <p>The main difference from <tt>Reference_Control</tt> is that there is
 no accounting for safety margins in &lambda; control, i.e. it is 
 perfectly implemented for both cathode and anode.</p>
+<p>In order to test for increased or decreased cross-over, it is necessary
+to adjust all feedforward crossover-compensating parameters (<i>a</i> and
+<i>b</i> estimates) in all controllers.<br/>
+For a given increase in crossover, say 10%, <i>a</i> and <i>b</i> have to
+be scaled by the same relative amount (+10%). In the cell model,
+ <i>k<sub>m</sub></i> stays identical, while <i>k<sub>x</sub></i> changes
+by a factor &alpha;(1-<i>b</i>)(1-&alpha;<i>b</i>), where &alpha; is 1.1
+for a 10% increase and <i>b</i> is the <em>original</em> value (i.e. before
+increasing by 10%).</p>
 </html>"));
 
     output Modelica.SIunits.HeatFlowRate crossover_heat = 725000 * fuelCell.n_x;
