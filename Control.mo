@@ -1,6 +1,5 @@
-within ;
-    /**
- * © Federico Zenith, 2009-2010.
+/**
+ * Â© Federico Zenith, 2009-2010.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -623,7 +622,7 @@ focusing on the effect of anodic flow (the input) on the cell temperature
 (the state and output); all other terms can be assumed constant, i.e. 
 neglected.</p>
 <p>The gain between solution flow rate and cell temperature is
-<i>c<sub>p<sub><sup>sol<sup></i>/<i>C<sub>p<sub><sup>cell<sup></i> × <i>&Delta;T</i>.
+<i>c<sub>p<sub><sup>sol<sup></i>/<i>C<sub>p<sub><sup>cell<sup></i> Ã— <i>&Delta;T</i>.
 Since <i>&Delta;T</i> is the difference between cell and mixer temperatures (i.e. 
 anode inlet and outlet temperatures), the system is actually a nonlinear stable system.
 However, assuming <i>&Delta;T</i> is measured independently by two thermocouples and 
