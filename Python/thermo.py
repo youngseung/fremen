@@ -153,9 +153,9 @@ Units for temperature are K, for heat capacity J/mol K.'''
     return _cp_H2O_gas( T )
   elif species == 'CH3OH':
     if phase == 'liq':
-      _cp_CH3OH_liq( T )
+      return _cp_CH3OH_liq( T )
     elif phase == 'gas':
-      _cp_CH3OH_gas( T )
+      return _cp_CH3OH_gas( T )
   raise KeyError('Bad key: {0}_{1}'.format(species, phase))
 
 def h( species, phase, T ):
@@ -172,7 +172,7 @@ Reference is set to standard state and elements in their native form.'''
       f = _h_CH3OH_liq
     elif phase == 'gas':
       f = _h_CH3OH_gas
-  return f( T ) - f( T_ref ) + _DHF[species][phase]
+  return f( T ) - f( T0 ) + _DHF[species][phase]
 
 def _rho_H2O( T ):
   '''Density of liquid water, T in K and ρ in kg/m³.
@@ -250,7 +250,6 @@ The negative flash, Fluid Phase Equilibria 53, 51-71, 1989.'''
     return - c/b
   return ( -b - sqrt(delta) ) / (2*a)
 
-# TODO test on system that actually has matplotlib
 if __name__ == '__main__':
   import matplotlib.pyplot as plt
 
@@ -258,41 +257,53 @@ if __name__ == '__main__':
 
   plt.figure()
   for i in SPECIES:
-    plt.plot( x, map( lambda T: h(i, 'gas', T), x ),
+    plt.plot( x, list(map( lambda T: h(i, 'gas', T), x )),
               label='{0}, gas'.format(i) )
   for i in CONDENSABLES:
-    plt.plot( x, map( lambda T: h(i, 'liq', T), x ),
+    plt.plot( x, list(map( lambda T: h(i, 'liq', T), x )),
               label='{0}, liquid'.format(i) )
   plt.title('Enthalpies')
+  plt.grid()
+  plt.legend()
 
   plt.figure()
   for i in SPECIES:
-    plt.plot( x, map( lambda T: cp(i, 'gas', T), x ),
+    plt.plot( x, list(map( lambda T: cp(i, 'gas', T), x )),
               label='{0}, gas'.format(i) )
   for i in CONDENSABLES:
-    plt.plot( x, map( lambda T: cp(i, 'liq', T), x ),
+    plt.plot( x, list(map( lambda T: cp(i, 'liq', T), x )),
               label='{0}, liquid'.format(i) )
   plt.title('Heat capacities')
+  plt.grid()
+  plt.legend()
 
   plt.figure()
   for i in SPECIES:
-    plt.plot( x, map( lambda T: rho(i, 'gas', T), x ),
-              label='{0}, gas'.format(i) )
+    plt.semilogy( x, list(map( lambda T: rho(i, 'gas', T), x )),
+                  label='{0}, gas'.format(i) )
   for i in CONDENSABLES:
-    plt.plot( x, map( lambda T: rho(i, 'liq', T), x ),
-              label='{0}, liquid'.format(i) )
+    plt.semilogy( x, list(map( lambda T: rho(i, 'liq', T), x )),
+                  label='{0}, liquid'.format(i) )
   plt.title('Densities')
+  plt.grid()
+  plt.legend()
 
   plt.figure()
   for i in CONDENSABLES:
-    plt.plot( x, map( lambda T: p_vap(i, T), x ),
+    plt.plot( x, list(map( lambda T: p_vap(i, T), x )),
               label='{0}'.format(i) )
   plt.title('Vapour pressures')
+  plt.grid()
+  plt.legend()
 
   plt.figure()
   for i in CONDENSABLES:
-    plt.plot( x, map( lambda T: K(i, T), x ),
+    plt.plot( x, list(map( lambda T: K(i, T), x )),
               label='{0}'.format(i) )
   plt.title('Equilibrium constants')
+  plt.grid()
+  plt.legend()
+
+  plt.show()
 
   # TODO RR test: exercise for 3D animation?
