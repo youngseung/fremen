@@ -238,20 +238,28 @@ It is assumed throughout that methanol is diluted.
 
 Whitson, Curtis H., and Michelsen, Michael L.:
 The negative flash, Fluid Phase Equilibria 53, 51-71, 1989.'''
+
+  assert( zm + zw <= 1 )
+  
   Cm = K('CH3OH', T) - 1
   Cw = K('H2O',   T) - 1
   assert( Cm > Cw )
+  
   a = Cm*Cw
   b = Cm*zm + Cw*zw + (Cm+Cw)*(1-zw-zm)
   c = 1 - zw - zm
   delta = b**2 - 4*a*c
 
-  if Cm == 0:
-    return - c/b
-  return ( -b - sqrt(delta) ) / (2*a)
+  beta = ( -b - sqrt(delta) ) / (2*a) if Cm != 0 else - c/b
+  if beta > 1:
+    beta = 1
+  return beta
+  
 
 if __name__ == '__main__':
+  import numpy as np
   import matplotlib.pyplot as plt
+  from matplotlib.animation import FuncAnimation
 
   x = list( range( 274, 330 ) )
 
@@ -306,4 +314,9 @@ if __name__ == '__main__':
 
   plt.show()
 
-  # TODO RR test: exercise for 3D animation?
+  rrzs = []
+  for zw in np.linspace(0, 1, 1001):
+    for zm in np.linspace(0, 1-zw, 1001):
+      rrzs.append( (zw, zm) )
+  # TODO RR test: contour() animation
+  
